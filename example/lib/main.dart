@@ -62,7 +62,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin{
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(child: LyricWidget(size: Size(300,300),lyrics: lyrics,vsync: this,currentProgress: start.inMilliseconds.toDouble(),)),
+      body: Center(child: LyricWidget(size: Size(300,300),lyrics: lyrics,vsync: this,currentProgress: start.inMilliseconds.toDouble(),remarkLyrics: remarkLyrics,)),
     );
   }
 }
