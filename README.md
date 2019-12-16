@@ -1,6 +1,6 @@
 # flutter_lyric
 
-[![oktoast](https://img.shields.io/badge/Okzyl-flutterLyric-blue.svg)](https://github.com/OpenFlutter/flutter_oktoast)
+[![flutter_lyric](https://img.shields.io/badge/ozyl-flutterLyric-blue.svg)](https://github.com/ozyl/flutter_lyric)
 [![pub package](https://img.shields.io/pub/v/flutter_lyric.svg)](https://pub.dartlang.org/packages/flutter_lyric)
 ![GitHub](https://img.shields.io/github/license/ozyl/flutter_lyric.svg)
 
@@ -12,11 +12,12 @@ Music lyric Library .
 
 单行歌词
 
-待添加
+![pic](https://github.com/ozyl/flutter_lyric/blob/master/screenshot/Screenshot_2019-12-16-16-04-35-915_cn.okzyl.flutter_lyric_example.jpg?raw=true)
 
 翻译/音译歌词
 
-待添加
+![pic](https://github.com/ozyl/flutter_lyric/raw/master/screenshot/Screenshot_2019-12-16-16-24-13-083_cn.okzyl.flutter_lyric_example.jpg)
+
 
 ## Usage
 
