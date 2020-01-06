@@ -44,10 +44,11 @@ class LyricWidget extends StatefulWidget {
       this.draggingLyricStyle,
       this.draggingRemarkLyricStyle,
       this.enableDrag: true,
-      double lyricMaxWidth,
+      this.lyricMaxWidth,
       this.currRemarkLyricStyle})
       : assert(enableDrag != null),
         assert(lyrics != null && lyrics.isNotEmpty),
+        assert(size != null),
         assert(controller != null) {
     this.lyricStyle ??= TextStyle(color: Colors.grey, fontSize: 14);
     this.remarkStyle ??= TextStyle(color: Colors.black, fontSize: 14);
@@ -88,7 +89,7 @@ class _LyricWidgetState extends State<LyricWidget> {
   void initState() {
     widget.controller.draggingComplete = () {
       cancelTimer();
-      widget.controller.progress = widget.controller.draggingDuration;
+      widget.controller.progress = widget.controller.draggingProgress;
       _lyricPainter.draggingLine = null;
       widget.controller.isDragging = false;
     };
@@ -156,7 +157,7 @@ class _LyricWidgetState extends State<LyricWidget> {
                 widget.controller.draggingLine =
                     getCurrentDraggingLine(temOffset);
                 _lyricPainter.draggingLine = widget.controller.draggingLine;
-                widget.controller.draggingDuration =
+                widget.controller.draggingProgress =
                     widget.lyrics[widget.controller.draggingLine].startTime +
                         Duration(milliseconds: 1);
                 widget.controller.isDragging = true;

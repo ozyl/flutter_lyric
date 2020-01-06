@@ -28,7 +28,7 @@ class LyricController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Duration draggingDuration;
+  Duration draggingProgress;
 
   Function draggingComplete;
 
