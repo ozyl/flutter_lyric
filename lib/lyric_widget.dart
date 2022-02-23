@@ -81,7 +81,7 @@ class LyricWidget extends StatefulWidget {
   _LyricWidgetState createState() => _LyricWidgetState();
 }
 
-class _LyricWidgetState extends State<LyricWidget> {
+class _LyricWidgetState extends State<LyricWidget>  with AutomaticKeepAliveClientMixin {
   LyricPainter _lyricPainter;
   double totalHeight = 0;
 
@@ -284,4 +284,7 @@ class _LyricWidgetState extends State<LyricWidget> {
     }
     return totalHeight;
   }
+
+  @override
+  bool get wantKeepAlive => true;
 }
