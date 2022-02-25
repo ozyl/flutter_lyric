@@ -47,4 +47,13 @@ class LyricController extends ChangeNotifier {
   int draggingLine = 0;
 
   LyricController({this.vsync, this.draggingTimerDuration});
+
+
+  var isNotifyComplete = true;
+  @override
+  void notifyListeners() {
+    isNotifyComplete =false;
+    super.notifyListeners();
+    isNotifyComplete = true;
+  }
 }

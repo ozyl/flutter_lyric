@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+
 import 'lyric.dart';
 import 'lyric_controller.dart';
 import 'lyric_painter.dart';
@@ -81,9 +82,11 @@ class LyricWidget extends StatefulWidget {
   _LyricWidgetState createState() => _LyricWidgetState();
 }
 
-class _LyricWidgetState extends State<LyricWidget>  with AutomaticKeepAliveClientMixin {
+class _LyricWidgetState extends State<LyricWidget>{
   LyricPainter _lyricPainter;
   double totalHeight = 0;
+
+  VoidCallback listener = null;
 
   @override
   void initState() {
@@ -96,7 +99,8 @@ class _LyricWidgetState extends State<LyricWidget>  with AutomaticKeepAliveClien
     WidgetsBinding.instance.addPostFrameCallback((call) {
       totalHeight = computeScrollY(widget.lyrics.length - 1);
     });
-    widget.controller.addListener(() {
+    listener = () async {
+      if (!mounted) return ;
       var curLine =
           findLyricIndexByDuration(widget.controller.progress, widget.lyrics);
       if (widget.controller.oldLine != curLine) {
@@ -108,9 +112,12 @@ class _LyricWidgetState extends State<LyricWidget>  with AutomaticKeepAliveClien
             animationScrollY(curLine, widget.controller.vsync);
           }
         }
-        widget.controller.oldLine = curLine;
+        if(widget.controller.isNotifyComplete){
+          widget.controller.oldLine = curLine;
+        }
       }
-    });
+    };
+    widget.controller.addListener(listener);
     super.initState();
   }
 
@@ -155,7 +162,7 @@ class _LyricWidgetState extends State<LyricWidget>  with AutomaticKeepAliveClien
               if (temOffset < 0 && temOffset >= -totalHeight) {
                 widget.controller.draggingOffset = temOffset;
                 widget.controller.draggingLine =
-                    getCurrentDraggingLine(temOffset+widget.lyricGap);
+                    getCurrentDraggingLine(temOffset + widget.lyricGap);
                 _lyricPainter.draggingLine = widget.controller.draggingLine;
                 widget.controller.draggingProgress =
                     widget.lyrics[widget.controller.draggingLine].startTime +
@@ -189,7 +196,11 @@ class _LyricWidgetState extends State<LyricWidget>  with AutomaticKeepAliveClien
         findLyricIndexByDuration(widget.controller.progress, widget.lyrics);
 
     widget.controller.previousRowOffset = -widget.controller.draggingOffset;
-    animationScrollY(_lyricPainter.currentLyricIndex, widget.controller.vsync);
+    if (widget.controller.vsync == null) {
+      _lyricPainter.offset = -computeScrollY(_lyricPainter.currentLyricIndex);
+    } else {
+      animationScrollY(_lyricPainter.currentLyricIndex, widget.controller.vsync);
+    }
     _lyricPainter.draggingLine = null;
     widget.controller.isDragging = false;
   }
@@ -287,4 +298,12 @@ class _LyricWidgetState extends State<LyricWidget>  with AutomaticKeepAliveClien
 
   @override
   bool get wantKeepAlive => true;
+
+  @override
+  void dispose() {
+    if (listener != null) {
+      widget.controller.removeListener(listener);
+    }
+    super.dispose();
+  }
 }

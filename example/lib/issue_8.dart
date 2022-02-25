@@ -70,7 +70,23 @@ class _Issue8State extends State<Issue8> with TickerProviderStateMixin {
             children: [
               TextButton(onPressed: () {}, child: Text("唱片")),
               TextButton(onPressed: () {}, child: Text("歌词")),
-              TextButton(onPressed: () {}, child: Text("KALAOK")),
+              TextButton(onPressed: () {
+                showModalBottomSheet(
+                  context: context,
+                  isScrollControlled: true,
+                  builder: (BuildContext context) {
+                    return LyricWidget(
+                      size: const Size(double.maxFinite, double.maxFinite),
+                      lyricGap: 10,
+                      lyrics: lyrics,
+                      lyricStyle: const TextStyle(color: Colors.white, fontSize: 14),
+                      currLyricStyle: const TextStyle(color: Colors.red, fontSize: 15),
+                      draggingLyricStyle: const TextStyle(color: Colors.blueGrey, fontSize: 14),
+                      controller: controller,
+                    );
+                  },
+                );
+              }, child: Text("显示弹窗")),
             ],
           ),
           Expanded(
