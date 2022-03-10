@@ -1,5 +1,5 @@
 name: flutter_lyric
-description: 一个flutter用于显示歌词的小部件，支持翻译/音译歌词，可自定义样式；
+description: 一个flutter用于显示歌词的小部件，支持翻译/音译歌词，可自定义样式;
 version: 2.0.0
 homepage: https://github.com/ozyl/flutter_lyric
 email: zylvip@163.com
