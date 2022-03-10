@@ -1,15 +1,16 @@
-name: flutter_lyric
-description: 一个flutter用于显示歌词的小部件，支持翻译/音译歌词，可自定义整体/当前/翻译歌词的字体样式，处理了换行逻辑；
-version: 1.0.3
-author: 泡在海里的鱼 <zylvip9@gmail.com>
-homepage: https://github.com/ozyl/flutter_lyric
-email: zylvip@163.com
+name: lyrics_reader
+description: 提供歌词展示功能
+version: 0.0.1
+homepage:
 
 environment:
-  sdk: ">=2.1.0 <3.0.0"
+  sdk: ">=2.12.0 <3.0.0"
+  flutter: ">=1.20.0"
 
 dependencies:
   flutter:
+    sdk: flutter
+  flutter_web_plugins:
     sdk: flutter
 
 dev_dependencies:
@@ -22,17 +23,24 @@ dev_dependencies:
 # The following section is specific to Flutter.
 flutter:
   # This section identifies this Flutter project as a plugin project.
-  # The androidPackage and pluginClass identifiers should not ordinarily
+  # The 'pluginClass' and Android 'package' identifiers should not ordinarily
   # be modified. They are used by the tooling to maintain consistency when
   # adding or updating assets for this project.
   plugin:
-    androidPackage: cn.okzyl.flutter_lyric
-    pluginClass: FlutterLyricPlugin
+    platforms:
+      android:
+        package: cn.okzyl.lyrics_reader
+        pluginClass: LyricsReaderPlugin
+      ios:
+        pluginClass: LyricsReaderPlugin
+      web:
+        pluginClass: LyricsReaderWeb
+        fileName: lyrics_reader_web.dart
 
   # To add assets to your plugin package, add an assets section, like this:
   # assets:
-  #  - images/a_dot_burr.jpeg
-  #  - images/a_dot_ham.jpeg
+  #   - images/a_dot_burr.jpeg
+  #   - images/a_dot_ham.jpeg
   #
   # For details regarding assets in packages, see
   # https://flutter.dev/assets-and-images/#from-packages

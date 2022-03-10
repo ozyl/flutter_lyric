@@ -1,6 +1,6 @@
-# flutter_lyric_example
+# lyrics_reader_example
 
-Demonstrates how to use the flutter_lyric plugin.
+Demonstrates how to use the lyrics_reader plugin.
 
 ## Getting Started
 

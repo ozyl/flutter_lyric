@@ -1,6 +1,4 @@
 ## 0.0.1
-初次提交
-## 1.0.0
-修改说明
-## 1.0.3
-增加拖动功能
+
+* TODO: Describe initial release.
+

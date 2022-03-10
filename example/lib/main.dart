@@ -1,139 +1,381 @@
-import 'dart:async';
+import 'dart:ui';
 
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_lyric/lyric_controller.dart';
-import 'package:flutter_lyric/lyric_util.dart';
-import 'package:flutter_lyric/lyric_widget.dart';
-import 'package:flutter_lyric_example/issue_8.dart';
+import 'package:lyrics_reader/lyric_ui/lyric_ui.dart';
+import 'package:lyrics_reader/lyric_ui/ui_netease.dart';
+import 'package:lyrics_reader/lyrics_reader.dart';
+import 'package:lyrics_reader/lyrics_reader_widget.dart';
 
-void main() => runApp(MyApp());
+import 'const.dart';
 
-class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
+void main() {
+  runApp(MyApp());
+}
+
+class MyApp extends StatefulWidget {
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
+  AudioCache audioCache = AudioCache();
+  AudioPlayer? audioPlayer;
+  double sliderProgress = 0;
+  double playProgress = 0;
+  double max_value = 100;
+  bool isTap = false;
+
+  var lyricModel = LyricsModelBuilder.creat()
+      .bindLyricToMain(normalLyric)
+      .bindLyricToExt(transLyric)
+      .getModel();
+
+  var lyricUI = UINetease();
+
+  @override
+  void initState() {
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Lyric Demo',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
-      home: MyHomePage(title: 'Flutter Lyric'),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  MyHomePage({Key key, this.title}) : super(key: key);
-
-  final String title;
-
-  @override
-  _MyHomePageState createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
-  //歌词
-  var songLyc =
-      "[00:00.000] 作曲 : Maynard Plant/Blaise Plant/菊池拓哉 \n[00:00.226] 作词 : Maynard Plant/Blaise Plant/菊池拓哉\n[00:00.680]明日を照らすよSunshine\n[00:03.570]窓から射し込む…扉開いて\n[00:20.920]Stop!'cause you got me thinking\n[00:22.360]that I'm a little quicker\n[00:23.520]Go!Maybe the rhythm's off,\n[00:25.100]but I will never let you\n[00:26.280]Know!I wish that you could see it for yourself.\n[00:28.560]It's not,it's not,just stop,hey y'all!やだ!\n[00:30.930]I never thought that I would take over it all.\n[00:33.420]And now I know that there's no way I could fall.\n[00:35.970]You know it's on and on and off and on,\n[00:38.210]And no one gets away.\n[00:40.300]僕の夢は何処に在るのか?\n[00:45.100]影も形も見えなくて\n[00:50.200]追いかけていた守るべきもの\n[00:54.860]There's a sunshine in my mind\n[01:02.400]明日を照らすよSunshineどこまでも続く\n[01:07.340]目の前に広がるヒカリの先へ\n[01:12.870]未来の\n[01:15.420]輝く\n[01:18.100]You know it's hard,just take a chance.\n[01:19.670]信じて\n[01:21.289]明日も晴れるかな?\n[01:32.960]ほんの些細なことに何度も躊躇ったり\n[01:37.830]誰かのその言葉いつも気にして\n[01:42.850]そんな弱い僕でも「いつか必ずきっと!」\n[01:47.800]強がり?それも負け惜しみ?\n[01:51.940]僕の夢は何だったのか\n[01:56.720]大事なことも忘れて\n[02:01.680]目の前にある守るべきもの\n[02:06.640]There's a sunshine in my mind\n[02:14.500]明日を照らすよSunshineどこまでも続く\n[02:19.000]目の前に広がるヒカリの先へ\n[02:24.670]未来のSunshine\n[02:27.200]輝くSunshine\n[02:29.900]You know it's hard,just take a chance.\n[02:31.420]信じて\n[02:33.300]明日も晴れるかな?\n[02:47.200]Rain's got me now\n[03:05.650]I guess I'm waiting for that Sunshine\n[03:09.200]Why's It only shine in my mind\n[03:15.960]I guess I'm waiting for that Sunshine\n[03:19.110]Why's It only shine in my mind\n[03:25.970]明日を照らすよSunshineどこまでも続く\n[03:30.690]目の前に広がるヒカリの先へ\n[03:36.400]未来のSunshine\n[03:38.840]輝くSunshine\n[03:41.520]You know it's hard,just take a chance.\n[03:43.200]信じて\n[03:44.829]明日も晴れるかな?\n";
-  //音译/翻译歌词
-  var remarkSongLyc =
-      "[00:00.680]照亮明天的阳光\n[00:03.570]从窗外洒进来…敞开门扉\n[00:20.920]停下!因为你让我感觉到\n[00:22.360]自己有点过快\n[00:23.520]走吧!也许脱离了节奏\n[00:25.100]但我绝不放开你\n[00:26.280]知道吗!我希望你能亲自看看\n[00:28.560]不是这样不是这样快停下听好!糟了!\n[00:30.930]我从来没想过我会接受这一切\n[00:33.420]现在我知道我没办法降低速度\n[00:35.970]你知道这是不断地和不时地\n[00:38.210]于是谁也无法逃脱\n[00:40.300]我的梦想究竟落在何方?\n[00:45.100]为何形影不见\n[00:50.200]奋力追赶着应当守护的事物\n[00:54.860]阳光至始至终都在我心底里\n[01:02.400]照亮明天的阳光无限延伸\n[01:07.340]向着展现眼前的光明前路\n[01:12.870]Sunshine未来的阳光\n[01:15.420]Sunshine耀眼的阳光\n[01:18.100]你知道难以达成只是想去尝试一番\n[01:19.670]相信吧\n[01:21.289]明天也会放晴吗?\n[01:32.960]常因些微不足道的事情踌躇不前\n[01:37.830]总是很在意某人说过的话\n[01:42.850]如此脆弱的我亦坚信「早日必定成功!」\n[01:47.800]这是逞强还是不服输?\n[01:51.940]我的梦想实为何物\n[01:56.720]竟忘了如此重要的事\n[02:01.680]应当守护的事物就在眼前\n[02:06.640]阳光至始至终都在我心底里\n[02:14.500]照亮明天的阳光无限延伸\n[02:19.000]向着展现眼前的光明前路\n[02:24.670]未来的阳光\n[02:27.200]耀眼的阳光\n[02:29.900]你知道难以达成只是想去尝试一番\n[02:31.420]相信吧\n[02:33.300]明天也会放晴吗?\n[02:47.200]此刻雨水纷飞\n[03:05.650]我推测我所等待的就是这缕阳光\n[03:09.200]为什么它只在我心中闪烁\n[03:15.960]我推测我所等待的就是这缕阳光\n[03:19.110]为什么它只在我心中闪烁\n[03:25.970]照亮明天的阳光无限延伸\n[03:30.690]向着展现眼前的光明前路\n[03:36.400]未来的阳光\n[03:38.840]耀眼的阳光\n[03:41.520]你知道难以达成只是想去尝试一番\n[03:43.200]相信吧\n[03:44.829]明天也会放晴吗?";
-  //是否显示选择器
-  bool showSelect = false;
-  Duration start = new Duration(seconds: 0);
-  //歌词控制器
-  LyricController controller;
-
-  @override
-  void initState() {
-    controller = LyricController(vsync: this);
-    //监听控制器
-    controller.addListener(() {
-      //如果拖动歌词则显示选择器
-      if (showSelect != controller.isDragging) {
-        setState(() {
-          showSelect = controller.isDragging;
-        });
-      }
-    });
-    super.initState();
-  }
-
-  double slider = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    var lyrics = LyricUtil.formatLyric(songLyc);
-    var remarkLyrics = LyricUtil.formatLyric(remarkSongLyc);
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.title),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: <Widget>[
+      home: Scaffold(
+        appBar: AppBar(
+          title: const Text('Plugin example app'),
+        ),
+        body: Column(
+          children: [
+            buildReaderWidget(),
             Expanded(
-              child: Stack(
-                alignment: Alignment.center,
-                children: <Widget>[
-                  Center(
-                      child: LyricWidget(
-                    size: Size(double.infinity, double.infinity),
-                    lyrics: lyrics,
-                    controller: controller,
-                    remarkLyrics: remarkLyrics,
-                  )),
-                  Offstage(
-                    offstage: !showSelect,
-                    child: GestureDetector(
-                      onTap: () {
-                        //点击选择器后移动歌词到滑动位置;
-                        controller.draggingComplete();
-                        //当前进度
-                        print("进度:${controller.draggingProgress}");
-                        setState(() {
-                          slider = controller.draggingProgress.inSeconds.toDouble();
-                        });
-                      },
-                      child: Row(
-                        children: <Widget>[
-                          Icon(
-                            Icons.play_circle_outline,
-                            color: Colors.green,
-                          ),
-                          Expanded(
-                              child: Divider(
-                            color: Colors.red,
-                          )),
-                        ],
-                      ),
-                    ),
-                  )
-                ],
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    ...buildPlayControl(),
+                    ...buildUIControl(),
+                  ],
+                ),
               ),
             ),
-            Slider(
-              onChanged: (d) {
-                setState(() {
-                  slider = d;
-                });
-              },
-              onChangeEnd: (d) {
-                controller.progress = Duration(seconds: d.toInt());
-              },
-              value: slider,
-              max: 320,
-              min: 0,
-            ),
-            TextButton(onPressed: (){
-              Navigator.push(context, MaterialPageRoute(builder: (context){
-                return Issue8();
-              }));
-            }, child: Text("issue#8"))
           ],
         ),
       ),
     );
   }
+
+  var lyricPadding = 40.0;
+  Stack buildReaderWidget() {
+    return Stack(
+      children: [
+        ...buildReaderBackground(),
+        LyricsReader(
+          padding: EdgeInsets.symmetric(horizontal: lyricPadding),
+          model: lyricModel,
+          position: playProgress,
+          lyricUi: lyricUI,
+          selectLineBuilder: (progress,confirm) {
+            return Row(
+              children: [
+                IconButton(onPressed: (){
+                  LyricsLog.logD("点击事件");
+                  confirm.call();
+                  setState(() {
+                    audioPlayer?.seek(Duration(milliseconds: progress));
+                  });
+                }, icon: Icon(Icons.play_arrow, color: Colors.green)),
+                Expanded(
+                  child: Container(
+                    decoration: BoxDecoration(color: Colors.green),
+                    height: 1,
+                    width: double.infinity,
+                  ),
+                ),
+                Text(progress.toString(),style: TextStyle(color: Colors.green),)
+              ],
+            );
+          },
+        )
+      ],
+    );
+  }
+
+  List<Widget> buildPlayControl() {
+    return [
+      Text(
+        "播放进度$sliderProgress",
+        style: TextStyle(
+          fontSize: 16,
+          color: Colors.green,
+        ),
+      ),
+      if(sliderProgress<max_value)
+      Slider(
+        min: 0,
+        max: max_value,
+        label: sliderProgress.toString(),
+        value: sliderProgress,
+        activeColor: Colors.blueGrey,
+        inactiveColor: Colors.blue,
+        onChanged: (double value) {
+          setState(() {
+            sliderProgress = value;
+          });
+        },
+        onChangeStart: (double value) {
+          isTap = true;
+        },
+        onChangeEnd: (double value) {
+          isTap = false;
+          playProgress = value;
+          audioPlayer?.seek(Duration(milliseconds: value.toInt()));
+        },
+      ),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          TextButton(
+              onPressed: () async {
+                if (audioPlayer == null) {
+                  audioPlayer = await audioCache.play("music1.mp3");
+                  audioPlayer?.onDurationChanged.listen((Duration event) {
+                    setState(() {
+                      max_value = event.inMilliseconds.toDouble();
+                    });
+                  });
+                  audioPlayer?.onAudioPositionChanged.listen((Duration event) {
+                    if (isTap) return;
+                    setState(() {
+                      sliderProgress = event.inMilliseconds.toDouble();
+                      playProgress = sliderProgress;
+                    });
+                  });
+                } else {
+                  audioPlayer?.resume();
+                }
+              },
+              child: Text("播放歌曲")),
+          TextButton(
+              onPressed: () async {
+                audioPlayer?.pause();
+              },
+              child: Text("暂停播放")),
+          TextButton(
+              onPressed: () async {
+                audioPlayer?.stop();
+                audioPlayer = null;
+              },
+              child: Text("停止播放")),
+        ],
+      ),
+    ];
+  }
+
+  List<Widget> buildReaderBackground() {
+    return [
+      Positioned.fill(
+        child: Image.asset(
+          "bg.jpeg",
+          fit: BoxFit.cover,
+        ),
+      ),
+      Positioned.fill(
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Container(
+            color: Colors.black.withOpacity(0.3),
+          ),
+        ),
+      )
+    ];
+  }
+
+  var mainTextSize = 18.0;
+  var extTextSize = 16.0;
+  var lineGap = 16.0;
+  var inlineGap = 10.0;
+  var lyricAlign = LyricAligin.CENTER;
+
+  List<Widget> buildUIControl() {
+    return [
+      Container(
+        height: 30,
+      ),
+      Text("UI控制", style: TextStyle(fontWeight: FontWeight.bold)),
+      buildTitle("歌词padding"),
+      Slider(
+        min: 0,
+        max: 100,
+        label: lyricPadding.toString(),
+        value: lyricPadding,
+        activeColor: Colors.blueGrey,
+        inactiveColor: Colors.blue,
+        onChanged: (double value) {
+          setState(() {
+            lyricPadding = value;
+          });
+        },
+      ),
+      buildTitle("主歌词大小"),
+      Slider(
+        min: 15,
+        max: 30,
+        label: mainTextSize.toString(),
+        value: mainTextSize,
+        activeColor: Colors.blueGrey,
+        inactiveColor: Colors.blue,
+        onChanged: (double value) {
+          setState(() {
+            mainTextSize = value;
+          });
+        },
+        onChangeEnd: (double value) {
+          setState(() {
+            lyricUI.defaultSize = mainTextSize;
+            refreshLyric();
+          });
+        },
+      ),
+      buildTitle("副歌词大小"),
+      Slider(
+        min: 15,
+        max: 30,
+        label: extTextSize.toString(),
+        value: extTextSize,
+        activeColor: Colors.blueGrey,
+        inactiveColor: Colors.blue,
+        onChanged: (double value) {
+          setState(() {
+            extTextSize = value;
+          });
+        },
+        onChangeEnd: (double value) {
+          setState(() {
+            lyricUI.defaultExtSize = extTextSize;
+            refreshLyric();
+          });
+        },
+      ),
+      buildTitle("行间距大小"),
+      Slider(
+        min: 10,
+        max: 80,
+        label: lineGap.toString(),
+        value: lineGap,
+        activeColor: Colors.blueGrey,
+        inactiveColor: Colors.blue,
+        onChanged: (double value) {
+          setState(() {
+            lineGap = value;
+          });
+        },
+        onChangeEnd: (double value) {
+          setState(() {
+            lyricUI.lineGap = lineGap;
+            refreshLyric();
+          });
+        },
+      ),
+      buildTitle("主副歌词间距大小"),
+      Slider(
+        min: 10,
+        max: 80,
+        label: inlineGap.toString(),
+        value: inlineGap,
+        activeColor: Colors.blueGrey,
+        inactiveColor: Colors.blue,
+        onChanged: (double value) {
+          setState(() {
+            inlineGap = value;
+          });
+        },
+        onChangeEnd: (double value) {
+          setState(() {
+            lyricUI.inlineGap = inlineGap;
+            refreshLyric();
+          });
+        },
+      ),
+      buildTitle("歌词对齐方向"),
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: LyricAligin.values
+            .map((e) =>  Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Column(
+            children: [
+              Radio<LyricAligin>(
+                  activeColor: Colors.orangeAccent,
+                  value: e,
+                  groupValue: lyricAlign,
+                  onChanged: (v) {
+                    setState(() {
+                      lyricAlign = v!;
+                      lyricUI.lyricAlign = lyricAlign;
+                      refreshLyric();
+                    });
+                  }),
+              Text(e.toString().split(".")[1])
+            ],
+          ),
+        ))
+            .toList(),
+      ),
+      buildTitle("选择行偏移"),
+      Slider(
+        min: 0.3,
+        max: 0.8,
+        label: bias.toString(),
+        value: bias,
+        activeColor: Colors.blueGrey,
+        inactiveColor: Colors.blue,
+        onChanged: (double value) {
+          setState(() {
+            bias = value;
+          });
+        },
+        onChangeEnd: (double value) {
+          setState(() {
+            lyricUI.bias = bias;
+            refreshLyric();
+          });
+        },
+      ),
+      buildTitle("选择行基线"),
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: LyricBaseLine.values
+            .map((e) => Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                children: [
+                  Radio<LyricBaseLine>(
+                  activeColor: Colors.orangeAccent,
+                  value: e,
+                  groupValue: lyricBiasBaseLine,
+                  onChanged: (v) {
+                    setState(() {
+                      lyricBiasBaseLine = v!;
+                      lyricUI.lyricBaseLine = lyricBiasBaseLine;
+                      refreshLyric();
+                    });
+                  }),
+                  Text(e.toString().split(".")[1])
+                ],
+              ),
+            ))
+            .toList(),
+      ),
+    ];
+  }
+
+  void refreshLyric(){
+    lyricUI = UINetease.clone(lyricUI);
+  }
+
+  var bias = 0.5;
+  var lyricBiasBaseLine = LyricBaseLine.CENTER;
+
+  Text buildTitle(String title) => Text(title,
+      style: TextStyle(fontWeight: FontWeight.bold, color: Colors.green));
 }
