@@ -1,5 +1,5 @@
-import 'package:lyrics_reader/lyric_parser/lyrics_parse.dart';
-import 'package:lyrics_reader/lyrics_reader.dart';
+import 'package:flutter_lyric/lyric_parser/lyrics_parse.dart';
+import 'package:flutter_lyric/lyrics_reader.dart';
 
 import 'lyric_parser/parser_smart.dart';
 import 'lyrics_reader_model.dart';

@@ -1,7 +1,6 @@
 name: flutter_lyric
 description: 一个flutter用于显示歌词的小部件，支持翻译/音译歌词，可自定义样式；
 version: 2.0.0
-author: 泡在海里的鱼 <zylvip9@gmail.com>
 homepage: https://github.com/ozyl/flutter_lyric
 email: zylvip@163.com
 
@@ -14,7 +13,7 @@ dependencies:
     sdk: flutter
   flutter_web_plugins:
     sdk: flutter
-  collection: 1.16.0
+  collection: ^1.15.0
 
 dev_dependencies:
   flutter_test:

@@ -2,10 +2,10 @@ import 'dart:ui';
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:lyrics_reader/lyric_ui/lyric_ui.dart';
-import 'package:lyrics_reader/lyric_ui/ui_netease.dart';
-import 'package:lyrics_reader/lyrics_reader.dart';
-import 'package:lyrics_reader/lyrics_reader_widget.dart';
+import 'package:flutter_lyric/lyric_ui/lyric_ui.dart';
+import 'package:flutter_lyric/lyric_ui/ui_netease.dart';
+import 'package:flutter_lyric/lyrics_reader.dart';
+import 'package:flutter_lyric/lyrics_reader_widget.dart';
 
 import 'const.dart';
 

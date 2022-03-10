@@ -1,7 +1,7 @@
 import 'package:flutter/widgets.dart';
-import 'package:lyrics_reader/lyric_parser/lyrics_parse.dart';
-import 'package:lyrics_reader/lyrics_log.dart';
-import 'package:lyrics_reader/lyrics_reader_model.dart';
+import 'package:flutter_lyric/lyric_parser/lyrics_parse.dart';
+import 'package:flutter_lyric/lyrics_log.dart';
+import 'package:flutter_lyric/lyrics_reader_model.dart';
 
 ///
 class ParserQrc extends LyricsParse{

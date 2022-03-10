@@ -1,4 +1,4 @@
-import 'package:lyrics_reader/lyrics_reader_model.dart';
+import 'package:flutter_lyric/lyrics_reader_model.dart';
 
 abstract class LyricsParse {
   String lyric;

@@ -1,6 +1,6 @@
 
 import 'package:flutter/material.dart';
-import 'package:lyrics_reader/lyric_ui/lyric_ui.dart';
+import 'package:flutter_lyric/lyric_ui/lyric_ui.dart';
 
 //示例样式
 class UINetease extends LyricUI {

@@ -1,5 +1,5 @@
-import 'package:lyrics_reader/lyric_helper.dart';
-import 'package:lyrics_reader/lyric_ui/lyric_ui.dart';
+import 'package:flutter_lyric/lyric_helper.dart';
+import 'package:flutter_lyric/lyric_ui/lyric_ui.dart';
 import 'package:collection/collection.dart';
 
 //歌词模型
