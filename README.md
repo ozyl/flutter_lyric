@@ -1,24 +1,23 @@
-# 歌词阅读器
+# lyric_reader
 
 ## Feature
 
-- [x] 扩展歌词(翻译歌词)
-- [x] 动画换行
-- [x] 惯性滚动
-- [x] 自定义UI
-- [x] 自定义解析
+- [x] translation lyrics
+- [x] smooth animation
+- [x] custom UI,Parse
 
 ## Show
+1.😊[example on web](https://ozyl.github.io/flutter_lyric/)
 
-run example or download example apk:[example.apk](https://bpp.dfabu.com/q6JR);
-
-example QR:
-
+2.download example apk:[example.apk](https://bpp.dfabu.com/q6JR)
  <img src="https://api.pwmqr.com/qrcode/create/?url=https://bpp.dfabu.com/q6JR" height="120" width="120"/>
+
+3.run example
+
 
 ## Use
 
-view example;
+view example
 
 ## Getting Started
 
