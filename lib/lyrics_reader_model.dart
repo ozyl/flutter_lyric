@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter_lyric/lyric_helper.dart';
 import 'package:flutter_lyric/lyric_ui/lyric_ui.dart';
 import 'package:collection/collection.dart';
@@ -59,8 +60,12 @@ class LyricsLineModel {
 }
 
 class LyricDrawInfo {
-  double otherMainTextHeight = 0;
-  double otherExtTextHeight = 0;
-  double playingMainTextHeight = 0;
-  double playingExtTextHeight = 0;
+  double get otherMainTextHeight =>otherMainTextPainter?.height??0;
+  double get otherExtTextHeight =>otherExtTextPainter?.height??0;
+  double get playingMainTextHeight =>playingMainTextPainter?.height??0;
+  double get playingExtTextHeight => playingExtTextPainter?.height??0;
+  TextPainter? otherMainTextPainter;
+  TextPainter? otherExtTextPainter;
+  TextPainter? playingMainTextPainter;
+  TextPainter? playingExtTextPainter;
 }

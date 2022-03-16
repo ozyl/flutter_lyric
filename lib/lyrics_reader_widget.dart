@@ -137,21 +137,41 @@ class LyricReaderState extends State<LyricsReader>
     _lineController?.forward();
   }
 
+
+
+
   refreshLyricHeight(Size size) {
     lyricPaint.clearCache();
+    
     widget.model?.lyrics.forEach((element) {
+
       element.drawInfo = LyricDrawInfo()
-        ..playingExtTextHeight = lyricPaint.getTextHeight(
+        ..playingExtTextPainter = getTextPaint(
             element.extText, widget.ui.getPlayingExtTextStyle(), size: size)
-        ..playingMainTextHeight = lyricPaint.getTextHeight(
+        ..playingMainTextPainter = getTextPaint(
             element.mainText, widget.ui.getPlayingMainTextStyle(), size: size)
-        ..otherExtTextHeight = lyricPaint.getTextHeight(
+        ..otherExtTextPainter = getTextPaint(
             element.extText, widget.ui.getOtherExtTextStyle(), size: size)
-        ..otherMainTextHeight = lyricPaint.getTextHeight(
+        ..otherMainTextPainter = getTextPaint(
             element.mainText, widget.ui.getOtherMainTextStyle(),
             size: size);
     });
   }
+
+
+  /// 获取文本高度
+  TextPainter getTextPaint(String? text, TextStyle style, {Size? size}) {
+    if (text == null) text = "";
+    var linePaint = TextPainter(
+      textDirection: TextDirection.ltr,
+    );
+    linePaint.textAlign = lyricPaint.lyricUI.getLyricTextAligin();
+    linePaint
+      ..text = TextSpan(text: text, style: style.copyWith(height: 1))
+      ..layout(maxWidth: (size ?? mSize).width);
+    return linePaint;
+  }
+
 
   handleSize() {
     mSize = widget.size;

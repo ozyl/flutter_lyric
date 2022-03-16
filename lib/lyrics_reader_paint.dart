@@ -20,10 +20,6 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
     ..color = Colors.green
     ..isAntiAlias = true;
 
-  var linePaint = TextPainter(
-    textDirection: TextDirection.ltr,
-  );
-
   var playingIndex = 0;
 
   double _lyricOffset = 0;
@@ -140,27 +136,28 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
     if (!element.hasMain && !element.hasExt) {
       return lyricUI.getBlankLineHeight();
     }
-    return _drwaOtherLyricLine(canvas, drawOffset, element, i == playingIndex);
+    return _drwaOtherLyricLine(canvas, drawOffset, element, i );
   }
 
   ///绘制其他歌词行
   ///返回造成的偏移量值
   double _drwaOtherLyricLine(
-      Canvas canvas, double drawOffsetY, LyricsLineModel element, bool isPlay) {
-    var mainTextStyle = isPlay
-        ? lyricUI.getPlayingMainTextStyle()
-        : lyricUI.getOtherMainTextStyle();
-    var extTextStyle = isPlay
-        ? lyricUI.getPlayingExtTextStyle()
-        : lyricUI.getOtherExtTextStyle();
+      Canvas canvas, double drawOffsetY, LyricsLineModel element, int lineIndex) {
+    var isPlay = lineIndex == playingIndex;
+    var mainTextPainter = (isPlay
+        ? element.drawInfo?.playingMainTextPainter
+        : element.drawInfo?.otherMainTextPainter);
+    var extTextPainter = (isPlay
+        ? element.drawInfo?.playingExtTextPainter
+        : element.drawInfo?.otherExtTextPainter);
     //该行行高
     double otherLineHeight = 0;
     //第一行不加行间距
-    if ((model?.lyrics.indexOf(element) ?? -1) != 0) {
+    if (lineIndex != 0) {
       otherLineHeight += lyricUI.getLineSpace();
     }
     if (element.hasMain) {
-      otherLineHeight += drawText(canvas, element.mainText, mainTextStyle,
+      otherLineHeight += drawText(canvas, mainTextPainter,
           drawOffsetY + otherLineHeight);
     }
     if (element.hasExt) {
@@ -170,32 +167,23 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
       }
       var extOffsetY = drawOffsetY + otherLineHeight;
       otherLineHeight +=
-          drawText(canvas, element.extText, extTextStyle, extOffsetY);
+          drawText(canvas,extTextPainter, extOffsetY);
     }
     return otherLineHeight;
   }
 
   ///绘制文本并返回行高度
   double drawText(
-      Canvas canvas, String? text, TextStyle style, double offsetY) {
-    double lineHeight = getTextHeight(text, style);
+      Canvas canvas, TextPainter? paint, double offsetY) {
+    //paint 理论上不可能为空，预期报错
+    var lineHeight = paint!.height;
     if (offsetY < 0 - lineHeight || offsetY > mSize.height) {
       return lineHeight;
     }
-    linePaint.paint(canvas, Offset(getLineOffsetX(linePaint), offsetY));
+    paint.paint(canvas, Offset(getLineOffsetX(paint), offsetY));
     return lineHeight;
   }
-
-  /// 获取文本高度
-  double getTextHeight(String? text, TextStyle style, {Size? size}) {
-    if (text == null) text = "";
-    linePaint.textAlign = lyricUI.getLyricTextAligin();
-    linePaint
-      ..text = TextSpan(text: text, style: style.copyWith(height: 1))
-      ..layout(maxWidth: (size ?? mSize).width);
-    return linePaint.height;
-  }
-
+  
   ///获取行绘制横向坐标
   double getLineOffsetX(TextPainter textPainter) {
     switch (lyricUI.getLyricHorizontalAlign()) {
@@ -222,4 +210,5 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     return true;
   }
+
 }

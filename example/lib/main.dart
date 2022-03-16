@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/lyric_ui/lyric_ui.dart';
 import 'package:flutter_lyric/lyric_ui/ui_netease.dart';
@@ -105,13 +107,11 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
 
   List<Widget> buildPlayControl() {
     return [
-      Container(
-        height: 20,
-      ),
-      Text("example's audio player library has problem in web platform,can't get music duration,you can use myself audio player library!",
-      style: TextStyle(fontSize: 20,color: Colors.grey),),
-      Container(
-        height: 30,
+      if(kIsWeb ==true)
+      Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Text("example's audio player library has problem in web platform,can't get music duration,you can use myself audio player library!",
+        style: TextStyle(fontSize: 20,color: Colors.grey),),
       ),
       Text(
         "播放进度$sliderProgress",
