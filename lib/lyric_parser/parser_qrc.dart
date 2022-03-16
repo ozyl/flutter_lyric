@@ -9,14 +9,14 @@ class ParserQrc extends LyricsParse{
   RegExp advancedPattern = RegExp(r"""\[\d+,\d+]""");
   RegExp qrcPattern = RegExp(r"""\((\d+,\d+)\)""");
 
-  RegExp advancedValuePattern = RegExp(r"(?<=\[)\d*,\d*(?=\])");
+  RegExp advancedValuePattern = RegExp(r"\[(\d*,\d*)\]");
 
   ParserQrc(String lyric) : super(lyric);
 
   @override
   List<LyricsLineModel> parseLines({bool isMain:true}) {
     lyric =
-        RegExp(r"""(?<=LyricContent=")[\s\S]*(?="/>)""").stringMatch(lyric) ??
+        RegExp(r"""LyricContent="([\s\S]*)">""").firstMatch(lyric)?.group(1) ??
             lyric;
     //读每一行
     var lines = lyric.split("\n");
@@ -36,7 +36,7 @@ class ParserQrc extends LyricsParse{
       }
       //转时间戳
       var ts = int.parse(
-          advancedValuePattern.stringMatch(time)?.split(",")[0] ?? "0");
+          advancedValuePattern.firstMatch(time)?.group(1)?.split(",")[0] ?? "0");
       //移除time，拿到真实歌词
       var realLyrics = line.replaceFirst(advancedPattern, "");
       LyricsLog.logD("匹配time:$time($ts) 真实歌词：$realLyrics");

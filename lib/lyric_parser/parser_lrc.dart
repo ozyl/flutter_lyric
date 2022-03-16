@@ -8,7 +8,7 @@ class ParserLrc extends LyricsParse{
 
   ///匹配普通格式内容
   ///eg:[00:03.47] -> 00:03.47
-  RegExp valuePattern = RegExp(r"(?<=\[)\d{2}:\d{2}.\d{2,3}(?=\])");
+  RegExp valuePattern = RegExp(r"\[(\d{2}:\d{2}.\d{2,3})\]");
 
   ParserLrc(String lyric) : super(lyric);
 
@@ -55,7 +55,7 @@ class ParserLrc extends LyricsParse{
       return null;
     }
     //通过正则取出value
-    var value = valuePattern.stringMatch(timeTag) ?? "";
+    var value = valuePattern.firstMatch(timeTag)?.group(1) ?? "";
     if (value.isEmpty) {
       LyricsLog.logW("未拿到时间值：$timeTag");
       return null;
