@@ -105,6 +105,14 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
 
   List<Widget> buildPlayControl() {
     return [
+      Container(
+        height: 20,
+      ),
+      Text("example's audio player library has problem in web platform,can't get music duration,you can use myself audio player library!",
+      style: TextStyle(fontSize: 20,color: Colors.grey),),
+      Container(
+        height: 30,
+      ),
       Text(
         "播放进度$sliderProgress",
         style: TextStyle(
@@ -158,11 +166,17 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                 }
               },
               child: Text("播放歌曲")),
+          Container(
+           width: 10,
+          ),
           TextButton(
               onPressed: () async {
                 audioPlayer?.pause();
               },
               child: Text("暂停播放")),
+          Container(
+            width: 10,
+          ),
           TextButton(
               onPressed: () async {
                 audioPlayer?.stop();
