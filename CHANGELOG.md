@@ -6,3 +6,5 @@ sliding inertia.custom UI,Parse
 docs: Update CHANGELOG.md,README.md
 ## 2.0.1
 more smooth
+## 2.0.1+1
+fix safari load failed
