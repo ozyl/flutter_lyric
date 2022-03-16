@@ -10,7 +10,7 @@ import 'package:flutter_lyric/lyrics_reader_widget.dart';
 import 'const.dart';
 
 void main() {
-  runApp(MyApp());
+  runApp(MaterialApp(home:MyApp()));
 }
 
 class MyApp extends StatefulWidget {
@@ -40,27 +40,30 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Scaffold(
-        appBar: AppBar(
-          title: const Text('Plugin example app'),
-        ),
-        body: Column(
-          children: [
-            buildReaderWidget(),
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    ...buildPlayControl(),
-                    ...buildUIControl(),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Plugin example app'),
       ),
+      body: buildContainer(),
+    );
+  }
+
+  Widget buildContainer() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Container(child: buildReaderWidget(),height: MediaQuery.of(context).size.height/2,),
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                ...buildPlayControl(),
+                ...buildUIControl(),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
