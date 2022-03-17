@@ -11,7 +11,8 @@
 🇨🇳china[example on web](http://zylvip.gitee.io/flutter_lyric)
 
 2.download example apk:[example.apk](https://bpp.dfabu.com/q6JR)
- <img src="https://api.pwmqr.com/qrcode/create/?url=https://bpp.dfabu.com/q6JR" height="120" width="120"/>
+
+ <img src="https://raw.githubusercontent.com/ozyl/flutter_lyric/master/doc/downloadQr.png" height="120" width="120"/>
 
 3.run example
 
