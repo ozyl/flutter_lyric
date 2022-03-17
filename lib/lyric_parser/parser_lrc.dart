@@ -2,6 +2,7 @@ import 'package:flutter_lyric/lyric_parser/lyrics_parse.dart';
 import 'package:flutter_lyric/lyrics_log.dart';
 import 'package:flutter_lyric/lyrics_reader_model.dart';
 
+///normal lyric parser
 class ParserLrc extends LyricsParse{
 
   RegExp pattern = RegExp(r"\[\d{2}:\d{2}.\d{2,3}]");

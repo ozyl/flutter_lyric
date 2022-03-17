@@ -7,6 +7,7 @@ import 'lyrics_reader_model.dart';
 /// lyric Util
 /// support Simple format、Enhanced format
 class LyricsModelBuilder {
+  ///if line time is null,then use MAX_VALUE replace
   final MAX_VALUE = 9999999999;
 
   var _lyricModel = LyricsReaderModel();

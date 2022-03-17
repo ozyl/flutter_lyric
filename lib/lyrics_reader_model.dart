@@ -3,7 +3,7 @@ import 'package:flutter_lyric/lyric_helper.dart';
 import 'package:flutter_lyric/lyric_ui/lyric_ui.dart';
 import 'package:collection/collection.dart';
 
-//歌词模型
+///lyric model
 class LyricsReaderModel {
   List<LyricsLineModel> lyrics = [];
 
@@ -45,6 +45,7 @@ class LyricsReaderModel {
 
 }
 
+///lyric line model
 class LyricsLineModel {
   String? mainText;
   String? extText;
@@ -59,6 +60,7 @@ class LyricsLineModel {
   bool get hasMain => mainText?.isNotEmpty == true;
 }
 
+///lyric draw model
 class LyricDrawInfo {
   double get otherMainTextHeight =>otherMainTextPainter?.height??0;
   double get otherExtTextHeight =>otherExtTextPainter?.height??0;

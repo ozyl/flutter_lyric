@@ -1,6 +1,8 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/rendering.dart';
 
+///lyric UI base
+///all lyric UI should be extends this file
 abstract class LyricUI {
   ///主歌词样式（播放行）
   TextStyle getPlayingMainTextStyle();
@@ -35,18 +37,18 @@ abstract class LyricUI {
 
   ///歌词对齐方向
   ///支持左中右对齐
-  LyricAligin getLyricHorizontalAlign();
+  LyricAlign getLyricHorizontalAlign();
 
   LyricBaseLine getBiasBaseLine() => LyricBaseLine.CENTER;
 
   ///单行铺满后的居中方式
   TextAlign getLyricTextAligin(){
     switch(getLyricHorizontalAlign()){
-      case LyricAligin.LEFT:
+      case LyricAlign.LEFT:
         return TextAlign.left;
-      case LyricAligin.RIGHT:
+      case LyricAlign.RIGHT:
         return TextAlign.right;
-      case LyricAligin.CENTER:
+      case LyricAlign.CENTER:
         return TextAlign.center;
     }
   }
@@ -71,5 +73,7 @@ abstract class LyricUI {
   }
 }
 
-enum LyricAligin { LEFT,CENTER, RIGHT }
+///lyric align enum
+enum LyricAlign { LEFT,CENTER, RIGHT }
+///lyric base line enum
 enum LyricBaseLine { MAIN_CENTER, CENTER,EXT_CENTER }

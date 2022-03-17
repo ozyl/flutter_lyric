@@ -3,7 +3,7 @@ import 'package:flutter_lyric/lyric_parser/lyrics_parse.dart';
 import 'package:flutter_lyric/lyrics_log.dart';
 import 'package:flutter_lyric/lyrics_reader_model.dart';
 
-///
+///qrc lyric parser
 class ParserQrc extends LyricsParse{
 
   RegExp advancedPattern = RegExp(r"""\[\d+,\d+]""");

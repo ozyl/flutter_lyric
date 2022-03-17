@@ -85,7 +85,6 @@ class LyricHelper {
                     : lyric.drawInfo?.otherMainTextHeight) ??
                 0) /
             2;
-        break;
       case LyricBaseLine.EXT_CENTER:
         if (!lyric.hasExt) {
           return _realCenterOffset(lyric, isCurr, LyricBaseLine.MAIN_CENTER,lyricUI,playIndex);
@@ -100,7 +99,6 @@ class LyricHelper {
                         : lyric.drawInfo?.otherExtTextHeight) ??
                     0) /
                 2;
-        break;
       case LyricBaseLine.CENTER:
         if (!lyric.hasExt) {
           return _realCenterOffset(lyric, isCurr, LyricBaseLine.MAIN_CENTER,lyricUI,playIndex);
@@ -109,7 +107,6 @@ class LyricHelper {
             ? lyric.drawInfo?.playingMainTextHeight
             : lyric.drawInfo?.otherMainTextHeight) ??
             0) + lyricUI.getInlineSpace()/2;
-        break;
     }
   }
 }

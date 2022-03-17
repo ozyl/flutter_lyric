@@ -8,6 +8,7 @@ import 'package:flutter_lyric/lyric_ui/lyric_ui.dart';
 import 'package:flutter_lyric/lyrics_log.dart';
 import 'package:flutter_lyric/lyrics_reader_model.dart';
 
+///draw lyric reader
 class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
   LyricsReaderModel? model;
 
@@ -39,6 +40,9 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
     cachePlayingIndex = -1;
   }
 
+  ///check offset illegal
+  ///true is OK
+  ///false is illegal
   bool checkOffset(double? offset) {
     if (offset == null) return false;
 
@@ -55,6 +59,7 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
     return false;
   }
 
+  ///calculateTotalHeight
   void calculateTotalHeight() {
     ///缓存下，避免多余计算
     if (cachePlayingIndex != playingIndex) {
@@ -187,11 +192,11 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
   ///获取行绘制横向坐标
   double getLineOffsetX(TextPainter textPainter) {
     switch (lyricUI.getLyricHorizontalAlign()) {
-      case LyricAligin.LEFT:
+      case LyricAlign.LEFT:
         return 0;
-      case LyricAligin.CENTER:
+      case LyricAlign.CENTER:
         return (mSize.width - textPainter.width) / 2;
-      case LyricAligin.RIGHT:
+      case LyricAlign.RIGHT:
         return mSize.width - textPainter.width;
       default:
         return (mSize.width - textPainter.width) / 2;

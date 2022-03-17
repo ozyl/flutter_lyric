@@ -211,7 +211,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   var extTextSize = 16.0;
   var lineGap = 16.0;
   var inlineGap = 10.0;
-  var lyricAlign = LyricAligin.CENTER;
+  var lyricAlign = LyricAlign.CENTER;
 
   List<Widget> buildUIControl() {
     return [
@@ -316,12 +316,12 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
       buildTitle("歌词对齐方向"),
       Row(
         mainAxisSize: MainAxisSize.min,
-        children: LyricAligin.values
+        children: LyricAlign.values
             .map((e) =>  Padding(
           padding: const EdgeInsets.all(8.0),
           child: Column(
             children: [
-              Radio<LyricAligin>(
+              Radio<LyricAlign>(
                   activeColor: Colors.orangeAccent,
                   value: e,
                   groupValue: lyricAlign,

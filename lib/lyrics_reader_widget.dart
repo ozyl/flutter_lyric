@@ -7,8 +7,17 @@ import 'package:flutter_lyric/lyric_ui/ui_netease.dart';
 import 'package:flutter_lyric/lyrics_reader_model.dart';
 import 'package:flutter_lyric/lyrics_reader_paint.dart';
 
+///SelectLineBuilder
+///[int] is select progress
+///[VoidCallback] call VoidCallback.call(),select current
 typedef SelectLineBuilder = Widget Function(int,VoidCallback);
 
+///Lyrics Reader Widget
+///[size] config widget size,default is screenWidth,screenWidth
+///[ui]  config lyric style
+///[position] music progress,unit is millisecond
+///[selectLineBuilder] call select line widget
+///
 class LyricsReader extends StatefulWidget {
   final Size size;
   final LyricsReaderModel? model;
@@ -62,6 +71,7 @@ class LyricReaderState extends State<LyricsReader>
 
   var isShowSelectLineWidget = false;
 
+  ///show select line
   void setSelectLine(bool isShow) {
     if (!mounted) return;
     setState(() {
@@ -89,7 +99,7 @@ class LyricReaderState extends State<LyricsReader>
       }
     }
   }
-
+  ///select current play line
   void scrollToPlayLine() {
     safeLyricOffset(widget.model?.computeScroll(
             lyricPaint.playingIndex, lyricPaint.playingIndex, widget.ui) ??
@@ -100,6 +110,7 @@ class LyricReaderState extends State<LyricsReader>
     lyricPaint.playingIndex = line;
   }
 
+  ///update progress after verify
   safeLyricOffset(double offset) {
     if (isDrag || isWait) return;
     if (_flingController?.isAnimating == true) return;
@@ -114,6 +125,7 @@ class LyricReaderState extends State<LyricsReader>
     }
   }
 
+  ///update progress use animation
   void animationOffset(double offset) {
     disposeLine();
     _lineController = AnimationController(
@@ -139,7 +151,7 @@ class LyricReaderState extends State<LyricsReader>
 
 
 
-
+  ///calculate all line draw info
   refreshLyricHeight(Size size) {
     lyricPaint.clearCache();
     
@@ -172,7 +184,9 @@ class LyricReaderState extends State<LyricsReader>
     return linePaint;
   }
 
-
+  ///handle widget size
+  ///default screenWidth,screenWidth
+  ///if outside box has limit,then select min value
   handleSize() {
     mSize = widget.size;
     if (mSize.width == double.infinity) {
@@ -231,6 +245,7 @@ class LyricReaderState extends State<LyricsReader>
     );
   }
 
+  ///build reader widget
   Container buildReaderWidget() {
     return Container(
       padding: widget.padding ?? EdgeInsets.zero,
@@ -250,6 +265,7 @@ class LyricReaderState extends State<LyricsReader>
     );
   }
 
+  ///support touch event
   Widget buildTouchReader(child) {
     return GestureDetector(
       onVerticalDragEnd: handleDragEnd,
@@ -303,6 +319,7 @@ class LyricReaderState extends State<LyricsReader>
 
   Timer? waitTimer;
 
+  ///handle select line
   resumeSelectLineOffset() {
     isWait = true;
     var waitSecond = 0;

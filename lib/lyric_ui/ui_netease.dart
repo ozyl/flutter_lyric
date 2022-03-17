@@ -2,7 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/lyric_ui/lyric_ui.dart';
 
-//示例样式
+///Sample Netease style
+///should be extends LyricUI implementation your own UI.
+///this property only for change UI,if not demand just only overwrite methods.
 class UINetease extends LyricUI {
   double defaultSize;
   double defaultExtSize;
@@ -10,7 +12,7 @@ class UINetease extends LyricUI {
   double bias;
   double lineGap;
   double inlineGap;
-  LyricAligin lyricAlign;
+  LyricAlign lyricAlign;
   LyricBaseLine lyricBaseLine;
 
   UINetease(
@@ -20,7 +22,7 @@ class UINetease extends LyricUI {
       this.bias = 0.5,
       this.lineGap = 25,
       this.inlineGap = 25,
-      this.lyricAlign = LyricAligin.CENTER,
+      this.lyricAlign = LyricAlign.CENTER,
       this.lyricBaseLine = LyricBaseLine.CENTER});
 
   UINetease.clone(UINetease uiNetease)
@@ -65,7 +67,7 @@ class UINetease extends LyricUI {
   double getPlayingLineBias() => bias;
 
   @override
-  LyricAligin getLyricHorizontalAlign() => lyricAlign;
+  LyricAlign getLyricHorizontalAlign() => lyricAlign;
 
   @override
   LyricBaseLine getBiasBaseLine() => lyricBaseLine;
