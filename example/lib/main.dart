@@ -358,23 +358,25 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
       Row(
         mainAxisSize: MainAxisSize.min,
         children: LyricBaseLine.values
-            .map((e) => Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                children: [
-                  Radio<LyricBaseLine>(
-                  activeColor: Colors.orangeAccent,
-                  value: e,
-                  groupValue: lyricBiasBaseLine,
-                  onChanged: (v) {
-                    setState(() {
-                      lyricBiasBaseLine = v!;
-                      lyricUI.lyricBaseLine = lyricBiasBaseLine;
-                      refreshLyric();
-                    });
-                  }),
-                  Text(e.toString().split(".")[1])
-                ],
+            .map((e) => Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  children: [
+                    Radio<LyricBaseLine>(
+                    activeColor: Colors.orangeAccent,
+                    value: e,
+                    groupValue: lyricBiasBaseLine,
+                    onChanged: (v) {
+                      setState(() {
+                        lyricBiasBaseLine = v!;
+                        lyricUI.lyricBaseLine = lyricBiasBaseLine;
+                        refreshLyric();
+                      });
+                    }),
+                    Text(e.toString().split(".")[1])
+                  ],
+                ),
               ),
             ))
             .toList(),
