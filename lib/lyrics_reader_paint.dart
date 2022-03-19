@@ -51,7 +51,7 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
         return true;
       }
     }
-    LyricsLog.logD("越界取消偏移 可偏移：${maxOffset} 目标偏移：$offset 当前：${_lyricOffset} ");
+    LyricsLog.logD("越界取消偏移 可偏移：$maxOffset 目标偏移：$offset 当前：$_lyricOffset ");
     return false;
   }
 
@@ -97,7 +97,7 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
 
   int get centerLyricIndex => _centerLyricIndex;
 
-  Function(int)? centerLyricIndexChangeCall=null;
+  Function(int)? centerLyricIndexChangeCall;
 
   Size mSize = Size.zero;
 
@@ -124,7 +124,7 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
       if(centerY>drawOffset && centerY<nextOffset){
         if(i!=centerLyricIndex){
           centerLyricIndex = i;
-          LyricsLog.logD("drawOffset:$drawOffset next:$nextOffset center:$centerY  当前行是：${i} 文本：${element.mainText} ");
+          LyricsLog.logD("drawOffset:$drawOffset next:$nextOffset center:$centerY  当前行是：$i 文本：${element.mainText} ");
         }
       }
       drawOffset = nextOffset;
