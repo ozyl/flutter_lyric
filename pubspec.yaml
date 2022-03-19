@@ -20,19 +20,20 @@ dev_dependencies:
     sdk: flutter
 
 
-plugin:
-  platforms:
-    android:
-      package: cn.okzyl.flutter_lyric
-      pluginClass: FlutterLyricPlugin
-    ios:
-      pluginClass: FlutterLyricPlugin
-    web:
-      pluginClass: LyricsReaderWeb
-      fileName: lyrics_reader_web.dart
-    macos:
-      pluginClass: FlutterLyricPlugin
-    linux:
-      pluginClass: FlutterLyricPlugin
-    windows:
-      pluginClass: FlutterLyricPlugin
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: cn.okzyl.flutter_lyric
+        pluginClass: FlutterLyricPlugin
+      ios:
+        pluginClass: FlutterLyricPlugin
+      web:
+        pluginClass: LyricsReaderWeb
+        fileName: lyrics_reader_web.dart
+      macos:
+        pluginClass: FlutterLyricPlugin
+      linux:
+        pluginClass: FlutterLyricPlugin
+      windows:
+        pluginClass: FlutterLyricPlugin
