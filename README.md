@@ -8,7 +8,8 @@
 
 ## Show
 1.😊[example on web](https://ozyl.github.io/flutter_lyric/)
-🇨🇳china[example on web](http://zylvip.gitee.io/flutter_lyric)
+
+🇨🇳china[example on web](https://zylvip.gitee.io/flutter_lyric)
 
 2.download example apk:[example.apk](https://bpp.dfabu.com/q6JR)
 

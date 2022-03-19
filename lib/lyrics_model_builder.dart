@@ -8,7 +8,7 @@ import 'lyrics_reader_model.dart';
 /// support Simple format、Enhanced format
 class LyricsModelBuilder {
   ///if line time is null,then use MAX_VALUE replace
-  final MAX_VALUE = 9999999999;
+  final maxValue = 9999999999;
 
   var _lyricModel = LyricsReaderModel();
 
@@ -40,7 +40,7 @@ class LyricsModelBuilder {
         lineList[i].endTime = lineList[i + 1].startTime;
       } catch (e) {
         //越界异常时直接MAX
-        lineList[i].endTime = MAX_VALUE;
+        lineList[i].endTime = maxValue;
       }
     }
     if (isMain) {
