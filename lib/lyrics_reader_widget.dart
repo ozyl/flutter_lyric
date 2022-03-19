@@ -10,7 +10,7 @@ import 'package:flutter_lyric/lyrics_reader_paint.dart';
 ///SelectLineBuilder
 ///[int] is select progress
 ///[VoidCallback] call VoidCallback.call(),select current
-typedef SelectLineBuilder = Widget Function(int,VoidCallback);
+typedef SelectLineBuilder = Widget Function(int, VoidCallback);
 
 ///Lyrics Reader Widget
 ///[size] config widget size,default is screenWidth,screenWidth
@@ -64,9 +64,10 @@ class LyricReaderState extends State<LyricsReader>
   @override
   void initState() {
     super.initState();
-    lyricPaint = LyricsReaderPaint(widget.model, widget.ui)..centerLyricIndexChangeCall = (index){
-      centerLyricIndexStream.add(index);
-    };
+    lyricPaint = LyricsReaderPaint(widget.model, widget.ui)
+      ..centerLyricIndexChangeCall = (index) {
+        centerLyricIndexStream.add(index);
+      };
   }
 
   var isShowSelectLineWidget = false;
@@ -99,6 +100,7 @@ class LyricReaderState extends State<LyricsReader>
       }
     }
   }
+
   ///select current play line
   void scrollToPlayLine() {
     safeLyricOffset(widget.model?.computeScroll(
@@ -149,27 +151,26 @@ class LyricReaderState extends State<LyricsReader>
     _lineController?.forward();
   }
 
-
-
   ///calculate all line draw info
   refreshLyricHeight(Size size) {
     lyricPaint.clearCache();
-    
-    widget.model?.lyrics.forEach((element) {
 
+    widget.model?.lyrics.forEach((element) {
       element.drawInfo = LyricDrawInfo()
         ..playingExtTextPainter = getTextPaint(
-            element.extText, widget.ui.getPlayingExtTextStyle(), size: size)
+            element.extText, widget.ui.getPlayingExtTextStyle(),
+            size: size)
         ..playingMainTextPainter = getTextPaint(
-            element.mainText, widget.ui.getPlayingMainTextStyle(), size: size)
+            element.mainText, widget.ui.getPlayingMainTextStyle(),
+            size: size)
         ..otherExtTextPainter = getTextPaint(
-            element.extText, widget.ui.getOtherExtTextStyle(), size: size)
+            element.extText, widget.ui.getOtherExtTextStyle(),
+            size: size)
         ..otherMainTextPainter = getTextPaint(
             element.mainText, widget.ui.getOtherMainTextStyle(),
             size: size);
     });
   }
-
 
   /// 获取文本高度
   TextPainter getTextPaint(String? text, TextStyle style, {Size? size}) {
@@ -225,18 +226,16 @@ class LyricReaderState extends State<LyricsReader>
         height: lyricPaint.centerY * 2,
         child: Center(
           child: StreamBuilder<int>(
-            stream: centerLyricIndexStream.stream,
-            builder: (context, snapshot) {
-              var centerIndex = snapshot.data??0;
-              return widget.selectLineBuilder!.call(
-                  lyricPaint.model?.lyrics[centerIndex].startTime ??
-                      0,(){
-                setSelectLine(false);
-                disposeFiling();
-                disposeSelectLineDelay();
-              });
-            }
-          ),
+              stream: centerLyricIndexStream.stream,
+              builder: (context, snapshot) {
+                var centerIndex = snapshot.data ?? 0;
+                return widget.selectLineBuilder!.call(
+                    lyricPaint.model?.lyrics[centerIndex].startTime ?? 0, () {
+                  setSelectLine(false);
+                  disposeFiling();
+                  disposeSelectLineDelay();
+                });
+              }),
         ),
       ),
       top: 0,
@@ -292,8 +291,7 @@ class LyricReaderState extends State<LyricsReader>
 
   handleDragEnd(DragEndDetails event) {
     isDrag = false;
-    _flingController = AnimationController.unbounded(
-        vsync: this)
+    _flingController = AnimationController.unbounded(vsync: this)
       ..addListener(() {
         if (_flingController == null) return;
         var flingOffset = _flingController!.value;

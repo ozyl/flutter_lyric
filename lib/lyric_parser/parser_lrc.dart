@@ -3,8 +3,7 @@ import 'package:flutter_lyric/lyrics_log.dart';
 import 'package:flutter_lyric/lyrics_reader_model.dart';
 
 ///normal lyric parser
-class ParserLrc extends LyricsParse{
-
+class ParserLrc extends LyricsParse {
   RegExp pattern = RegExp(r"\[\d{2}:\d{2}.\d{2,3}]");
 
   ///匹配普通格式内容
@@ -14,14 +13,14 @@ class ParserLrc extends LyricsParse{
   ParserLrc(String lyric) : super(lyric);
 
   @override
-  List<LyricsLineModel> parseLines({bool isMain:true}) {
+  List<LyricsLineModel> parseLines({bool isMain: true}) {
     //读每一行
     var lines = lyric.split("\n");
     if (lines.isEmpty) {
       LyricsLog.logD("未解析到歌词");
       return [];
     }
-    List<LyricsLineModel> lineList =[];
+    List<LyricsLineModel> lineList = [];
     lines.forEach((line) {
       //匹配time
       var time = pattern.stringMatch(line);
@@ -36,14 +35,14 @@ class ParserLrc extends LyricsParse{
       //转时间戳
       var ts = timeTagToTS(time);
       LyricsLog.logD("匹配time:$time($ts) 真实歌词：$realLyrics");
-      var lineModel = LyricsLineModel()..startTime=ts;
-      if(realLyrics=="//"){
+      var lineModel = LyricsLineModel()..startTime = ts;
+      if (realLyrics == "//") {
         LyricsLog.logD("移除无效字符：//");
         realLyrics = "";
       }
-      if(isMain){
+      if (isMain) {
         lineModel.mainText = realLyrics;
-      }else{
+      } else {
         lineModel.extText = realLyrics;
       }
       lineList.add(lineModel);
@@ -70,9 +69,9 @@ class ParserLrc extends LyricsParse{
     }
     var minAndSecArray = timeArray.first.split(":");
     return Duration(
-        minutes: int.parse(minAndSecArray.first),
-        seconds: int.parse(minAndSecArray.last),
-        milliseconds: int.parse(millsceconds))
+            minutes: int.parse(minAndSecArray.first),
+            seconds: int.parse(minAndSecArray.last),
+            milliseconds: int.parse(millsceconds))
         .inMilliseconds;
   }
 }

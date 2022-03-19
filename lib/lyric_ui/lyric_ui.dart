@@ -33,7 +33,7 @@ abstract class LyricUI {
   ///ending在比一半尺寸还小的位置时太丑
   ///true 最少也会偏移到bias0.5的位置，不会比0.5再小了
   ///false 无限制 将会偏移到bias0.5
-  bool halfSizeLimit()=> getPlayingLineBias()<0.5;
+  bool halfSizeLimit() => getPlayingLineBias() < 0.5;
 
   ///歌词对齐方向
   ///支持左中右对齐
@@ -42,8 +42,8 @@ abstract class LyricUI {
   LyricBaseLine getBiasBaseLine() => LyricBaseLine.CENTER;
 
   ///单行铺满后的居中方式
-  TextAlign getLyricTextAligin(){
-    switch(getLyricHorizontalAlign()){
+  TextAlign getLyricTextAligin() {
+    switch (getLyricHorizontalAlign()) {
       case LyricAlign.LEFT:
         return TextAlign.left;
       case LyricAlign.RIGHT:
@@ -68,12 +68,12 @@ abstract class LyricUI {
         '${getPlayingLineBias()}'
         '${getLyricHorizontalAlign()}'
         '${getLyricTextAligin()}'
-        '${getBiasBaseLine()}'
-    ;
+        '${getBiasBaseLine()}';
   }
 }
 
 ///lyric align enum
-enum LyricAlign { LEFT,CENTER, RIGHT }
+enum LyricAlign { LEFT, CENTER, RIGHT }
+
 ///lyric base line enum
-enum LyricBaseLine { MAIN_CENTER, CENTER,EXT_CENTER }
+enum LyricBaseLine { MAIN_CENTER, CENTER, EXT_CENTER }

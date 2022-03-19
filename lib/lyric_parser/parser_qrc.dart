@@ -3,8 +3,7 @@ import 'package:flutter_lyric/lyrics_log.dart';
 import 'package:flutter_lyric/lyrics_reader_model.dart';
 
 ///qrc lyric parser
-class ParserQrc extends LyricsParse{
-
+class ParserQrc extends LyricsParse {
   RegExp advancedPattern = RegExp(r"""\[\d+,\d+]""");
   RegExp qrcPattern = RegExp(r"""\((\d+,\d+)\)""");
 
@@ -13,7 +12,7 @@ class ParserQrc extends LyricsParse{
   ParserQrc(String lyric) : super(lyric);
 
   @override
-  List<LyricsLineModel> parseLines({bool isMain:true}) {
+  List<LyricsLineModel> parseLines({bool isMain: true}) {
     lyric =
         RegExp(r"""LyricContent="([\s\S]*)">""").firstMatch(lyric)?.group(1) ??
             lyric;
@@ -35,7 +34,8 @@ class ParserQrc extends LyricsParse{
       }
       //转时间戳
       var ts = int.parse(
-          advancedValuePattern.firstMatch(time)?.group(1)?.split(",")[0] ?? "0");
+          advancedValuePattern.firstMatch(time)?.group(1)?.split(",")[0] ??
+              "0");
       //移除time，拿到真实歌词
       var realLyrics = line.replaceFirst(advancedPattern, "");
       LyricsLog.logD("匹配time:$time($ts) 真实歌词：$realLyrics");
@@ -49,6 +49,7 @@ class ParserQrc extends LyricsParse{
 
   @override
   bool isOK() {
-    return lyric.contains("LyricContent=") || advancedPattern.stringMatch(lyric)!=null;
+    return lyric.contains("LyricContent=") ||
+        advancedPattern.stringMatch(lyric) != null;
   }
 }

@@ -72,11 +72,11 @@ class LyricHelper {
   static double centerOffset(
       LyricsLineModel? lyric, bool isCurr, LyricUI lyricUI, int playIndex) {
     var baseLine = lyricUI.getBiasBaseLine();
-    return _realCenterOffset(lyric, isCurr, baseLine,lyricUI,playIndex);
+    return _realCenterOffset(lyric, isCurr, baseLine, lyricUI, playIndex);
   }
 
-  static double _realCenterOffset(
-      LyricsLineModel? lyric, bool isCurr, LyricBaseLine baseLine, LyricUI lyricUI, int playIndex) {
+  static double _realCenterOffset(LyricsLineModel? lyric, bool isCurr,
+      LyricBaseLine baseLine, LyricUI lyricUI, int playIndex) {
     if (lyric == null) return 0;
     switch (baseLine) {
       case LyricBaseLine.MAIN_CENTER:
@@ -87,13 +87,14 @@ class LyricHelper {
             2;
       case LyricBaseLine.EXT_CENTER:
         if (!lyric.hasExt) {
-          return _realCenterOffset(lyric, isCurr, LyricBaseLine.MAIN_CENTER,lyricUI,playIndex);
+          return _realCenterOffset(
+              lyric, isCurr, LyricBaseLine.MAIN_CENTER, lyricUI, playIndex);
         }
         return ((isCurr
                     ? lyric.drawInfo?.playingMainTextHeight
                     : lyric.drawInfo?.otherMainTextHeight) ??
                 0) +
-            lyricUI.getInlineSpace()+
+            lyricUI.getInlineSpace() +
             ((isCurr
                         ? lyric.drawInfo?.playingExtTextHeight
                         : lyric.drawInfo?.otherExtTextHeight) ??
@@ -101,12 +102,14 @@ class LyricHelper {
                 2;
       case LyricBaseLine.CENTER:
         if (!lyric.hasExt) {
-          return _realCenterOffset(lyric, isCurr, LyricBaseLine.MAIN_CENTER,lyricUI,playIndex);
+          return _realCenterOffset(
+              lyric, isCurr, LyricBaseLine.MAIN_CENTER, lyricUI, playIndex);
         }
         return ((isCurr
-            ? lyric.drawInfo?.playingMainTextHeight
-            : lyric.drawInfo?.otherMainTextHeight) ??
-            0) + lyricUI.getInlineSpace()/2;
+                    ? lyric.drawInfo?.playingMainTextHeight
+                    : lyric.drawInfo?.otherMainTextHeight) ??
+                0) +
+            lyricUI.getInlineSpace() / 2;
     }
   }
 }

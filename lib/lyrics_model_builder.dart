@@ -19,21 +19,20 @@ class LyricsModelBuilder {
   List<LyricsLineModel>? mainLines;
   List<LyricsLineModel>? extLines;
 
-
   static LyricsModelBuilder creat() => LyricsModelBuilder._();
 
   LyricsModelBuilder bindLyricToMain(String lyric, [LyricsParse? parser]) {
-    mainLines = (parser??ParserSmart(lyric)).parseLines();
+    mainLines = (parser ?? ParserSmart(lyric)).parseLines();
     return this;
   }
 
-  LyricsModelBuilder bindLyricToExt(String lyric,[LyricsParse? parser]) {
-    extLines = (parser??ParserSmart(lyric)).parseLines(isMain: false);
+  LyricsModelBuilder bindLyricToExt(String lyric, [LyricsParse? parser]) {
+    extLines = (parser ?? ParserSmart(lyric)).parseLines(isMain: false);
     return this;
   }
 
   _setLyric(List<LyricsLineModel>? lineList, {isMain = true}) {
-    if(lineList==null)return;
+    if (lineList == null) return;
     //下一行的开始时间则为上一行的结束时间，若无则MAX
     for (int i = 0; i < lineList.length; i++) {
       try {

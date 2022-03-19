@@ -1,5 +1,3 @@
-
-
 export 'lyric_parser/lyrics_parse.dart';
 export 'lyric_parser/parser_lrc.dart';
 export 'lyric_parser/parser_qrc.dart';

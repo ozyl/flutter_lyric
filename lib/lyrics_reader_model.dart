@@ -26,23 +26,25 @@ class LyricsReaderModel {
       offset += ui.getBlankLineHeight() + ui.getLineSpace();
     } else {
       offset += ui.getLineSpace();
-      offset += LyricHelper.centerOffset(targetLine, toLine == playLine, ui,playLine);
+      offset += LyricHelper.centerOffset(
+          targetLine, toLine == playLine, ui, playLine);
     }
     //需要特殊处理往上偏移的第一行
-    return -LyricHelper.getTotalHeight(lyrics.sublist(0,toLine), playLine, ui)
-        + firstCenterOffset(playLine,ui)
-        -offset
-    ;
+    return -LyricHelper.getTotalHeight(
+            lyrics.sublist(0, toLine), playLine, ui) +
+        firstCenterOffset(playLine, ui) -
+        offset;
   }
 
-  double firstCenterOffset(int playIndex, LyricUI lyricUI){
-    return LyricHelper.centerOffset(lyrics.firstOrNull, playIndex==0,lyricUI,playIndex);
+  double firstCenterOffset(int playIndex, LyricUI lyricUI) {
+    return LyricHelper.centerOffset(
+        lyrics.firstOrNull, playIndex == 0, lyricUI, playIndex);
   }
 
-  double lastCenterOffset(int playIndex, LyricUI lyricUI){
-    return LyricHelper.centerOffset(lyrics.lastOrNull, playIndex==lyrics.length-1,lyricUI,playIndex);
+  double lastCenterOffset(int playIndex, LyricUI lyricUI) {
+    return LyricHelper.centerOffset(
+        lyrics.lastOrNull, playIndex == lyrics.length - 1, lyricUI, playIndex);
   }
-
 }
 
 ///lyric line model
@@ -62,10 +64,10 @@ class LyricsLineModel {
 
 ///lyric draw model
 class LyricDrawInfo {
-  double get otherMainTextHeight =>otherMainTextPainter?.height??0;
-  double get otherExtTextHeight =>otherExtTextPainter?.height??0;
-  double get playingMainTextHeight =>playingMainTextPainter?.height??0;
-  double get playingExtTextHeight => playingExtTextPainter?.height??0;
+  double get otherMainTextHeight => otherMainTextPainter?.height ?? 0;
+  double get otherExtTextHeight => otherExtTextPainter?.height ?? 0;
+  double get playingMainTextHeight => playingMainTextPainter?.height ?? 0;
+  double get playingExtTextHeight => playingExtTextPainter?.height ?? 0;
   TextPainter? otherMainTextPainter;
   TextPainter? otherExtTextPainter;
   TextPainter? playingMainTextPainter;

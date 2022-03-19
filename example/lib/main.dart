@@ -8,7 +8,7 @@ import 'package:flutter_lyric/lyrics_reader.dart';
 import 'const.dart';
 
 void main() {
-  runApp(MaterialApp(home:MyApp()));
+  runApp(MaterialApp(home: MyApp()));
 }
 
 class MyApp extends StatefulWidget {
@@ -50,7 +50,10 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Container(child: buildReaderWidget(),height: MediaQuery.of(context).size.height/2,),
+        Container(
+          child: buildReaderWidget(),
+          height: MediaQuery.of(context).size.height / 2,
+        ),
         Expanded(
           child: SingleChildScrollView(
             child: Column(
@@ -75,16 +78,18 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           model: lyricModel,
           position: playProgress,
           lyricUi: lyricUI,
-          selectLineBuilder: (progress,confirm) {
+          selectLineBuilder: (progress, confirm) {
             return Row(
               children: [
-                IconButton(onPressed: (){
-                  LyricsLog.logD("点击事件");
-                  confirm.call();
-                  setState(() {
-                    audioPlayer?.seek(Duration(milliseconds: progress));
-                  });
-                }, icon: Icon(Icons.play_arrow, color: Colors.green)),
+                IconButton(
+                    onPressed: () {
+                      LyricsLog.logD("点击事件");
+                      confirm.call();
+                      setState(() {
+                        audioPlayer?.seek(Duration(milliseconds: progress));
+                      });
+                    },
+                    icon: Icon(Icons.play_arrow, color: Colors.green)),
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(color: Colors.green),
@@ -92,7 +97,10 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                     width: double.infinity,
                   ),
                 ),
-                Text(progress.toString(),style: TextStyle(color: Colors.green),)
+                Text(
+                  progress.toString(),
+                  style: TextStyle(color: Colors.green),
+                )
               ],
             );
           },
@@ -103,12 +111,14 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
 
   List<Widget> buildPlayControl() {
     return [
-      if(kIsWeb ==true)
-      Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Text("example's audio player library has problem in web platform,can't get music duration,you can use myself audio player library!",
-        style: TextStyle(fontSize: 20,color: Colors.grey),),
-      ),
+      if (kIsWeb == true)
+        Padding(
+          padding: const EdgeInsets.all(8.0),
+          child: Text(
+            "example's audio player library has problem in web platform,can't get music duration,you can use myself audio player library!",
+            style: TextStyle(fontSize: 20, color: Colors.grey),
+          ),
+        ),
       Text(
         "播放进度$sliderProgress",
         style: TextStyle(
@@ -116,28 +126,28 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           color: Colors.green,
         ),
       ),
-      if(sliderProgress<max_value)
-      Slider(
-        min: 0,
-        max: max_value,
-        label: sliderProgress.toString(),
-        value: sliderProgress,
-        activeColor: Colors.blueGrey,
-        inactiveColor: Colors.blue,
-        onChanged: (double value) {
-          setState(() {
-            sliderProgress = value;
-          });
-        },
-        onChangeStart: (double value) {
-          isTap = true;
-        },
-        onChangeEnd: (double value) {
-          isTap = false;
-          playProgress = value;
-          audioPlayer?.seek(Duration(milliseconds: value.toInt()));
-        },
-      ),
+      if (sliderProgress < max_value)
+        Slider(
+          min: 0,
+          max: max_value,
+          label: sliderProgress.toString(),
+          value: sliderProgress,
+          activeColor: Colors.blueGrey,
+          inactiveColor: Colors.blue,
+          onChanged: (double value) {
+            setState(() {
+              sliderProgress = value;
+            });
+          },
+          onChangeStart: (double value) {
+            isTap = true;
+          },
+          onChangeEnd: (double value) {
+            isTap = false;
+            playProgress = value;
+            audioPlayer?.seek(Duration(milliseconds: value.toInt()));
+          },
+        ),
       Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -163,7 +173,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
               },
               child: Text("播放歌曲")),
           Container(
-           width: 10,
+            width: 10,
           ),
           TextButton(
               onPressed: () async {
@@ -313,25 +323,25 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
       Row(
         mainAxisSize: MainAxisSize.min,
         children: LyricAlign.values
-            .map((e) =>  Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Column(
-            children: [
-              Radio<LyricAlign>(
-                  activeColor: Colors.orangeAccent,
-                  value: e,
-                  groupValue: lyricAlign,
-                  onChanged: (v) {
-                    setState(() {
-                      lyricAlign = v!;
-                      lyricUI.lyricAlign = lyricAlign;
-                      refreshLyric();
-                    });
-                  }),
-              Text(e.toString().split(".")[1])
-            ],
-          ),
-        ))
+            .map((e) => Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    children: [
+                      Radio<LyricAlign>(
+                          activeColor: Colors.orangeAccent,
+                          value: e,
+                          groupValue: lyricAlign,
+                          onChanged: (v) {
+                            setState(() {
+                              lyricAlign = v!;
+                              lyricUI.lyricAlign = lyricAlign;
+                              refreshLyric();
+                            });
+                          }),
+                      Text(e.toString().split(".")[1])
+                    ],
+                  ),
+                ))
             .toList(),
       ),
       buildTitle("选择行偏移"),
@@ -359,30 +369,30 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
         mainAxisSize: MainAxisSize.min,
         children: LyricBaseLine.values
             .map((e) => Padding(
-              padding: const EdgeInsets.all(8.0),
-              child: Column(
-                children: [
-                  Radio<LyricBaseLine>(
-                  activeColor: Colors.orangeAccent,
-                  value: e,
-                  groupValue: lyricBiasBaseLine,
-                  onChanged: (v) {
-                    setState(() {
-                      lyricBiasBaseLine = v!;
-                      lyricUI.lyricBaseLine = lyricBiasBaseLine;
-                      refreshLyric();
-                    });
-                  }),
-                  Text(e.toString().split(".")[1])
-                ],
-              ),
-            ))
+                  padding: const EdgeInsets.all(8.0),
+                  child: Column(
+                    children: [
+                      Radio<LyricBaseLine>(
+                          activeColor: Colors.orangeAccent,
+                          value: e,
+                          groupValue: lyricBiasBaseLine,
+                          onChanged: (v) {
+                            setState(() {
+                              lyricBiasBaseLine = v!;
+                              lyricUI.lyricBaseLine = lyricBiasBaseLine;
+                              refreshLyric();
+                            });
+                          }),
+                      Text(e.toString().split(".")[1])
+                    ],
+                  ),
+                ))
             .toList(),
       ),
     ];
   }
 
-  void refreshLyric(){
+  void refreshLyric() {
     lyricUI = UINetease.clone(lyricUI);
   }
 
