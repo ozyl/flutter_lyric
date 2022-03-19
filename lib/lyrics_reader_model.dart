@@ -1,3 +1,4 @@
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_lyric/lyric_helper.dart';
 import 'package:flutter_lyric/lyric_ui/lyric_ui.dart';
@@ -70,4 +71,13 @@ class LyricDrawInfo {
   TextPainter? otherExtTextPainter;
   TextPainter? playingMainTextPainter;
   TextPainter? playingExtTextPainter;
+  List<LyricInlineDrawInfo> inlineDrawList=[];
+}
+
+class LyricInlineDrawInfo{
+  int number=0;
+  String text="";
+  double width =0;
+  double height =0;
+  Offset startOffset=Offset.zero;
 }

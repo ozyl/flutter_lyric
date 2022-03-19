@@ -4,13 +4,14 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/lyric_ui/lyric_ui.dart';
 import 'package:flutter_lyric/lyric_ui/ui_netease.dart';
+import 'package:flutter_lyric/lyrics_log.dart';
 import 'package:flutter_lyric/lyrics_reader_model.dart';
 import 'package:flutter_lyric/lyrics_reader_paint.dart';
 
 ///SelectLineBuilder
 ///[int] is select progress
 ///[VoidCallback] call VoidCallback.call(),select current
-typedef SelectLineBuilder = Widget Function(int,VoidCallback);
+typedef SelectLineBuilder = Widget Function(int, VoidCallback);
 
 ///Lyrics Reader Widget
 ///[size] config widget size,default is screenWidth,screenWidth
@@ -64,9 +65,10 @@ class LyricReaderState extends State<LyricsReader>
   @override
   void initState() {
     super.initState();
-    lyricPaint = LyricsReaderPaint(widget.model, widget.ui)..centerLyricIndexChangeCall = (index){
-      centerLyricIndexStream.add(index);
-    };
+    lyricPaint = LyricsReaderPaint(widget.model, widget.ui)
+      ..centerLyricIndexChangeCall = (index) {
+        centerLyricIndexStream.add(index);
+      };
   }
 
   var isShowSelectLineWidget = false;
@@ -99,6 +101,7 @@ class LyricReaderState extends State<LyricsReader>
       }
     }
   }
+
   ///select current play line
   void scrollToPlayLine() {
     safeLyricOffset(widget.model?.computeScroll(
@@ -149,27 +152,29 @@ class LyricReaderState extends State<LyricsReader>
     _lineController?.forward();
   }
 
-
-
   ///calculate all line draw info
   refreshLyricHeight(Size size) {
     lyricPaint.clearCache();
-    
-    widget.model?.lyrics.forEach((element) {
 
-      element.drawInfo = LyricDrawInfo()
+    widget.model?.lyrics.forEach((element) {
+      var drawInfo = LyricDrawInfo()
         ..playingExtTextPainter = getTextPaint(
-            element.extText, widget.ui.getPlayingExtTextStyle(), size: size)
-        ..playingMainTextPainter = getTextPaint(
-            element.mainText, widget.ui.getPlayingMainTextStyle(), size: size)
+            element.extText, widget.ui.getPlayingExtTextStyle(),
+            size: size)
         ..otherExtTextPainter = getTextPaint(
-            element.extText, widget.ui.getOtherExtTextStyle(), size: size)
+            element.extText, widget.ui.getOtherExtTextStyle(),
+            size: size)
+        ..playingMainTextPainter = getTextPaint(
+            element.mainText, widget.ui.getPlayingMainTextStyle(),
+            size: size)
         ..otherMainTextPainter = getTextPaint(
             element.mainText, widget.ui.getOtherMainTextStyle(),
             size: size);
+      element.drawInfo = drawInfo;
+      drawInfo.inlineDrawList = getTextInlineInfo(
+          drawInfo.playingMainTextPainter!, widget.ui, element.mainText!);
     });
   }
-
 
   /// 获取文本高度
   TextPainter getTextPaint(String? text, TextStyle style, {Size? size}) {
@@ -182,6 +187,50 @@ class LyricReaderState extends State<LyricsReader>
       ..text = TextSpan(text: text, style: style.copyWith(height: 1))
       ..layout(maxWidth: (size ?? mSize).width);
     return linePaint;
+  }
+
+  List<LyricInlineDrawInfo> getTextInlineInfo(TextPainter linePaint, LyricUI ui, String text) {
+    var metrics = linePaint.computeLineMetrics();
+    var testHeight = 0.0;
+    var start = 0;
+    List<LyricInlineDrawInfo> lineList = [];
+    metrics.forEach((element) {
+      //起始偏移量X
+      var startOffsetX =0.0;
+      switch (ui.getLyricTextAligin()) {
+        case TextAlign.right:
+          startOffsetX = linePaint.width-element.width;
+          break;
+        case TextAlign.center:
+          startOffsetX = (linePaint.width-element.width)/2;
+          break;
+        default: break;
+      }
+      var offsetX = element.width;
+      switch (ui.getLyricTextAligin()) {
+        case TextAlign.right:
+          offsetX = linePaint.width;
+          break;
+        case TextAlign.center:
+          offsetX = (linePaint.width-element.width)/2+element.width;
+          break;
+        default: break;
+      }
+      var end = linePaint
+          .getPositionForOffset(Offset(offsetX, testHeight))
+          .offset;
+      var lineText = text.substring(start, end);
+      LyricsLog.logD("获取行内信息：第${element.lineNumber}行，内容：${lineText}");
+      lineList.add(LyricInlineDrawInfo()
+        ..text=lineText
+        ..number=element.lineNumber
+        ..width=element.width
+        ..height=element.height
+        ..startOffset = Offset(startOffsetX, testHeight));
+      start = end;
+      testHeight += element.height;
+    });
+    return lineList;
   }
 
   ///handle widget size
@@ -225,18 +274,16 @@ class LyricReaderState extends State<LyricsReader>
         height: lyricPaint.centerY * 2,
         child: Center(
           child: StreamBuilder<int>(
-            stream: centerLyricIndexStream.stream,
-            builder: (context, snapshot) {
-              var centerIndex = snapshot.data??0;
-              return widget.selectLineBuilder!.call(
-                  lyricPaint.model?.lyrics[centerIndex].startTime ??
-                      0,(){
-                setSelectLine(false);
-                disposeFiling();
-                disposeSelectLineDelay();
-              });
-            }
-          ),
+              stream: centerLyricIndexStream.stream,
+              builder: (context, snapshot) {
+                var centerIndex = snapshot.data ?? 0;
+                return widget.selectLineBuilder!.call(
+                    lyricPaint.model?.lyrics[centerIndex].startTime ?? 0, () {
+                  setSelectLine(false);
+                  disposeFiling();
+                  disposeSelectLineDelay();
+                });
+              }),
         ),
       ),
       top: 0,
@@ -292,8 +339,7 @@ class LyricReaderState extends State<LyricsReader>
 
   handleDragEnd(DragEndDetails event) {
     isDrag = false;
-    _flingController = AnimationController.unbounded(
-        vsync: this)
+    _flingController = AnimationController.unbounded(vsync: this)
       ..addListener(() {
         if (_flingController == null) return;
         var flingOffset = _flingController!.value;
