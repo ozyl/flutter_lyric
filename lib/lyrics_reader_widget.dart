@@ -160,6 +160,7 @@ class LyricReaderState extends State<LyricsReader>
       var drawInfo = LyricDrawInfo()
         ..playingExtTextPainter = getTextPaint(
             element.extText, widget.ui.getPlayingExtTextStyle(),
+
             size: size)
         ..otherExtTextPainter = getTextPaint(
             element.extText, widget.ui.getOtherExtTextStyle(),

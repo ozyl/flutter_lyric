@@ -31,7 +31,8 @@ class LyricsReaderWeb {
       default:
         throw PlatformException(
           code: 'Unimplemented',
-          details: 'lyrics_reader for web doesn\'t implement \'${call.method}\'',
+          details:
+              'lyrics_reader for web doesn\'t implement \'${call.method}\'',
         );
     }
   }

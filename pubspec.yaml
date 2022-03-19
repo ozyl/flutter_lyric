@@ -1,6 +1,6 @@
 name: flutter_lyric
 description: This plugin is a music lyric reader,support translation lyrics,smooth animation,custom UI,Parse.;
-version: 2.0.1+5
+version: 2.0.1+6
 homepage: https://github.com/ozyl/flutter_lyric
 email: zylvip@163.com
 
@@ -20,19 +20,20 @@ dev_dependencies:
     sdk: flutter
 
 
-plugin:
-  platforms:
-    android:
-      package: cn.okzyl.flutter_lyric
-      pluginClass: FlutterLyricPlugin
-    ios:
-      pluginClass: FlutterLyricPlugin
-    web:
-      pluginClass: LyricsReaderWeb
-      fileName: lyrics_reader_web.dart
-    macos:
-      pluginClass: FlutterLyricPlugin
-    linux:
-      pluginClass: FlutterLyricPlugin
-    windows:
-      pluginClass: FlutterLyricPlugin
+flutter:
+  plugin:
+    platforms:
+      android:
+        package: cn.okzyl.flutter_lyric
+        pluginClass: FlutterLyricPlugin
+      ios:
+        pluginClass: FlutterLyricPlugin
+      web:
+        pluginClass: LyricsReaderWeb
+        fileName: lyrics_reader_web.dart
+      macos:
+        pluginClass: FlutterLyricPlugin
+      linux:
+        pluginClass: FlutterLyricPlugin
+      windows:
+        pluginClass: FlutterLyricPlugin
