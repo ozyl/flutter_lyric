@@ -39,12 +39,39 @@ class ParserQrc extends LyricsParse {
       //移除time，拿到真实歌词
       var realLyrics = line.replaceFirst(advancedPattern, "");
       LyricsLog.logD("匹配time:$time($ts) 真实歌词：$realLyrics");
+
+      List<LyricSpanInfo> spanList = getSpanList(realLyrics);
+
       var lineModel = LyricsLineModel()
         ..mainText = realLyrics.replaceAll(qrcPattern, "")
-        ..startTime = ts;
+        ..startTime = ts
+        ..spanList = spanList;
       lineList.add(lineModel);
     });
     return lineList;
+  }
+
+  ///get line span info list
+  List<LyricSpanInfo> getSpanList(String realLyrics) {
+    var invalidLength = 0;
+    var startIndex = 0;
+    var spanList = qrcPattern.allMatches(realLyrics).map((element) {
+      var span = LyricSpanInfo();
+
+      span.raw = realLyrics.substring(startIndex+invalidLength,element.start);
+
+      var elementText = element.group(0) ?? "";
+      span.startIndex = startIndex;
+      span.length = element.start - span.startIndex - invalidLength;
+      invalidLength += elementText.length;
+      startIndex += span.length;
+
+      var time = (element.group(1)?.split(",") ?? ["0", "0"]);
+      span.startProgress = int.parse(time[0]);
+      span.duration = int.parse(time[1]);
+      return span;
+    }).toList();
+    return spanList;
   }
 
   @override

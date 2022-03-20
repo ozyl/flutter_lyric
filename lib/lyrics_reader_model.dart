@@ -54,6 +54,7 @@ class LyricsLineModel {
   String? extText;
   int? startTime;
   int? endTime;
+  List<LyricSpanInfo>? spanList;
 
   //绘制信息
   LyricDrawInfo? drawInfo;
@@ -82,4 +83,12 @@ class LyricInlineDrawInfo{
   double width =0;
   double height =0;
   Offset startOffset=Offset.zero;
+}
+
+class LyricSpanInfo{
+  int startIndex=0;
+  int length =0;
+  int duration =0;
+  int startProgress =0;
+  String raw="";
 }
