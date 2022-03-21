@@ -20,11 +20,11 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   AudioCache audioCache = AudioCache();
   AudioPlayer? audioPlayer;
   double sliderProgress = 0;
-  double playProgress = 0;
+  int playProgress = 0;
   double max_value = 100;
   bool isTap = false;
 
-  var lyricModel = LyricsModelBuilder.creat()
+  var lyricModel = LyricsModelBuilder.create()
       .bindLyricToMain(normalLyric)
       .bindLyricToExt(transLyric)
       .getModel();
@@ -144,7 +144,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           },
           onChangeEnd: (double value) {
             isTap = false;
-            playProgress = value;
+            playProgress = value.toInt();
             audioPlayer?.seek(Duration(milliseconds: value.toInt()));
           },
         ),
@@ -164,7 +164,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                     if (isTap) return;
                     setState(() {
                       sliderProgress = event.inMilliseconds.toDouble();
-                      playProgress = sliderProgress;
+                      playProgress = event.inMilliseconds;
                     });
                   });
                 } else {

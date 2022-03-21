@@ -19,7 +19,7 @@ class LyricsModelBuilder {
   List<LyricsLineModel>? mainLines;
   List<LyricsLineModel>? extLines;
 
-  static LyricsModelBuilder creat() => LyricsModelBuilder._();
+  static LyricsModelBuilder create() => LyricsModelBuilder._();
 
   LyricsModelBuilder bindLyricToMain(String lyric, [LyricsParse? parser]) {
     mainLines = (parser ?? ParserSmart(lyric)).parseLines();

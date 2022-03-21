@@ -61,13 +61,13 @@ class ParserQrc extends LyricsParse {
       span.raw = realLyrics.substring(startIndex+invalidLength,element.start);
 
       var elementText = element.group(0) ?? "";
-      span.startIndex = startIndex;
-      span.length = element.start - span.startIndex - invalidLength;
+      span.index = startIndex;
+      span.length = element.start - span.index - invalidLength;
       invalidLength += elementText.length;
       startIndex += span.length;
 
       var time = (element.group(1)?.split(",") ?? ["0", "0"]);
-      span.startProgress = int.parse(time[0]);
+      span.start = int.parse(time[0]);
       span.duration = int.parse(time[1]);
       return span;
     }).toList();

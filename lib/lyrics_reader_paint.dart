@@ -183,8 +183,8 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
     element.drawInfo?.inlineDrawList.forEach((element) {
       canvas.drawRect(
           Rect.fromLTWH(
-              getLineOffsetX(painter!) + element.startOffset.dx,
-              drawOffsetY + element.startOffset.dy,
+              getLineOffsetX(painter!) + element.offset.dx,
+              drawOffsetY + element.offset.dy,
               element.width,
               element.height),
           gradientPaint);

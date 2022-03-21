@@ -23,7 +23,7 @@ class LyricsReader extends StatefulWidget {
   final Size size;
   final LyricsReaderModel? model;
   final LyricUI ui;
-  final double position;
+  final int position;
   final EdgeInsets? padding;
   final VoidCallback? onTap;
   final SelectLineBuilder? selectLineBuilder;
@@ -31,14 +31,13 @@ class LyricsReader extends StatefulWidget {
   @override
   State<StatefulWidget> createState() => LyricReaderState();
 
-  LyricsReader(
-      {this.position = 0,
-      this.model,
-      this.padding,
-      this.size = Size.infinite,
-      this.selectLineBuilder,
-      LyricUI? lyricUi,
-      this.onTap})
+  LyricsReader({this.position = 0,
+    this.model,
+    this.padding,
+    this.size = Size.infinite,
+    this.selectLineBuilder,
+    LyricUI? lyricUi,
+    this.onTap})
       : ui = lyricUi ?? UINetease();
 }
 
@@ -105,7 +104,7 @@ class LyricReaderState extends State<LyricsReader>
   ///select current play line
   void scrollToPlayLine() {
     safeLyricOffset(widget.model?.computeScroll(
-            lyricPaint.playingIndex, lyricPaint.playingIndex, widget.ui) ??
+        lyricPaint.playingIndex, lyricPaint.playingIndex, widget.ui) ??
         0);
   }
 
@@ -171,9 +170,8 @@ class LyricReaderState extends State<LyricsReader>
         ..otherMainTextPainter = getTextPaint(
             element.mainText, widget.ui.getOtherMainTextStyle(),
             size: size);
+      setTextInlineInfo(drawInfo, widget.ui, element.mainText!);
       element.drawInfo = drawInfo;
-      drawInfo.inlineDrawList = getTextInlineInfo(
-          drawInfo.playingMainTextPainter!, widget.ui, element.mainText!);
     });
   }
 
@@ -190,48 +188,54 @@ class LyricReaderState extends State<LyricsReader>
     return linePaint;
   }
 
-  List<LyricInlineDrawInfo> getTextInlineInfo(TextPainter linePaint, LyricUI ui, String text) {
+  void setTextInlineInfo(LyricDrawInfo drawInfo, LyricUI ui, String text) {
+    var linePaint = drawInfo.playingMainTextPainter!;
     var metrics = linePaint.computeLineMetrics();
-    var testHeight = 0.0;
+    var targetLineHeight = 0.0;
     var start = 0;
     List<LyricInlineDrawInfo> lineList = [];
+    drawInfo.lineWidth = 0;
     metrics.forEach((element) {
       //起始偏移量X
-      var startOffsetX =0.0;
+      var startOffsetX = 0.0;
       switch (ui.getLyricTextAligin()) {
         case TextAlign.right:
-          startOffsetX = linePaint.width-element.width;
+          startOffsetX = linePaint.width - element.width;
           break;
         case TextAlign.center:
-          startOffsetX = (linePaint.width-element.width)/2;
+          startOffsetX = (linePaint.width - element.width) / 2;
           break;
-        default: break;
+        default:
+          break;
       }
+      //获取总宽度
+      drawInfo.lineWidth += element.width;
       var offsetX = element.width;
       switch (ui.getLyricTextAligin()) {
         case TextAlign.right:
           offsetX = linePaint.width;
           break;
         case TextAlign.center:
-          offsetX = (linePaint.width-element.width)/2+element.width;
+          offsetX = (linePaint.width - element.width) / 2 + element.width;
           break;
-        default: break;
+        default:
+          break;
       }
       var end = linePaint
-          .getPositionForOffset(Offset(offsetX, testHeight))
+          .getPositionForOffset(Offset(offsetX, targetLineHeight))
           .offset;
       var lineText = text.substring(start, end);
       LyricsLog.logD("获取行内信息：第${element.lineNumber}行，内容：${lineText}");
       lineList.add(LyricInlineDrawInfo()
-        ..text=lineText
-        ..number=element.lineNumber
-        ..width=element.width
-        ..height=element.height
-        ..startOffset = Offset(startOffsetX, testHeight));
+        ..raw = lineText
+        ..number = element.lineNumber
+        ..width = element.width
+        ..height = element.height
+        ..offset = Offset(startOffsetX, targetLineHeight));
       start = end;
-      testHeight += element.height;
+      targetLineHeight += element.height;
     });
-    return lineList;
+    drawInfo.inlineDrawList = lineList;
   }
 
   ///handle widget size
@@ -240,7 +244,10 @@ class LyricReaderState extends State<LyricsReader>
   handleSize() {
     mSize = widget.size;
     if (mSize.width == double.infinity) {
-      mSize = Size(MediaQuery.of(context).size.width, mSize.height);
+      mSize = Size(MediaQuery
+          .of(context)
+          .size
+          .width, mSize.height);
     }
     if (mSize.height == double.infinity) {
       mSize = Size(mSize.width, mSize.width);
@@ -333,7 +340,7 @@ class LyricReaderState extends State<LyricsReader>
         setSelectLine(true);
       },
       onVerticalDragUpdate: (event) =>
-          {lyricPaint.lyricOffset += event.primaryDelta ?? 0},
+      {lyricPaint.lyricOffset += event.primaryDelta ?? 0},
       child: child,
     );
   }
@@ -375,9 +382,9 @@ class LyricReaderState extends State<LyricsReader>
       waitSecond += 100;
       if (waitSecond == 400) {
         realUpdateOffset(widget.model?.computeScroll(
-                lyricPaint.centerLyricIndex,
-                lyricPaint.playingIndex,
-                widget.ui) ??
+            lyricPaint.centerLyricIndex,
+            lyricPaint.playingIndex,
+            widget.ui) ??
             0);
         return;
       }

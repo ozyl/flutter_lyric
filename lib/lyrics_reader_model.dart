@@ -8,7 +8,7 @@ import 'package:collection/collection.dart';
 class LyricsReaderModel {
   List<LyricsLineModel> lyrics = [];
 
-  getCurrentLine(double progress) {
+  getCurrentLine(int progress) {
     for (var i = 0; i < lyrics.length; i++) {
       var element = lyrics[i];
       if (progress >= (element.startTime ?? 0) &&
@@ -75,20 +75,21 @@ class LyricDrawInfo {
   TextPainter? playingMainTextPainter;
   TextPainter? playingExtTextPainter;
   List<LyricInlineDrawInfo> inlineDrawList=[];
+  double lineWidth=0;
 }
 
 class LyricInlineDrawInfo{
   int number=0;
-  String text="";
+  String raw="";
   double width =0;
   double height =0;
-  Offset startOffset=Offset.zero;
+  Offset offset=Offset.zero;
 }
 
 class LyricSpanInfo{
-  int startIndex=0;
+  int index=0;
   int length =0;
   int duration =0;
-  int startProgress =0;
+  int start =0;
   String raw="";
 }
