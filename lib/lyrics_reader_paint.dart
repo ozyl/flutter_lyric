@@ -184,13 +184,26 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
   void drawHighlight(LyricsLineModel model, Canvas canvas, TextPainter? painter,
       Offset offset) {
     if (!model.hasMain) return;
+    var tmpHighlightWidth =highlightWidth;
     model.drawInfo?.inlineDrawList.forEach((element) {
+      if(tmpHighlightWidth<0){
+        return;
+      }
+      var currentWidth = 0.0;
+      if(tmpHighlightWidth>=element.width){
+        currentWidth = element.width;
+      }else{
+        currentWidth = element.width - (element.width - tmpHighlightWidth);
+      }
+      tmpHighlightWidth -=currentWidth;
       canvas.drawRect(
           Rect.fromLTWH(offset.dx + element.offset.dx,
-              offset.dy + element.offset.dy, element.width, element.height),
+              offset.dy + element.offset.dy,currentWidth, element.height),
           gradientPaint..color = Colors.amber);
     });
   }
+
+  var highlightWidth = 0.0;
 
   ///绘制文本并返回行高度
   ///when [element] not null,then draw gradient
