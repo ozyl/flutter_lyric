@@ -62,16 +62,16 @@ class ParserLrc extends LyricsParse {
     }
     var timeArray = value.split(".");
     var padZero = 3 - timeArray.last.length;
-    var millsceconds = timeArray.last.padRight(padZero, "0");
+    var millisecond = timeArray.last.padRight(padZero, "0");
     //避免出现奇葩
-    if (millsceconds.length > 3) {
-      millsceconds = millsceconds.substring(0, 3);
+    if (millisecond.length > 3) {
+      millisecond = millisecond.substring(0, 3);
     }
     var minAndSecArray = timeArray.first.split(":");
     return Duration(
             minutes: int.parse(minAndSecArray.first),
             seconds: int.parse(minAndSecArray.last),
-            milliseconds: int.parse(millsceconds))
+            milliseconds: int.parse(millisecond))
         .inMilliseconds;
   }
 }

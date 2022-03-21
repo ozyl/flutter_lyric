@@ -86,6 +86,9 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
 
   double get lyricOffset => _lyricOffset;
 
+  //限制刷新频率
+  int ts = DateTime.now().microsecond;
+
   refresh() {
     notifyListeners();
   }
@@ -140,14 +143,14 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
     if (!element.hasMain && !element.hasExt) {
       return lyricUI.getBlankLineHeight();
     }
-    return _drwaOtherLyricLine(canvas, drawOffset, element, i);
+    return _drawOtherLyricLine(canvas, drawOffset, element, i);
   }
 
-  Paint gradientPaint = Paint()..color = Colors.green;
+  Paint gradientPaint = Paint();
 
   ///绘制其他歌词行
   ///返回造成的偏移量值
-  double _drwaOtherLyricLine(Canvas canvas, double drawOffsetY,
+  double _drawOtherLyricLine(Canvas canvas, double drawOffsetY,
       LyricsLineModel element, int lineIndex) {
     var isPlay = lineIndex == playingIndex;
     var mainTextPainter = (isPlay
@@ -164,7 +167,8 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
     }
     var nextOffsetY = drawOffsetY + otherLineHeight;
     if (element.hasMain) {
-      otherLineHeight += drawText(canvas, mainTextPainter, nextOffsetY,isPlay ? element : null);
+      otherLineHeight += drawText(
+          canvas, mainTextPainter, nextOffsetY, isPlay ? element : null);
     }
     if (element.hasExt) {
       //有主歌词时才加内间距
@@ -177,32 +181,33 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
     return otherLineHeight;
   }
 
-  void drawGradient(LyricsLineModel element, Canvas canvas,
-      TextPainter? painter, double drawOffsetY) {
-    if (!element.hasMain) return;
-    element.drawInfo?.inlineDrawList.forEach((element) {
+  void drawHighlight(LyricsLineModel model, Canvas canvas, TextPainter? painter,
+      Offset offset) {
+    if (!model.hasMain) return;
+    model.drawInfo?.inlineDrawList.forEach((element) {
       canvas.drawRect(
-          Rect.fromLTWH(
-              getLineOffsetX(painter!) + element.offset.dx,
-              drawOffsetY + element.offset.dy,
-              element.width,
-              element.height),
-          gradientPaint);
+          Rect.fromLTWH(offset.dx + element.offset.dx,
+              offset.dy + element.offset.dy, element.width, element.height),
+          gradientPaint..color = Colors.amber);
     });
   }
 
   ///绘制文本并返回行高度
   ///when [element] not null,then draw gradient
-  double drawText(Canvas canvas, TextPainter? paint, double offsetY, [LyricsLineModel? element=null]) {
+  double drawText(Canvas canvas, TextPainter? paint, double offsetY,
+      [LyricsLineModel? element = null]) {
     //paint 理论上不可能为空，预期报错
     var lineHeight = paint!.height;
     if (offsetY < 0 - lineHeight || offsetY > mSize.height) {
       return lineHeight;
     }
-    if(element!=null){
-      drawGradient(element, canvas, paint, offsetY);
+    var isEnableLight = element != null && lyricUI.enableHighlight();
+    var offset = Offset(getLineOffsetX(paint), offsetY);
+    if (isEnableLight) {
+      drawHighlight(element!, canvas, paint, offset);
     }
-    paint.paint(canvas, Offset(getLineOffsetX(paint), offsetY));
+    paint.paint(canvas, offset);
+
     return lineHeight;
   }
 

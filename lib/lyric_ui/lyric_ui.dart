@@ -56,6 +56,8 @@ abstract class LyricUI {
   ///启用行动画
   bool enableLineAnimation() => true;
 
+  bool enableHighlight() => true;
+
   @override
   String toString() {
     return '${getPlayingMainTextStyle()}'
