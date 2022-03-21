@@ -452,28 +452,33 @@ class LyricReaderState extends State<LyricsReader>
 
   void handleHighlight() {
     var line = lyricPaint.model?.lyrics[lyricPaint.playingIndex];
-    var lineDuration = (line?.endTime??0) - (line?.startTime??0);
+    if (line == null) return;
+    var lineDuration = (line.endTime ?? 0) - (line.startTime ?? 0);
     List<TweenSequenceItem> items = [];
     var width = 0.0;
     var duration = 0;
-    for (LyricSpanInfo element in line?.spanList ?? []) {
+    for (LyricSpanInfo element in line.spanList) {
       if (widget.position >= element.end) {
         width += element.drawWidth;
         duration += element.duration;
         continue;
       }
       var ratio = (widget.position - element.start) / element.duration;
-      if(ratio<0){
+      if (ratio < 0) {
         ratio = 0;
       }
-      items.add(TweenSequenceItem(tween: Tween(begin: width+=(ratio*element.drawWidth), end: width+=element.drawWidth), weight: element.duration/(lineDuration-duration)));
+      items.add(TweenSequenceItem(
+          tween: Tween(
+              begin: width += (ratio * element.drawWidth),
+              end: width += element.drawWidth),
+          weight: element.duration / (lineDuration - duration)));
     }
     disposeHighlight();
-    if(items.isEmpty){
+    if (items.isEmpty) {
       return;
     }
     _highlightController = AnimationController(
-      duration: Duration(milliseconds: lineDuration-duration),
+      duration: Duration(milliseconds: lineDuration - duration),
       vsync: this,
     );
     var animate = TweenSequence(items)

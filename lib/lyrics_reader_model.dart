@@ -54,7 +54,18 @@ class LyricsLineModel {
   String? extText;
   int? startTime;
   int? endTime;
-  List<LyricSpanInfo> spanList = [];
+  List<LyricSpanInfo>? _spanList;
+
+  List<LyricSpanInfo> get spanList =>_spanList??=
+  [
+    LyricSpanInfo()
+      ..duration = (endTime ?? 0) - (startTime ?? 0)
+      ..start = startTime ?? 0
+      ..length = mainText?.length ?? 0
+      ..raw = mainText ?? ""
+  ];
+
+  set spanList(List<LyricSpanInfo> list)=> _spanList = list;
 
   //绘制信息
   LyricDrawInfo? drawInfo;
