@@ -25,7 +25,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   bool isTap = false;
 
   var lyricModel = LyricsModelBuilder.create()
-      .bindLyricToMain(normalLyric)
+      .bindLyricToMain(advancedLyric)
       .bindLyricToExt(transLyric)
       .getModel();
 

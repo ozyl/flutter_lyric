@@ -31,13 +31,14 @@ class LyricsReader extends StatefulWidget {
   @override
   State<StatefulWidget> createState() => LyricReaderState();
 
-  LyricsReader({this.position = 0,
-    this.model,
-    this.padding,
-    this.size = Size.infinite,
-    this.selectLineBuilder,
-    LyricUI? lyricUi,
-    this.onTap})
+  LyricsReader(
+      {this.position = 0,
+      this.model,
+      this.padding,
+      this.size = Size.infinite,
+      this.selectLineBuilder,
+      LyricUI? lyricUi,
+      this.onTap})
       : ui = lyricUi ?? UINetease();
 }
 
@@ -104,7 +105,7 @@ class LyricReaderState extends State<LyricsReader>
   ///select current play line
   void scrollToPlayLine() {
     safeLyricOffset(widget.model?.computeScroll(
-        lyricPaint.playingIndex, lyricPaint.playingIndex, widget.ui) ??
+            lyricPaint.playingIndex, lyricPaint.playingIndex, widget.ui) ??
         0);
   }
 
@@ -154,12 +155,10 @@ class LyricReaderState extends State<LyricsReader>
   ///calculate all line draw info
   refreshLyricHeight(Size size) {
     lyricPaint.clearCache();
-
     widget.model?.lyrics.forEach((element) {
       var drawInfo = LyricDrawInfo()
         ..playingExtTextPainter = getTextPaint(
             element.extText, widget.ui.getPlayingExtTextStyle(),
-
             size: size)
         ..otherExtTextPainter = getTextPaint(
             element.extText, widget.ui.getOtherExtTextStyle(),
@@ -170,19 +169,28 @@ class LyricReaderState extends State<LyricsReader>
         ..otherMainTextPainter = getTextPaint(
             element.mainText, widget.ui.getOtherMainTextStyle(),
             size: size);
-      if(widget.ui.enableHighlight()){
+      if (widget.ui.enableHighlight()) {
         setTextInlineInfo(drawInfo, widget.ui, element.mainText!);
+        setTextSpanDrawInfo(
+            widget.ui,
+            element.spanList,
+            TextPainter(
+              textDirection: TextDirection.ltr,
+            ));
       }
       element.drawInfo = drawInfo;
     });
   }
 
   /// 获取文本高度
-  TextPainter getTextPaint(String? text, TextStyle style, {Size? size}) {
+  TextPainter getTextPaint(String? text, TextStyle style,
+      {Size? size, TextPainter? linePaint}) {
     if (text == null) text = "";
-    var linePaint = TextPainter(
-      textDirection: TextDirection.ltr,
-    );
+    if (linePaint == null) {
+      linePaint = TextPainter(
+        textDirection: TextDirection.ltr,
+      );
+    }
     linePaint.textAlign = lyricPaint.lyricUI.getLyricTextAligin();
     linePaint
       ..text = TextSpan(text: text, style: style.copyWith(height: 1))
@@ -246,10 +254,7 @@ class LyricReaderState extends State<LyricsReader>
   handleSize() {
     mSize = widget.size;
     if (mSize.width == double.infinity) {
-      mSize = Size(MediaQuery
-          .of(context)
-          .size
-          .width, mSize.height);
+      mSize = Size(MediaQuery.of(context).size.width, mSize.height);
     }
     if (mSize.height == double.infinity) {
       mSize = Size(mSize.width, mSize.width);
@@ -342,7 +347,7 @@ class LyricReaderState extends State<LyricsReader>
         setSelectLine(true);
       },
       onVerticalDragUpdate: (event) =>
-      {lyricPaint.lyricOffset += event.primaryDelta ?? 0},
+          {lyricPaint.lyricOffset += event.primaryDelta ?? 0},
       child: child,
     );
   }
@@ -384,9 +389,9 @@ class LyricReaderState extends State<LyricsReader>
       waitSecond += 100;
       if (waitSecond == 400) {
         realUpdateOffset(widget.model?.computeScroll(
-            lyricPaint.centerLyricIndex,
-            lyricPaint.playingIndex,
-            widget.ui) ??
+                lyricPaint.centerLyricIndex,
+                lyricPaint.playingIndex,
+                widget.ui) ??
             0);
         return;
       }
@@ -420,5 +425,20 @@ class LyricReaderState extends State<LyricsReader>
     disposeLine();
     centerLyricIndexStream.close();
     super.dispose();
+  }
+
+  ///计算span宽度
+  void setTextSpanDrawInfo(
+      LyricUI ui, List<LyricSpanInfo> spanList, TextPainter painter) {
+    painter.textAlign = lyricPaint.lyricUI.getLyricTextAligin();
+    spanList.forEach((element) {
+      painter
+        ..text = TextSpan(
+            text: element.raw,
+            style: ui.getPlayingMainTextStyle().copyWith(height: 1))
+        ..layout();
+      element.drawHeight = painter.height;
+      element.drawWidth = painter.width;
+    });
   }
 }

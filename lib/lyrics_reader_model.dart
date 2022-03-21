@@ -93,6 +93,9 @@ class LyricSpanInfo{
   int start =0;
   String raw="";
 
+  double drawWidth =0;
+  double drawHeight =0;
+
   int get end=> start + duration;
   int get endIndex=> index + length;
 }
