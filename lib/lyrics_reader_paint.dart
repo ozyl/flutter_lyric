@@ -34,6 +34,7 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
 
   clearCache() {
     cachePlayingIndex = -1;
+    highlightWidth = 0;
   }
 
   ///check offset illegal
@@ -184,7 +185,7 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
   void drawHighlight(LyricsLineModel model, Canvas canvas, TextPainter? painter,
       Offset offset) {
     if (!model.hasMain) return;
-    var tmpHighlightWidth =highlightWidth;
+    var tmpHighlightWidth =_highlightWidth;
     model.drawInfo?.inlineDrawList.forEach((element) {
       if(tmpHighlightWidth<0){
         return;
@@ -203,7 +204,13 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
     });
   }
 
-  var highlightWidth = 0.0;
+  var _highlightWidth = 0.0;
+
+  set highlightWidth(double value){
+    _highlightWidth = value;
+    refresh();
+  }
+  double get highlightWidth => _highlightWidth;
 
   ///绘制文本并返回行高度
   ///when [element] not null,then draw gradient

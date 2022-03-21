@@ -48,6 +48,7 @@ class LyricReaderState extends State<LyricsReader>
 
   StreamController<int> centerLyricIndexStream = StreamController.broadcast();
   AnimationController? _flingController;
+  AnimationController? _highlightController;
   AnimationController? _lineController;
 
   var mSize = Size.infinite;
@@ -96,7 +97,9 @@ class LyricReaderState extends State<LyricsReader>
     if (oldWidget.position != widget.position) {
       selectLine(widget.model?.getCurrentLine(widget.position) ?? 0);
       if (cacheLine != lyricPaint.playingIndex) {
+        lyricPaint.highlightWidth = 0;
         cacheLine = lyricPaint.playingIndex;
+        handleHighlight();
         scrollToPlayLine();
       }
     }
@@ -418,6 +421,11 @@ class LyricReaderState extends State<LyricsReader>
     _lineController = null;
   }
 
+  disposeHighlight() {
+    _highlightController?.dispose();
+    _highlightController = null;
+  }
+
   @override
   void dispose() {
     disposeSelectLineDelay();
@@ -440,5 +448,46 @@ class LyricReaderState extends State<LyricsReader>
       element.drawHeight = painter.height;
       element.drawWidth = painter.width;
     });
+  }
+
+  void handleHighlight() {
+    var line = lyricPaint.model?.lyrics[lyricPaint.playingIndex];
+    var lineDuration = (line?.endTime??0) - (line?.startTime??0);
+    List<TweenSequenceItem> items = [];
+    var width = 0.0;
+    var duration = 0;
+    for (LyricSpanInfo element in line?.spanList ?? []) {
+      if (widget.position >= element.end) {
+        width += element.drawWidth;
+        duration += element.duration;
+        continue;
+      }
+      var ratio = (widget.position - element.start) / element.duration;
+      if(ratio<0){
+        ratio = 0;
+      }
+      items.add(TweenSequenceItem(tween: Tween(begin: width+=(ratio*element.drawWidth), end: width+=element.drawWidth), weight: element.duration/(lineDuration-duration)));
+    }
+    disposeHighlight();
+    if(items.isEmpty){
+      return;
+    }
+    _highlightController = AnimationController(
+      duration: Duration(milliseconds: lineDuration-duration),
+      vsync: this,
+    );
+    var animate = TweenSequence(items)
+        .chain(CurveTween(curve: Curves.easeInOut))
+        .animate(_highlightController!)
+      ..addStatusListener((status) {
+        if (status == AnimationStatus.completed) {
+          disposeHighlight();
+        }
+      });
+    animate
+      ..addListener(() {
+        lyricPaint.highlightWidth = animate.value;
+      });
+    _highlightController?.forward();
   }
 }
