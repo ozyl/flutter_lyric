@@ -12,3 +12,5 @@ fix safari load failed
 modify pub config
 ## 2.0.2
 highlight(enhanced&normal)
+## 2.0.2+1
+fix location always on last

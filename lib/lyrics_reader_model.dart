@@ -10,14 +10,20 @@ class LyricsReaderModel {
   List<LyricsLineModel> lyrics = [];
 
   getCurrentLine(int progress) {
+    var lastEndTime = 0;
     for (var i = 0; i < lyrics.length; i++) {
       var element = lyrics[i];
       if (progress >= (element.startTime ?? 0) &&
           progress < (element.endTime ?? 0)) {
         return i;
       }
+      lastEndTime = element.endTime??0;
     }
-    return max(lyrics.length - 1, 0);
+    if(progress>lastEndTime){
+      return lyrics.length - 1;
+    }else{
+      return 0;
+    }
   }
 
   double computeScroll(int toLine, int playLine, LyricUI ui) {
