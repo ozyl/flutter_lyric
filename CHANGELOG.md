@@ -10,3 +10,5 @@ more smooth
 fix safari load failed
 ## 2.0.1+2~2.0.1+6
 modify pub config
+## 2.0.2
+highlight(enhanced&normal)
