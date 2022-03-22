@@ -1,7 +1,6 @@
 import 'dart:ui';
 
 import 'package:audioplayers/audioplayers.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/lyrics_reader.dart';
 
@@ -21,7 +20,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   AudioPlayer? audioPlayer;
   double sliderProgress = 0;
   int playProgress = 0;
-  double max_value = 100;
+  double max_value = 211658;
   bool isTap = false;
 
   bool useEnhancedLrc = false;
@@ -114,14 +113,6 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
 
   List<Widget> buildPlayControl() {
     return [
-      if (kIsWeb == true)
-        Padding(
-          padding: const EdgeInsets.all(8.0),
-          child: Text(
-            "example's audio player library has problem in web platform,can't get music duration,you can use myself audio player library!",
-            style: TextStyle(fontSize: 20, color: Colors.grey),
-          ),
-        ),
       Text(
         "播放进度$sliderProgress",
         style: TextStyle(
