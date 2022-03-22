@@ -17,7 +17,7 @@ class LyricsReaderModel {
         return i;
       }
     }
-    return max(lyrics.length-1,0);
+    return max(lyrics.length - 1, 0);
   }
 
   double computeScroll(int toLine, int playLine, LyricUI ui) {
@@ -66,9 +66,7 @@ class LyricsLineModel {
 
   List<LyricSpanInfo>? _defaultSpanList;
 
-  get defaultSpanList =>
-      _defaultSpanList ??=
-      [
+  get defaultSpanList => _defaultSpanList ??= [
         LyricSpanInfo()
           ..duration = (endTime ?? 0) - (startTime ?? 0)
           ..start = startTime ?? 0

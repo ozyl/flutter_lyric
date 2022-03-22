@@ -5,7 +5,6 @@ import 'lyric_parser/parser_smart.dart';
 import 'lyrics_reader_model.dart';
 import 'package:collection/collection.dart';
 
-
 /// lyric Util
 /// support Simple format、Enhanced format
 class LyricsModelBuilder {
@@ -42,10 +41,10 @@ class LyricsModelBuilder {
         currLine.endTime = lineList[i + 1].startTime;
       } catch (e) {
         var lastSpan = currLine.spanList?.lastOrNull;
-        if(lastSpan!=null){
+        if (lastSpan != null) {
           currLine.endTime = lastSpan.end;
-        }else{
-          currLine.endTime = (currLine.startTime??0) + defaultLineDuration;
+        } else {
+          currLine.endTime = (currLine.startTime ?? 0) + defaultLineDuration;
         }
       }
     }

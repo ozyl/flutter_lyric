@@ -191,7 +191,7 @@ class LyricReaderState extends State<LyricsReader>
         setTextInlineInfo(drawInfo, widget.ui, element.mainText!);
         setTextSpanDrawInfo(
             widget.ui,
-            element.spanList??element.defaultSpanList,
+            element.spanList ?? element.defaultSpanList,
             TextPainter(
               textDirection: TextDirection.ltr,
             ));
@@ -482,7 +482,7 @@ class LyricReaderState extends State<LyricsReader>
     var width = 0.0;
     var duration = 0;
     double? firstBegin;
-    for (LyricSpanInfo element in (line.spanList ??line.defaultSpanList)) {
+    for (LyricSpanInfo element in (line.spanList ?? line.defaultSpanList)) {
       if (widget.position >= element.end) {
         width += element.drawWidth;
         duration += element.duration;
