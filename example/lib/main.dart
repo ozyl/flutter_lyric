@@ -78,6 +78,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           model: lyricModel,
           position: playProgress,
           lyricUi: lyricUI,
+          playing: playing,
           selectLineBuilder: (progress, confirm) {
             return Row(
               children: [
@@ -155,6 +156,9 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
               onPressed: () async {
                 if (audioPlayer == null) {
                   audioPlayer = await audioCache.play("music1.mp3");
+                  setState(() {
+                    playing = true;
+                  });
                   audioPlayer?.onDurationChanged.listen((Duration event) {
                     setState(() {
                       max_value = event.inMilliseconds.toDouble();
@@ -167,6 +171,12 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                       playProgress = event.inMilliseconds;
                     });
                   });
+
+                  audioPlayer?.onPlayerStateChanged.listen((PlayerState state) {
+                    setState(() {
+                      playing = state == PlayerState.PLAYING;
+                    });
+                  });
                 } else {
                   audioPlayer?.resume();
                 }
@@ -177,7 +187,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           ),
           TextButton(
               onPressed: () async {
-                audioPlayer?.pause();
+                  audioPlayer?.pause();
               },
               child: Text("暂停播放")),
           Container(
@@ -193,6 +203,8 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
       ),
     ];
   }
+
+  var playing = false;
 
   List<Widget> buildReaderBackground() {
     return [
