@@ -21,7 +21,7 @@ typedef SelectLineBuilder = Widget Function(int, VoidCallback);
 ///[playing] if playing status is null,no highlight.
 ///
 class LyricsReader extends StatefulWidget {
-  final Size size;
+  final Size? size;
   final LyricsReaderModel? model;
   final LyricUI ui;
   final bool? playing;
@@ -36,7 +36,7 @@ class LyricsReader extends StatefulWidget {
   LyricsReader({this.position = 0,
     this.model,
     this.padding,
-    this.size = Size.infinite,
+    this.size,
     this.selectLineBuilder,
     LyricUI? lyricUi,
     this.onTap, this.playing,})
@@ -86,7 +86,7 @@ class LyricReaderState extends State<LyricsReader>
   @override
   void didUpdateWidget(covariant LyricsReader oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.size.toString() != widget.size.toString() ||
+    if (oldWidget.size?.toString() != widget.size?.toString() ||
         oldWidget.model != widget.model ||
         oldWidget.ui != widget.ui) {
       lyricPaint.model = widget.model;
@@ -268,7 +268,7 @@ class LyricReaderState extends State<LyricsReader>
   ///default screenWidth,screenWidth
   ///if outside box has limit,then select min value
   handleSize() {
-    mSize = widget.size;
+    mSize = widget.size??Size.infinite;
     if (mSize.width == double.infinity) {
       mSize = Size(MediaQuery
           .of(context)
@@ -279,11 +279,12 @@ class LyricReaderState extends State<LyricsReader>
       mSize = Size(mSize.width, mSize.width);
     }
     if (cacheBox != null) {
+      var selectFun = widget.size==null? max :min;
       if (cacheBox!.maxWidth != double.infinity) {
-        mSize = Size(min(cacheBox!.maxWidth, mSize.width), mSize.height);
+        mSize = Size(selectFun.call(cacheBox!.maxWidth, mSize.width), mSize.height);
       }
       if (cacheBox!.maxHeight != double.infinity) {
-        mSize = Size(mSize.width, min(cacheBox!.maxHeight, mSize.height));
+        mSize = Size(mSize.width, selectFun.call(cacheBox!.maxHeight, mSize.height));
       }
     }
     refreshLyricHeight(mSize);
