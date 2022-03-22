@@ -222,7 +222,6 @@ class LyricReaderState extends State<LyricsReader>
     var targetLineHeight = 0.0;
     var start = 0;
     List<LyricInlineDrawInfo> lineList = [];
-    drawInfo.lineWidth = 0;
     metrics.forEach((element) {
       //起始偏移量X
       var startOffsetX = 0.0;
@@ -236,8 +235,6 @@ class LyricReaderState extends State<LyricsReader>
         default:
           break;
       }
-      //获取总宽度
-      drawInfo.lineWidth += element.width;
       var offsetX = element.width;
       switch (ui.getLyricTextAligin()) {
         case TextAlign.right:

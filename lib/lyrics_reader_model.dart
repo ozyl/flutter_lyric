@@ -84,7 +84,6 @@ class LyricDrawInfo {
   TextPainter? playingMainTextPainter;
   TextPainter? playingExtTextPainter;
   List<LyricInlineDrawInfo> inlineDrawList = [];
-  double lineWidth = 0;
 }
 
 class LyricInlineDrawInfo {
