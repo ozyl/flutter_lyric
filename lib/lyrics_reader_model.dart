@@ -1,7 +1,9 @@
+import 'dart:math';
+
+import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_lyric/lyric_helper.dart';
 import 'package:flutter_lyric/lyric_ui/lyric_ui.dart';
-import 'package:collection/collection.dart';
 
 ///lyric model
 class LyricsReaderModel {
@@ -15,7 +17,7 @@ class LyricsReaderModel {
         return i;
       }
     }
-    return 0;
+    return max(lyrics.length-1,0);
   }
 
   double computeScroll(int toLine, int playLine, LyricUI ui) {
@@ -53,17 +55,7 @@ class LyricsLineModel {
   String? extText;
   int? startTime;
   int? endTime;
-  List<LyricSpanInfo>? _spanList;
-
-  List<LyricSpanInfo> get spanList => _spanList ??= [
-        LyricSpanInfo()
-          ..duration = (endTime ?? 0) - (startTime ?? 0)
-          ..start = startTime ?? 0
-          ..length = mainText?.length ?? 0
-          ..raw = mainText ?? ""
-      ];
-
-  set spanList(List<LyricSpanInfo> list) => _spanList = list;
+  List<LyricSpanInfo>? spanList;
 
   //绘制信息
   LyricDrawInfo? drawInfo;
@@ -71,13 +63,28 @@ class LyricsLineModel {
   bool get hasExt => extText?.isNotEmpty == true;
 
   bool get hasMain => mainText?.isNotEmpty == true;
+
+  List<LyricSpanInfo>? _defaultSpanList;
+
+  get defaultSpanList =>
+      _defaultSpanList ??=
+      [
+        LyricSpanInfo()
+          ..duration = (endTime ?? 0) - (startTime ?? 0)
+          ..start = startTime ?? 0
+          ..length = mainText?.length ?? 0
+          ..raw = mainText ?? ""
+      ];
 }
 
 ///lyric draw model
 class LyricDrawInfo {
   double get otherMainTextHeight => otherMainTextPainter?.height ?? 0;
+
   double get otherExtTextHeight => otherExtTextPainter?.height ?? 0;
+
   double get playingMainTextHeight => playingMainTextPainter?.height ?? 0;
+
   double get playingExtTextHeight => playingExtTextPainter?.height ?? 0;
   TextPainter? otherMainTextPainter;
   TextPainter? otherExtTextPainter;
@@ -105,5 +112,6 @@ class LyricSpanInfo {
   double drawHeight = 0;
 
   int get end => start + duration;
+
   int get endIndex => index + length;
 }

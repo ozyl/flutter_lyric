@@ -3,12 +3,14 @@ import 'package:flutter_lyric/lyrics_reader.dart';
 
 import 'lyric_parser/parser_smart.dart';
 import 'lyrics_reader_model.dart';
+import 'package:collection/collection.dart';
+
 
 /// lyric Util
 /// support Simple format、Enhanced format
 class LyricsModelBuilder {
   ///if line time is null,then use MAX_VALUE replace
-  final maxValue = 9999999999;
+  static final defaultLineDuration = 5000;
 
   var _lyricModel = LyricsReaderModel();
 
@@ -35,11 +37,16 @@ class LyricsModelBuilder {
     if (lineList == null) return;
     //下一行的开始时间则为上一行的结束时间，若无则MAX
     for (int i = 0; i < lineList.length; i++) {
+      var currLine = lineList[i];
       try {
-        lineList[i].endTime = lineList[i + 1].startTime;
+        currLine.endTime = lineList[i + 1].startTime;
       } catch (e) {
-        //越界异常时直接MAX
-        lineList[i].endTime = maxValue;
+        var lastSpan = currLine.spanList?.lastOrNull;
+        if(lastSpan!=null){
+          currLine.endTime = lastSpan.end;
+        }else{
+          currLine.endTime = (currLine.startTime??0) + defaultLineDuration;
+        }
       }
     }
     if (isMain) {
