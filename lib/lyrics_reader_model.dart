@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:collection/collection.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_lyric/lyric_helper.dart';
@@ -17,11 +15,11 @@ class LyricsReaderModel {
           progress < (element.endTime ?? 0)) {
         return i;
       }
-      lastEndTime = element.endTime??0;
+      lastEndTime = element.endTime ?? 0;
     }
-    if(progress>lastEndTime){
+    if (progress > lastEndTime) {
       return lyrics.length - 1;
-    }else{
+    } else {
       return 0;
     }
   }
