@@ -33,14 +33,16 @@ class LyricsReader extends StatefulWidget {
   @override
   State<StatefulWidget> createState() => LyricReaderState();
 
-  LyricsReader({this.position = 0,
+  LyricsReader({
+    this.position = 0,
     this.model,
     this.padding,
     this.size,
     this.selectLineBuilder,
     LyricUI? lyricUi,
-    this.onTap, this.playing,})
-      : ui = lyricUi ?? UINetease();
+    this.onTap,
+    this.playing,
+  }) : ui = lyricUi ?? UINetease();
 }
 
 class LyricReaderState extends State<LyricsReader>
@@ -111,7 +113,7 @@ class LyricReaderState extends State<LyricsReader>
       } else {
         if (widget.playing == true) {
           _highlightController?.forward();
-        }else{
+        } else {
           _highlightController?.stop();
         }
       }
@@ -121,7 +123,7 @@ class LyricReaderState extends State<LyricsReader>
   ///select current play line
   void scrollToPlayLine() {
     safeLyricOffset(widget.model?.computeScroll(
-        lyricPaint.playingIndex, lyricPaint.playingIndex, widget.ui) ??
+            lyricPaint.playingIndex, lyricPaint.playingIndex, widget.ui) ??
         0);
   }
 
@@ -268,23 +270,22 @@ class LyricReaderState extends State<LyricsReader>
   ///default screenWidth,screenWidth
   ///if outside box has limit,then select min value
   handleSize() {
-    mSize = widget.size??Size.infinite;
+    mSize = widget.size ?? Size.infinite;
     if (mSize.width == double.infinity) {
-      mSize = Size(MediaQuery
-          .of(context)
-          .size
-          .width, mSize.height);
+      mSize = Size(MediaQuery.of(context).size.width, mSize.height);
     }
     if (mSize.height == double.infinity) {
       mSize = Size(mSize.width, mSize.width);
     }
     if (cacheBox != null) {
-      var selectFun = widget.size==null? max :min;
+      var selectFun = widget.size == null ? max : min;
       if (cacheBox!.maxWidth != double.infinity) {
-        mSize = Size(selectFun.call(cacheBox!.maxWidth, mSize.width), mSize.height);
+        mSize =
+            Size(selectFun.call(cacheBox!.maxWidth, mSize.width), mSize.height);
       }
       if (cacheBox!.maxHeight != double.infinity) {
-        mSize = Size(mSize.width, selectFun.call(cacheBox!.maxHeight, mSize.height));
+        mSize = Size(
+            mSize.width, selectFun.call(cacheBox!.maxHeight, mSize.height));
       }
     }
     refreshLyricHeight(mSize);
@@ -367,7 +368,7 @@ class LyricReaderState extends State<LyricsReader>
         setSelectLine(true);
       },
       onVerticalDragUpdate: (event) =>
-      {lyricPaint.lyricOffset += event.primaryDelta ?? 0},
+          {lyricPaint.lyricOffset += event.primaryDelta ?? 0},
       child: child,
     );
   }
@@ -409,9 +410,9 @@ class LyricReaderState extends State<LyricsReader>
       waitSecond += 100;
       if (waitSecond == 400) {
         realUpdateOffset(widget.model?.computeScroll(
-            lyricPaint.centerLyricIndex,
-            lyricPaint.playingIndex,
-            widget.ui) ??
+                lyricPaint.centerLyricIndex,
+                lyricPaint.playingIndex,
+                widget.ui) ??
             0);
         return;
       }
@@ -454,8 +455,8 @@ class LyricReaderState extends State<LyricsReader>
   }
 
   ///计算span宽度
-  void setTextSpanDrawInfo(LyricUI ui, List<LyricSpanInfo> spanList,
-      TextPainter painter) {
+  void setTextSpanDrawInfo(
+      LyricUI ui, List<LyricSpanInfo> spanList, TextPainter painter) {
     painter.textAlign = lyricPaint.lyricUI.getLyricTextAligin();
     spanList.forEach((element) {
       painter
@@ -490,13 +491,11 @@ class LyricReaderState extends State<LyricsReader>
         ratio = 0;
       }
       var begin = width += (ratio * element.drawWidth);
-      if(firstBegin==null){
+      if (firstBegin == null) {
         firstBegin = begin;
       }
       items.add(TweenSequenceItem(
-          tween: Tween(
-              begin: begin,
-              end: width += element.drawWidth),
+          tween: Tween(begin: begin, end: width += element.drawWidth),
           weight: element.duration / (lineDuration - duration)));
     }
     disposeHighlight();
@@ -519,10 +518,10 @@ class LyricReaderState extends State<LyricsReader>
       ..addListener(() {
         lyricPaint.highlightWidth = animate.value;
       });
-    if(widget.playing==true){
+    if (widget.playing == true) {
       _highlightController?.forward();
-    }else{
-      lyricPaint.highlightWidth = firstBegin??width;
+    } else {
+      lyricPaint.highlightWidth = firstBegin ?? width;
     }
   }
 }

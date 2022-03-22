@@ -1,4 +1,3 @@
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_lyric/lyric_helper.dart';
 import 'package:flutter_lyric/lyric_ui/lyric_ui.dart';
@@ -56,16 +55,15 @@ class LyricsLineModel {
   int? endTime;
   List<LyricSpanInfo>? _spanList;
 
-  List<LyricSpanInfo> get spanList =>_spanList??=
-  [
-    LyricSpanInfo()
-      ..duration = (endTime ?? 0) - (startTime ?? 0)
-      ..start = startTime ?? 0
-      ..length = mainText?.length ?? 0
-      ..raw = mainText ?? ""
-  ];
+  List<LyricSpanInfo> get spanList => _spanList ??= [
+        LyricSpanInfo()
+          ..duration = (endTime ?? 0) - (startTime ?? 0)
+          ..start = startTime ?? 0
+          ..length = mainText?.length ?? 0
+          ..raw = mainText ?? ""
+      ];
 
-  set spanList(List<LyricSpanInfo> list)=> _spanList = list;
+  set spanList(List<LyricSpanInfo> list) => _spanList = list;
 
   //绘制信息
   LyricDrawInfo? drawInfo;
@@ -85,28 +83,28 @@ class LyricDrawInfo {
   TextPainter? otherExtTextPainter;
   TextPainter? playingMainTextPainter;
   TextPainter? playingExtTextPainter;
-  List<LyricInlineDrawInfo> inlineDrawList=[];
-  double lineWidth=0;
+  List<LyricInlineDrawInfo> inlineDrawList = [];
+  double lineWidth = 0;
 }
 
-class LyricInlineDrawInfo{
-  int number=0;
-  String raw="";
-  double width =0;
-  double height =0;
-  Offset offset=Offset.zero;
+class LyricInlineDrawInfo {
+  int number = 0;
+  String raw = "";
+  double width = 0;
+  double height = 0;
+  Offset offset = Offset.zero;
 }
 
-class LyricSpanInfo{
-  int index=0;
-  int length =0;
-  int duration =0;
-  int start =0;
-  String raw="";
+class LyricSpanInfo {
+  int index = 0;
+  int length = 0;
+  int duration = 0;
+  int start = 0;
+  String raw = "";
 
-  double drawWidth =0;
-  double drawHeight =0;
+  double drawWidth = 0;
+  double drawHeight = 0;
 
-  int get end=> start + duration;
-  int get endIndex=> index + length;
+  int get end => start + duration;
+  int get endIndex => index + length;
 }

@@ -197,7 +197,7 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
       tmpHighlightWidth -= currentWidth;
       canvas.drawRect(
           Rect.fromLTWH(offset.dx + element.offset.dx,
-              offset.dy + element.offset.dy, currentWidth, element.height+1),
+              offset.dy + element.offset.dy, currentWidth, element.height + 1),
           lightBlendPaint..color = lyricUI.getLyricHightlightColor());
     });
   }
@@ -225,7 +225,8 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
     var isEnableLight = element != null && lyricUI.enableHighlight();
     var offset = Offset(getLineOffsetX(paint), offsetY);
     if (isEnableLight) {
-      canvas.saveLayer(Rect.fromLTWH(0, 0, mSize.width,  mSize.height), layerPaint);
+      canvas.saveLayer(
+          Rect.fromLTWH(0, 0, mSize.width, mSize.height), layerPaint);
     }
     paint.paint(canvas, offset);
     if (isEnableLight) {

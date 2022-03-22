@@ -58,7 +58,8 @@ class ParserQrc extends LyricsParse {
     var spanList = qrcPattern.allMatches(realLyrics).map((element) {
       var span = LyricSpanInfo();
 
-      span.raw = realLyrics.substring(startIndex+invalidLength,element.start);
+      span.raw =
+          realLyrics.substring(startIndex + invalidLength, element.start);
 
       var elementText = element.group(0) ?? "";
       span.index = startIndex;
