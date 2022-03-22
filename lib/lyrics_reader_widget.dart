@@ -274,6 +274,9 @@ class LyricReaderState extends State<LyricsReader>
     if (mSize.height == double.infinity) {
       mSize = Size(mSize.width, mSize.width);
     }
+    var paddingWidth = (widget.padding?.left??0)+(widget.padding?.right??0);
+    var paddingHeight = (widget.padding?.top??0)+(widget.padding?.bottom??0);
+    mSize = Size(mSize.width-paddingWidth, mSize.height-paddingHeight);
     if (cacheBox != null) {
       var selectFun = widget.size == null ? max : min;
       if (cacheBox!.maxWidth != double.infinity) {
@@ -319,7 +322,7 @@ class LyricReaderState extends State<LyricsReader>
               }),
         ),
       ),
-      top: 0,
+      top: (widget.padding?.top??0),
       left: 0,
       right: 0,
     );
