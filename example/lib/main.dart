@@ -24,6 +24,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   double max_value = 100;
   bool isTap = false;
 
+  bool useEnhancedLrc = false;
   var lyricModel = LyricsModelBuilder.create()
       .bindLyricToMain(normalLyric)
       .bindLyricToExt(transLyric)
@@ -69,6 +70,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   }
 
   var lyricPadding = 40.0;
+
   Stack buildReaderWidget() {
     return Stack(
       children: [
@@ -187,7 +189,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           ),
           TextButton(
               onPressed: () async {
-                  audioPlayer?.pause();
+                audioPlayer?.pause();
               },
               child: Text("暂停播放")),
           Container(
@@ -237,6 +239,32 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
         height: 30,
       ),
       Text("UI控制", style: TextStyle(fontWeight: FontWeight.bold)),
+      Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Checkbox(
+              value: lyricUI.enableHighlight(),
+              onChanged: (value) {
+                setState(() {
+                  lyricUI.highlight = (value ?? false);
+                  refreshLyric();
+                });
+              }),
+          Text("enable highLight"),
+          Checkbox(
+              value: useEnhancedLrc,
+              onChanged: (value) {
+                setState(() {
+                  useEnhancedLrc = value!;
+                  lyricModel = LyricsModelBuilder.create()
+                      .bindLyricToMain(value ? advancedLyric : normalLyric)
+                      .bindLyricToExt(transLyric)
+                      .getModel();
+                });
+              }),
+          Text("use Enhanced lrc")
+        ],
+      ),
       buildTitle("歌词padding"),
       Slider(
         min: 0,
@@ -331,31 +359,6 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           });
         },
       ),
-      buildTitle("歌词对齐方向"),
-      Row(
-        mainAxisSize: MainAxisSize.min,
-        children: LyricAlign.values
-            .map((e) => Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Column(
-                    children: [
-                      Radio<LyricAlign>(
-                          activeColor: Colors.orangeAccent,
-                          value: e,
-                          groupValue: lyricAlign,
-                          onChanged: (v) {
-                            setState(() {
-                              lyricAlign = v!;
-                              lyricUI.lyricAlign = lyricAlign;
-                              refreshLyric();
-                            });
-                          }),
-                      Text(e.toString().split(".")[1])
-                    ],
-                  ),
-                ))
-            .toList(),
-      ),
       buildTitle("选择行偏移"),
       Slider(
         min: 0.3,
@@ -376,31 +379,58 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           });
         },
       ),
-      buildTitle("选择行基线"),
+      buildTitle("歌词对齐方向"),
       Row(
         mainAxisSize: MainAxisSize.min,
-        children: LyricBaseLine.values
-            .map((e) => Expanded(
-              child: Padding(
+        children: LyricAlign.values
+            .map(
+              (e) => Expanded(
+                  child: Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Column(
                   children: [
-                    Radio<LyricBaseLine>(
-                    activeColor: Colors.orangeAccent,
-                    value: e,
-                    groupValue: lyricBiasBaseLine,
-                    onChanged: (v) {
-                      setState(() {
-                        lyricBiasBaseLine = v!;
-                        lyricUI.lyricBaseLine = lyricBiasBaseLine;
-                        refreshLyric();
-                      });
-                    }),
+                    Radio<LyricAlign>(
+                        activeColor: Colors.orangeAccent,
+                        value: e,
+                        groupValue: lyricAlign,
+                        onChanged: (v) {
+                          setState(() {
+                            lyricAlign = v!;
+                            lyricUI.lyricAlign = lyricAlign;
+                            refreshLyric();
+                          });
+                        }),
                     Text(e.toString().split(".")[1])
                   ],
                 ),
-              ),
-            ))
+              )),
+            )
+            .toList(),
+      ),
+      buildTitle("选择行基线"),
+      Row(
+        children: LyricBaseLine.values
+            .map((e) => Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Column(
+                      children: [
+                        Radio<LyricBaseLine>(
+                            activeColor: Colors.orangeAccent,
+                            value: e,
+                            groupValue: lyricBiasBaseLine,
+                            onChanged: (v) {
+                              setState(() {
+                                lyricBiasBaseLine = v!;
+                                lyricUI.lyricBaseLine = lyricBiasBaseLine;
+                                refreshLyric();
+                              });
+                            }),
+                        Text(e.toString().split(".")[1])
+                      ],
+                    ),
+                  ),
+                ))
             .toList(),
       ),
     ];

@@ -1,5 +1,4 @@
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/rendering.dart';
+import 'package:flutter/material.dart';
 
 ///lyric UI base
 ///all lyric UI should be extends this file
@@ -57,6 +56,8 @@ abstract class LyricUI {
   bool enableLineAnimation() => true;
 
   bool enableHighlight() => true;
+
+  Color getLyricHightlightColor() => Colors.amber;
 
   @override
   String toString() {

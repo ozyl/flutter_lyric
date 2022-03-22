@@ -92,7 +92,9 @@ class LyricReaderState extends State<LyricsReader>
       lyricPaint.model = widget.model;
       lyricPaint.lyricUI = widget.ui;
       handleSize();
+      selectLine(widget.model?.getCurrentLine(widget.position) ?? 0);
       scrollToPlayLine();
+      handleHighlight();
     }
     if (oldWidget.position != widget.position) {
       selectLine(widget.model?.getCurrentLine(widget.position) ?? 0);
@@ -445,6 +447,7 @@ class LyricReaderState extends State<LyricsReader>
     disposeSelectLineDelay();
     disposeFiling();
     disposeLine();
+    disposeHighlight();
     centerLyricIndexStream.close();
     super.dispose();
   }

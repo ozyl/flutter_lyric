@@ -14,7 +14,7 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
 
   ///高亮混合笔
   var lightBlendPaint = Paint()
-    ..color = Colors.green
+    ..blendMode = BlendMode.srcIn
     ..isAntiAlias = true;
 
   var playingIndex = 0;
@@ -147,8 +147,6 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
     return _drawOtherLyricLine(canvas, drawOffset, element, i);
   }
 
-  Paint gradientPaint = Paint();
-
   ///绘制其他歌词行
   ///返回造成的偏移量值
   double _drawOtherLyricLine(Canvas canvas, double drawOffsetY,
@@ -185,32 +183,35 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
   void drawHighlight(LyricsLineModel model, Canvas canvas, TextPainter? painter,
       Offset offset) {
     if (!model.hasMain) return;
-    var tmpHighlightWidth =_highlightWidth;
+    var tmpHighlightWidth = _highlightWidth;
     model.drawInfo?.inlineDrawList.forEach((element) {
-      if(tmpHighlightWidth<0){
+      if (tmpHighlightWidth < 0) {
         return;
       }
       var currentWidth = 0.0;
-      if(tmpHighlightWidth>=element.width){
+      if (tmpHighlightWidth >= element.width) {
         currentWidth = element.width;
-      }else{
+      } else {
         currentWidth = element.width - (element.width - tmpHighlightWidth);
       }
-      tmpHighlightWidth -=currentWidth;
+      tmpHighlightWidth -= currentWidth;
       canvas.drawRect(
           Rect.fromLTWH(offset.dx + element.offset.dx,
-              offset.dy + element.offset.dy,currentWidth, element.height),
-          gradientPaint..color = Colors.amber);
+              offset.dy + element.offset.dy, currentWidth, element.height+1),
+          lightBlendPaint..color = lyricUI.getLyricHightlightColor());
     });
   }
 
   var _highlightWidth = 0.0;
 
-  set highlightWidth(double value){
+  set highlightWidth(double value) {
     _highlightWidth = value;
     refresh();
   }
+
   double get highlightWidth => _highlightWidth;
+
+  Paint layerPaint = Paint();
 
   ///绘制文本并返回行高度
   ///when [element] not null,then draw gradient
@@ -224,10 +225,13 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
     var isEnableLight = element != null && lyricUI.enableHighlight();
     var offset = Offset(getLineOffsetX(paint), offsetY);
     if (isEnableLight) {
-      drawHighlight(element!, canvas, paint, offset);
+      canvas.saveLayer(Rect.fromLTWH(0, 0, mSize.width,  mSize.height), layerPaint);
     }
     paint.paint(canvas, offset);
-
+    if (isEnableLight) {
+      drawHighlight(element!, canvas, paint, offset);
+      canvas.restore();
+    }
     return lineHeight;
   }
 
