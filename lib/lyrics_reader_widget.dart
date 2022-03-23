@@ -267,29 +267,7 @@ class LyricReaderState extends State<LyricsReader>
   ///default screenWidth,screenWidth
   ///if outside box has limit,then select min value
   handleSize() {
-    mSize = widget.size ?? Size.infinite;
-    if (mSize.width == double.infinity) {
-      mSize = Size(MediaQuery.of(context).size.width, mSize.height);
-    }
-    if (mSize.height == double.infinity) {
-      mSize = Size(mSize.width, mSize.width);
-    }
-    var paddingWidth =
-        (widget.padding?.left ?? 0) + (widget.padding?.right ?? 0);
-    var paddingHeight =
-        (widget.padding?.top ?? 0) + (widget.padding?.bottom ?? 0);
-    mSize = Size(mSize.width - paddingWidth, mSize.height - paddingHeight);
-    if (cacheBox != null) {
-      var selectFun = widget.size == null ? max : min;
-      if (cacheBox!.maxWidth != double.infinity) {
-        mSize =
-            Size(selectFun.call(cacheBox!.maxWidth, mSize.width), mSize.height);
-      }
-      if (cacheBox!.maxHeight != double.infinity) {
-        mSize = Size(
-            mSize.width, selectFun.call(cacheBox!.maxHeight, mSize.height));
-      }
-    }
+    mSize = widget.size ?? Size(cacheBox?.maxWidth??0, cacheBox?.maxHeight??0);
     refreshLyricHeight(mSize);
   }
 
