@@ -216,7 +216,7 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
   ///绘制文本并返回行高度
   ///when [element] not null,then draw gradient
   double drawText(Canvas canvas, TextPainter? paint, double offsetY,
-      [LyricsLineModel? element = null]) {
+      [LyricsLineModel? element]) {
     //paint 理论上不可能为空，预期报错
     var lineHeight = paint!.height;
     if (offsetY < 0 - lineHeight || offsetY > mSize.height) {

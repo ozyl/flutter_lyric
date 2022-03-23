@@ -14,3 +14,5 @@ modify pub config
 highlight(enhanced&normal)
 ## 2.0.2+1
 fix location always on last
+## 2.0.2+2
+pub score

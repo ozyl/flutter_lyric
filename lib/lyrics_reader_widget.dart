@@ -250,7 +250,7 @@ class LyricReaderState extends State<LyricsReader>
           .getPositionForOffset(Offset(offsetX, targetLineHeight))
           .offset;
       var lineText = text.substring(start, end);
-      LyricsLog.logD("获取行内信息：第${element.lineNumber}行，内容：${lineText}");
+      LyricsLog.logD("获取行内信息：第${element.lineNumber}行，内容：$lineText");
       lineList.add(LyricInlineDrawInfo()
         ..raw = lineText
         ..number = element.lineNumber
