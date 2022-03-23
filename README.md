@@ -1,4 +1,7 @@
 # lyric_reader
+[![flutter_lyric](https://img.shields.io/badge/ozyl-flutterLyric-blue.svg)](https://github.com/ozyl/flutter_lyric)
+[![pub package](https://img.shields.io/pub/v/flutter_lyric.svg)](https://pub.dartlang.org/packages/flutter_lyric)
+![GitHub](https://img.shields.io/github/license/ozyl/flutter_lyric.svg)
 
 ## Feature
 
