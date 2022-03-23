@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/lyric_ui/lyric_ui.dart';
@@ -267,7 +266,8 @@ class LyricReaderState extends State<LyricsReader>
   ///default screenWidth,screenWidth
   ///if outside box has limit,then select min value
   handleSize() {
-    mSize = widget.size ?? Size(cacheBox?.maxWidth??0, cacheBox?.maxHeight??0);
+    mSize =
+        widget.size ?? Size(cacheBox?.maxWidth ?? 0, cacheBox?.maxHeight ?? 0);
     refreshLyricHeight(mSize);
   }
 
