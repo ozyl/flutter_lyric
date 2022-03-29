@@ -50,10 +50,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Container(
-          child: buildReaderWidget(),
-          height: MediaQuery.of(context).size.height / 2,
-        ),
+        buildReaderWidget(),
         Expanded(
           child: SingleChildScrollView(
             child: Column(
@@ -80,6 +77,13 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           position: playProgress,
           lyricUi: lyricUI,
           playing: playing,
+          size: Size(double.infinity, MediaQuery.of(context).size.height / 2),
+          emptyBuilder: () => Center(
+            child: Text(
+              "No lyrics",
+              style: lyricUI.getOtherMainTextStyle(),
+            ),
+          ),
           selectLineBuilder: (progress, confirm) {
             return Row(
               children: [

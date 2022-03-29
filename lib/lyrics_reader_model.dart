@@ -117,3 +117,7 @@ class LyricSpanInfo {
 
   int get endIndex => index + length;
 }
+
+extension LyricsReaderModelExt on LyricsReaderModel? {
+  get isNullOrEmpty => this?.lyrics == null || this!.lyrics.isEmpty;
+}
