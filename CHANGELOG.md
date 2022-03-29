@@ -1,3 +1,5 @@
+## [2.0.2+4]
+* fix:highlight NPE
 ## [2.0.2+3]
 * fix:padding lead to overflow clipping
 ## [2.0.2+2]

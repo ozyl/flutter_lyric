@@ -452,9 +452,13 @@ class LyricReaderState extends State<LyricsReader>
   /// enable highlight animation
   /// if playing status is null,no highlight.
   void handleHighlight() {
-    if (!lyricPaint.lyricUI.enableHighlight() || widget.playing == null) return;
-    var line = lyricPaint.model?.lyrics[lyricPaint.playingIndex];
-    if (line == null) return;
+    var lyrics = lyricPaint.model?.lyrics;
+    if (!lyricPaint.lyricUI.enableHighlight() ||
+        widget.playing == null ||
+        lyrics == null ||
+        lyrics.isEmpty ||
+        lyricPaint.playingIndex >= lyrics.length) return;
+    var line = lyrics[lyricPaint.playingIndex];
     var lineDuration = (line.endTime ?? 0) - (line.startTime ?? 0);
     List<TweenSequenceItem> items = [];
     var width = 0.0;
