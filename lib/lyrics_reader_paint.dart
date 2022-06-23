@@ -197,7 +197,7 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
       tmpHighlightWidth -= currentWidth;
       canvas.drawRect(
           Rect.fromLTWH(offset.dx + element.offset.dx,
-              offset.dy + element.offset.dy, currentWidth, element.height + 1),
+              offset.dy + element.offset.dy -2, currentWidth, element.height + 2),
           lightBlendPaint..color = lyricUI.getLyricHightlightColor());
     });
   }
