@@ -25,7 +25,7 @@ class LyricsReaderModel {
   }
 
   double computeScroll(int toLine, int playLine, LyricUI ui) {
-    if (toLine == 0) return 0;
+    if (toLine <= 0) return 0;
     var targetLine = lyrics[toLine];
     double offset = 0;
     if (!targetLine.hasExt && !targetLine.hasMain) {
