@@ -57,6 +57,8 @@ abstract class LyricUI {
 
   bool enableHighlight() => true;
 
+  HighlightDirection getHighlightDirection() => HighlightDirection.LTR;
+
   Color getLyricHightlightColor() => Colors.amber;
 
   @override
@@ -77,6 +79,7 @@ abstract class LyricUI {
 
 ///lyric align enum
 enum LyricAlign { LEFT, CENTER, RIGHT }
+enum HighlightDirection { LTR,RTL }
 
 ///lyric base line enum
 enum LyricBaseLine { MAIN_CENTER, CENTER, EXT_CENTER }

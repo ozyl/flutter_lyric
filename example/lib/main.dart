@@ -113,8 +113,11 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
 
   List<Widget> buildPlayControl() {
     return [
+      Container(
+        height: 20,
+      ),
       Text(
-        "播放进度$sliderProgress",
+        "Progress:$sliderProgress",
         style: TextStyle(
           fontSize: 16,
           color: Colors.green,
@@ -174,7 +177,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                   audioPlayer?.resume();
                 }
               },
-              child: Text("播放歌曲")),
+              child: Text("Play")),
           Container(
             width: 10,
           ),
@@ -182,7 +185,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
               onPressed: () async {
                 audioPlayer?.pause();
               },
-              child: Text("暂停播放")),
+              child: Text("Pause")),
           Container(
             width: 10,
           ),
@@ -191,7 +194,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                 audioPlayer?.stop();
                 audioPlayer = null;
               },
-              child: Text("停止播放")),
+              child: Text("Stop")),
         ],
       ),
     ];
@@ -223,13 +226,14 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   var lineGap = 16.0;
   var inlineGap = 10.0;
   var lyricAlign = LyricAlign.CENTER;
+  var highlightDirection = HighlightDirection.LTR;
 
   List<Widget> buildUIControl() {
     return [
       Container(
         height: 30,
       ),
-      Text("UI控制", style: TextStyle(fontWeight: FontWeight.bold)),
+      Text("UI setting", style: TextStyle(fontWeight: FontWeight.bold)),
       Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -256,7 +260,35 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           Text("use Enhanced lrc")
         ],
       ),
-      buildTitle("歌词padding"),
+      buildTitle("highlight direction"),
+      Row(
+        mainAxisSize: MainAxisSize.min,
+        children: HighlightDirection.values
+            .map(
+              (e) => Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Column(
+                  children: [
+                    Radio<HighlightDirection>(
+                        activeColor: Colors.orangeAccent,
+                        value: e,
+                        groupValue: highlightDirection,
+                        onChanged: (v) {
+                          setState(() {
+                            highlightDirection = v!;
+                            lyricUI.highlightDirection = highlightDirection;
+                            refreshLyric();
+                          });
+                        }),
+                    Text(e.toString().split(".")[1])
+                  ],
+                ),
+              )),
+        )
+            .toList(),
+      ),
+      buildTitle("lyric padding"),
       Slider(
         min: 0,
         max: 100,
@@ -270,7 +302,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           });
         },
       ),
-      buildTitle("主歌词大小"),
+      buildTitle("lyric primary text size"),
       Slider(
         min: 15,
         max: 30,
@@ -290,7 +322,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           });
         },
       ),
-      buildTitle("副歌词大小"),
+      buildTitle("lyric secondary text size"),
       Slider(
         min: 15,
         max: 30,
@@ -310,7 +342,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           });
         },
       ),
-      buildTitle("行间距大小"),
+      buildTitle("lyric line spacing"),
       Slider(
         min: 10,
         max: 80,
@@ -330,7 +362,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           });
         },
       ),
-      buildTitle("主副歌词间距大小"),
+      buildTitle("primary and secondary lyric spacing"),
       Slider(
         min: 10,
         max: 80,
@@ -350,7 +382,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           });
         },
       ),
-      buildTitle("选择行偏移"),
+      buildTitle("select line bias"),
       Slider(
         min: 0.3,
         max: 0.8,
@@ -370,7 +402,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           });
         },
       ),
-      buildTitle("歌词对齐方向"),
+      buildTitle("lyric align"),
       Row(
         mainAxisSize: MainAxisSize.min,
         children: LyricAlign.values
@@ -398,7 +430,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
             )
             .toList(),
       ),
-      buildTitle("选择行基线"),
+      buildTitle("select line base"),
       Row(
         children: LyricBaseLine.values
             .map((e) => Expanded(
