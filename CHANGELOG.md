@@ -1,3 +1,5 @@
+## [2.0.3]
+* [Support setting gradient direction](https://github.com/ozyl/flutter_lyric/issues/14)
 ## [2.0.2+4]
 * fix:highlight NPE
 ## [2.0.2+3]
