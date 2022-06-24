@@ -11,6 +11,7 @@ import 'package:flutter_lyric/lyrics_reader_paint.dart';
 ///[int] is select progress
 ///[VoidCallback] call VoidCallback.call(),select current
 typedef SelectLineBuilder = Widget Function(int, VoidCallback);
+typedef EmptyBuilder = Widget? Function();
 
 ///Lyrics Reader Widget
 ///[size] config widget size,default is screenWidth,screenWidth
@@ -28,6 +29,7 @@ class LyricsReader extends StatefulWidget {
   final EdgeInsets? padding;
   final VoidCallback? onTap;
   final SelectLineBuilder? selectLineBuilder;
+  final EmptyBuilder? emptyBuilder;
 
   @override
   State<StatefulWidget> createState() => LyricReaderState();
@@ -41,6 +43,7 @@ class LyricsReader extends StatefulWidget {
     LyricUI? lyricUi,
     this.onTap,
     this.playing,
+    this.emptyBuilder,
   }) : ui = lyricUi ?? UINetease();
 }
 
@@ -266,8 +269,7 @@ class LyricReaderState extends State<LyricsReader>
   ///default screenWidth,screenWidth
   ///if outside box has limit,then select min value
   handleSize() {
-    mSize =
-        widget.size ?? Size(cacheBox?.maxWidth ?? 0, cacheBox?.maxHeight ?? 0);
+    mSize = Size(cacheBox?.maxWidth ?? 0, cacheBox?.maxHeight ?? 0);
     refreshLyricHeight(mSize);
   }
 
@@ -293,6 +295,9 @@ class LyricReaderState extends State<LyricsReader>
               stream: centerLyricIndexStream.stream,
               builder: (context, snapshot) {
                 var centerIndex = snapshot.data ?? 0;
+                if (lyricPaint.model.isNullOrEmpty) {
+                  return Container();
+                }
                 return widget.selectLineBuilder!.call(
                     lyricPaint.model?.lyrics[centerIndex].startTime ?? 0, () {
                   setSelectLine(false);
@@ -313,11 +318,16 @@ class LyricReaderState extends State<LyricsReader>
     return Container(
       padding: widget.padding ?? EdgeInsets.zero,
       color: Colors.transparent,
+      width: widget.size?.width,
+      height: widget.size?.height,
       child: LayoutBuilder(
         builder: (c, box) {
           if (cacheBox?.toString() != box.toString()) {
             cacheBox = box;
             handleSize();
+          }
+          if (widget.model.isNullOrEmpty) {
+            return widget.emptyBuilder?.call() ?? Container();
           }
           return CustomPaint(
             painter: lyricPaint,
@@ -452,12 +462,11 @@ class LyricReaderState extends State<LyricsReader>
   /// enable highlight animation
   /// if playing status is null,no highlight.
   void handleHighlight() {
-    var lyrics = lyricPaint.model?.lyrics;
-    if (!lyricPaint.lyricUI.enableHighlight() ||
+    var lyrics = widget.model?.lyrics;
+    if (!widget.ui.enableHighlight() ||
         widget.playing == null ||
-        lyrics == null ||
-        lyrics.isEmpty ||
-        lyricPaint.playingIndex >= lyrics.length) return;
+        widget.model.isNullOrEmpty ||
+        lyricPaint.playingIndex >= lyrics!.length) return;
     var line = lyrics[lyricPaint.playingIndex];
     var lineDuration = (line.endTime ?? 0) - (line.startTime ?? 0);
     List<TweenSequenceItem> items = [];
