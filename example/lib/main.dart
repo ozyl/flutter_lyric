@@ -16,7 +16,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
-  AudioCache audioCache = AudioCache();
   AudioPlayer? audioPlayer;
   double sliderProgress = 0;
   int playProgress = 0;
@@ -155,7 +154,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           TextButton(
               onPressed: () async {
                 if (audioPlayer == null) {
-                  audioPlayer = await audioCache.play("music1.mp3");
+                  audioPlayer =  AudioPlayer()..play(AssetSource("music1.mp3"));
                   setState(() {
                     playing = true;
                   });
@@ -164,7 +163,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                       max_value = event.inMilliseconds.toDouble();
                     });
                   });
-                  audioPlayer?.onAudioPositionChanged.listen((Duration event) {
+                  audioPlayer?.onPositionChanged.listen((Duration event) {
                     if (isTap) return;
                     setState(() {
                       sliderProgress = event.inMilliseconds.toDouble();
@@ -174,7 +173,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
 
                   audioPlayer?.onPlayerStateChanged.listen((PlayerState state) {
                     setState(() {
-                      playing = state == PlayerState.PLAYING;
+                      playing = state == PlayerState.playing;
                     });
                   });
                 } else {
