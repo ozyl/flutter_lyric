@@ -213,7 +213,7 @@ class LyricReaderState extends State<LyricsReader>
     }
     linePaint.textAlign = lyricPaint.lyricUI.getLyricTextAligin();
     linePaint
-      ..text = TextSpan(text: text, style: style.copyWith(height: 1))
+      ..text = TextSpan(text: text, style: style)
       ..layout(maxWidth: (size ?? mSize).width);
     return linePaint;
   }
@@ -450,9 +450,8 @@ class LyricReaderState extends State<LyricsReader>
     painter.textAlign = lyricPaint.lyricUI.getLyricTextAligin();
     spanList.forEach((element) {
       painter
-        ..text = TextSpan(
-            text: element.raw,
-            style: ui.getPlayingMainTextStyle().copyWith(height: 1))
+        ..text =
+            TextSpan(text: element.raw, style: ui.getPlayingMainTextStyle())
         ..layout();
       element.drawHeight = painter.height;
       element.drawWidth = painter.width;
