@@ -154,7 +154,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           TextButton(
               onPressed: () async {
                 if (audioPlayer == null) {
-                  audioPlayer =  AudioPlayer()..play(AssetSource("music1.mp3"));
+                  audioPlayer = AudioPlayer()..play(AssetSource("music1.mp3"));
                   setState(() {
                     playing = true;
                   });
@@ -269,7 +269,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
         children: HighlightDirection.values
             .map(
               (e) => Expanded(
-              child: Padding(
+                  child: Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: Column(
                   children: [
@@ -288,7 +288,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
                   ],
                 ),
               )),
-        )
+            )
             .toList(),
       ),
       buildTitle("lyric padding"),

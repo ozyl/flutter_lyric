@@ -1,3 +1,5 @@
+## [2.0.4+1]
+* merged pull#18 [Remove redundant configuration. ](https://github.com/ozyl/flutter_lyric/pull/18) 
 ## [2.0.4]
 * [Support setting gradient direction](https://github.com/ozyl/flutter_lyric/issues/14)
 ## [2.0.3]

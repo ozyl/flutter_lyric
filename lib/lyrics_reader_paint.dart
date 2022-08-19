@@ -196,13 +196,13 @@ class LyricsReaderPaint extends ChangeNotifier implements CustomPainter {
       }
       tmpHighlightWidth -= currentWidth;
       var dx = offset.dx + element.offset.dx;
-      if(lyricUI.getHighlightDirection()==HighlightDirection.RTL){
+      if (lyricUI.getHighlightDirection() == HighlightDirection.RTL) {
         dx += element.width;
         dx -= currentWidth;
       }
       canvas.drawRect(
-          Rect.fromLTWH(dx,
-              offset.dy + element.offset.dy -2, currentWidth, element.height + 2),
+          Rect.fromLTWH(dx, offset.dy + element.offset.dy - 2, currentWidth,
+              element.height + 2),
           lightBlendPaint..color = lyricUI.getLyricHightlightColor());
     });
   }

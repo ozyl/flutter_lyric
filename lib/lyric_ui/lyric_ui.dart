@@ -79,7 +79,8 @@ abstract class LyricUI {
 
 ///lyric align enum
 enum LyricAlign { LEFT, CENTER, RIGHT }
-enum HighlightDirection { LTR,RTL }
+
+enum HighlightDirection { LTR, RTL }
 
 ///lyric base line enum
 enum LyricBaseLine { MAIN_CENTER, CENTER, EXT_CENTER }
