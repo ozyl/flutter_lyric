@@ -1,3 +1,5 @@
+## [2.0.4+2]
+* fix package not showing support for Android, iOS, Windows, Linux & macOS on pub.dev. 
 ## [2.0.4+1]
 * merged pull#18 [Remove redundant configuration. ](https://github.com/ozyl/flutter_lyric/pull/18) 
 ## [2.0.4]
