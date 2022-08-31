@@ -75,6 +75,7 @@ class LyricReaderState extends State<LyricsReader>
       ..centerLyricIndexChangeCall = (index) {
         centerLyricIndexStream.add(index);
       };
+    selectLineAndScrollToPlayLine(widget.ui.initAnimation());
   }
 
   var isShowSelectLineWidget = false;
@@ -101,13 +102,7 @@ class LyricReaderState extends State<LyricsReader>
       handleHighlight();
     }
     if (oldWidget.position != widget.position) {
-      selectLine(widget.model?.getCurrentLine(widget.position) ?? 0);
-      if (cacheLine != lyricPaint.playingIndex) {
-        lyricPaint.highlightWidth = 0;
-        cacheLine = lyricPaint.playingIndex;
-        handleHighlight();
-        scrollToPlayLine();
-      }
+      selectLineAndScrollToPlayLine();
     }
     if (oldWidget.playing != widget.playing) {
       if (widget.playing == null) {
@@ -122,11 +117,21 @@ class LyricReaderState extends State<LyricsReader>
     }
   }
 
+  void selectLineAndScrollToPlayLine([bool animation=true]) {
+    selectLine(widget.model?.getCurrentLine(widget.position) ?? 0);
+    if (cacheLine != lyricPaint.playingIndex) {
+      lyricPaint.highlightWidth = 0;
+      cacheLine = lyricPaint.playingIndex;
+      handleHighlight();
+      scrollToPlayLine(animation);
+    }
+  }
+
   ///select current play line
-  void scrollToPlayLine() {
+  void scrollToPlayLine([bool animation=true]) {
     safeLyricOffset(widget.model?.computeScroll(
             lyricPaint.playingIndex, lyricPaint.playingIndex, widget.ui) ??
-        0);
+        0,animation);
   }
 
   void selectLine(int line) {
@@ -134,14 +139,14 @@ class LyricReaderState extends State<LyricsReader>
   }
 
   ///update progress after verify
-  safeLyricOffset(double offset) {
+  safeLyricOffset(double offset,[bool animation=true]) {
     if (isDrag || isWait) return;
     if (_flingController?.isAnimating == true) return;
-    realUpdateOffset(offset);
+    realUpdateOffset(offset,animation);
   }
 
-  void realUpdateOffset(double offset) {
-    if (widget.ui.enableLineAnimation()) {
+  void realUpdateOffset(double offset,[bool animation=true]) {
+    if (widget.ui.enableLineAnimation() && animation) {
       animationOffset(offset);
     } else {
       lyricPaint.lyricOffset = offset;

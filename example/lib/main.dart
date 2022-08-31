@@ -17,8 +17,8 @@ class MyApp extends StatefulWidget {
 
 class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   AudioPlayer? audioPlayer;
-  double sliderProgress = 0;
-  int playProgress = 0;
+  double sliderProgress = 111658;
+  int playProgress = 111658;
   double max_value = 211658;
   bool isTap = false;
 
@@ -144,7 +144,9 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           },
           onChangeEnd: (double value) {
             isTap = false;
-            playProgress = value.toInt();
+            setState(() {
+              playProgress = value.toInt();
+            });
             audioPlayer?.seek(Duration(milliseconds: value.toInt()));
           },
         ),

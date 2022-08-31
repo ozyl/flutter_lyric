@@ -57,6 +57,9 @@ abstract class LyricUI {
 
   bool enableHighlight() => true;
 
+  //init progress animation scroll to position
+  bool initAnimation() => false;
+
   HighlightDirection getHighlightDirection() => HighlightDirection.LTR;
 
   Color getLyricHightlightColor() => Colors.amber;
