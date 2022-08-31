@@ -1,6 +1,6 @@
 name: flutter_lyric
 description: A music lyric reader that supports highlight, translation lyrics, smooth animation, custom UI & parsing.
-version: 2.0.4+3
+version: 2.0.4+4
 homepage: https://github.com/ozyl/flutter_lyric
 email: zylvip@163.com
 

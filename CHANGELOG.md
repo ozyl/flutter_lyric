@@ -1,9 +1,11 @@
+## [2.0.4+4]
+* fix:position has error on init.
 ## [2.0.4+3]
-* fix:position not work on init.
+* fix:position not work on init. has error,please use [2.0.4+4]
 ## [2.0.4+2]
-* fix package not showing support for Android, iOS, Windows, Linux & macOS on pub.dev. 
+* fix package not showing support for Android, iOS, Windows, Linux & macOS on pub.dev.
 ## [2.0.4+1]
-* merged pull#18 [Remove redundant configuration. ](https://github.com/ozyl/flutter_lyric/pull/18) 
+* merged pull#18 [Remove redundant configuration. ](https://github.com/ozyl/flutter_lyric/pull/18)
 ## [2.0.4]
 * [Support setting gradient direction](https://github.com/ozyl/flutter_lyric/issues/14)
 ## [2.0.3]

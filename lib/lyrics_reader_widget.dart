@@ -75,7 +75,9 @@ class LyricReaderState extends State<LyricsReader>
       ..centerLyricIndexChangeCall = (index) {
         centerLyricIndexStream.add(index);
       };
-    selectLineAndScrollToPlayLine(widget.ui.initAnimation());
+    WidgetsBinding.instance?.addPostFrameCallback((timeStamp) {
+      selectLineAndScrollToPlayLine(widget.ui.initAnimation());
+    });
   }
 
   var isShowSelectLineWidget = false;
