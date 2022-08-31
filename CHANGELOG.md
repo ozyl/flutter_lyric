@@ -1,3 +1,5 @@
+## [2.0.4+5]
+* Avoid Warning messages
 ## [2.0.4+4]
 * fix:position has error on init.
 ## [2.0.4+3]
