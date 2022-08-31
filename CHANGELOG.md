@@ -1,3 +1,5 @@
+## [2.0.4+3]
+* fix:position not work on init.
 ## [2.0.4+2]
 * fix package not showing support for Android, iOS, Windows, Linux & macOS on pub.dev. 
 ## [2.0.4+1]

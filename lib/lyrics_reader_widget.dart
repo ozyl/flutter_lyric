@@ -117,7 +117,7 @@ class LyricReaderState extends State<LyricsReader>
     }
   }
 
-  void selectLineAndScrollToPlayLine([bool animation=true]) {
+  void selectLineAndScrollToPlayLine([bool animation = true]) {
     selectLine(widget.model?.getCurrentLine(widget.position) ?? 0);
     if (cacheLine != lyricPaint.playingIndex) {
       lyricPaint.highlightWidth = 0;
@@ -128,10 +128,12 @@ class LyricReaderState extends State<LyricsReader>
   }
 
   ///select current play line
-  void scrollToPlayLine([bool animation=true]) {
-    safeLyricOffset(widget.model?.computeScroll(
-            lyricPaint.playingIndex, lyricPaint.playingIndex, widget.ui) ??
-        0,animation);
+  void scrollToPlayLine([bool animation = true]) {
+    safeLyricOffset(
+        widget.model?.computeScroll(
+                lyricPaint.playingIndex, lyricPaint.playingIndex, widget.ui) ??
+            0,
+        animation);
   }
 
   void selectLine(int line) {
@@ -139,13 +141,13 @@ class LyricReaderState extends State<LyricsReader>
   }
 
   ///update progress after verify
-  safeLyricOffset(double offset,[bool animation=true]) {
+  safeLyricOffset(double offset, [bool animation = true]) {
     if (isDrag || isWait) return;
     if (_flingController?.isAnimating == true) return;
-    realUpdateOffset(offset,animation);
+    realUpdateOffset(offset, animation);
   }
 
-  void realUpdateOffset(double offset,[bool animation=true]) {
+  void realUpdateOffset(double offset, [bool animation = true]) {
     if (widget.ui.enableLineAnimation() && animation) {
       animationOffset(offset);
     } else {

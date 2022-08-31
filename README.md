@@ -15,9 +15,10 @@
 
 🇨🇳china[example on web](https://zylvip.gitee.io/flutter_lyric)
 
-2.download example apk:[example.apk](https://bpp.dfabu.com/q6JR)
+2.download example apk:
 
- <img src="https://raw.githubusercontent.com/ozyl/flutter_lyric/master/doc/downloadQr.png" height="120" width="120"/>
+[Android](https://raw.githubusercontent.com/ozyl/flutter_lyric/master/example_release/example.apk)
+[MacOS](https://raw.githubusercontent.com/ozyl/flutter_lyric/master/example_release/example_mac.zip)
 
 3.run example
 
