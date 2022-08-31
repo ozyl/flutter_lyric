@@ -17,8 +17,8 @@
 
 2.download example apk:
 
-[Android](https://raw.githubusercontent.com/ozyl/flutter_lyric/master/example_release/example.apk)
-[MacOS](https://raw.githubusercontent.com/ozyl/flutter_lyric/master/example_release/example_mac.zip)
+[Android](https://raw.githubusercontent.com/ozyl/flutter_lyric/master/doc/example_release/example.apk)
+[MacOS](https://raw.githubusercontent.com/ozyl/flutter_lyric/master/doc/example_release/example_mac.zip)
 
 3.run example
 
