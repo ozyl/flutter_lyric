@@ -496,11 +496,9 @@ class LyricReaderState extends State<LyricsReader>
       }
       var begin = width += (ratio * element.drawWidth);
       firstBegin ??= begin;
-      if (element.duration > 0) {
-        items.add(TweenSequenceItem(
-            tween: Tween(begin: begin, end: width += element.drawWidth),
-            weight: element.duration.toDouble()));
-      }
+      items.add(TweenSequenceItem(
+          tween: Tween(begin: begin, end: width += element.drawWidth),
+          weight: element.duration.toDouble()));
     }
     disposeHighlight();
     if (items.isEmpty) {
