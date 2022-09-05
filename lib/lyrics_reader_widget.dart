@@ -476,15 +476,18 @@ class LyricReaderState extends State<LyricsReader>
         widget.model.isNullOrEmpty ||
         lyricPaint.playingIndex >= lyrics!.length) return;
     var line = lyrics[lyricPaint.playingIndex];
-    var lineDuration = (line.endTime ?? 0) - (line.startTime ?? 0);
     List<TweenSequenceItem> items = [];
     var width = 0.0;
-    var duration = 0;
     double? firstBegin;
-    for (LyricSpanInfo element in (line.spanList ?? line.defaultSpanList)) {
+    final spans = line.spanList ?? line.defaultSpanList;
+    final blankTime = (line.startTime ?? 0) - widget.position;
+    if (blankTime > 0) {
+      items.add(TweenSequenceItem(
+          tween: Tween(begin: 0.0, end: 0.0), weight: blankTime.toDouble()));
+    }
+    for (LyricSpanInfo element in spans) {
       if (widget.position >= element.end) {
         width += element.drawWidth;
-        duration += element.duration;
         continue;
       }
       var ratio = (widget.position - element.start) / element.duration;
@@ -492,20 +495,22 @@ class LyricReaderState extends State<LyricsReader>
         ratio = 0;
       }
       var begin = width += (ratio * element.drawWidth);
-      if (firstBegin == null) {
-        firstBegin = begin;
+      firstBegin ??= begin;
+      if (element.duration > 0) {
+        items.add(TweenSequenceItem(
+            tween: Tween(begin: begin, end: width += element.drawWidth),
+            weight: element.duration.toDouble()));
       }
-      items.add(TweenSequenceItem(
-          tween: Tween(begin: begin, end: width += element.drawWidth),
-          weight: element.duration / (lineDuration - duration)));
     }
     disposeHighlight();
     if (items.isEmpty) {
       lyricPaint.highlightWidth = width;
       return;
     }
+    final highlightDuration = (line.endTime ?? 0) - widget.position;
     _highlightController = AnimationController(
-      duration: Duration(milliseconds: lineDuration - duration),
+      duration:
+          Duration(milliseconds: highlightDuration > 0 ? highlightDuration : 0),
       vsync: this,
     );
     var animate = TweenSequence(items)
@@ -516,10 +521,9 @@ class LyricReaderState extends State<LyricsReader>
           disposeHighlight();
         }
       });
-    animate
-      ..addListener(() {
-        lyricPaint.highlightWidth = animate.value;
-      });
+    animate.addListener(() {
+      lyricPaint.highlightWidth = animate.value;
+    });
     if (widget.playing == true) {
       _highlightController?.forward();
     } else {
