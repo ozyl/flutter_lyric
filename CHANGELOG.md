@@ -1,3 +1,5 @@
+## [2.0.4+6]
+* Fix animation before first line starts
 ## [2.0.4+5]
 * Avoid Warning messages
 ## [2.0.4+4]
