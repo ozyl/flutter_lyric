@@ -55,6 +55,8 @@ class LyricsReaderModel {
 
 ///lyric line model
 class LyricsLineModel {
+
+  late bool editing;
   String? mainText;
   String? extText;
   int? startTime;

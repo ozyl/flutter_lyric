@@ -10,7 +10,7 @@ import 'package:flutter_lyric/lyrics_reader_paint.dart';
 ///SelectLineBuilder
 ///[int] is select progress
 ///[VoidCallback] call VoidCallback.call(),select current
-typedef SelectLineBuilder = Widget Function(int, VoidCallback);
+typedef SelectLineBuilder = Widget Function(int, LyricsLineModel?,VoidCallback);
 typedef EmptyBuilder = Widget? Function();
 
 ///Lyrics Reader Widget
@@ -21,6 +21,7 @@ typedef EmptyBuilder = Widget? Function();
 ///[playing] if playing status is null,no highlight.
 ///
 class LyricsReader extends StatefulWidget {
+
   final Size? size;
   final LyricsReaderModel? model;
   final LyricUI ui;
@@ -31,8 +32,14 @@ class LyricsReader extends StatefulWidget {
   final SelectLineBuilder? selectLineBuilder;
   final EmptyBuilder? emptyBuilder;
 
+  static LyricReaderState currentState = LyricReaderState();
+
+  static  LyricReaderState getCurrentState(){
+    return currentState;
+  }
+
   @override
-  State<StatefulWidget> createState() => LyricReaderState();
+  State<StatefulWidget> createState() => currentState;
 
   LyricsReader({
     this.position = 0,
@@ -55,7 +62,7 @@ class LyricReaderState extends State<LyricsReader>
   AnimationController? _flingController;
   AnimationController? _highlightController;
   AnimationController? _lineController;
-
+  bool editing = false;
   var mSize = Size.infinite;
 
   var isDrag = false;
@@ -77,6 +84,12 @@ class LyricReaderState extends State<LyricsReader>
       };
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
       selectLineAndScrollToPlayLine(widget.ui.initAnimation());
+    });
+  }
+
+  setEditState(bool isEditing){
+    setState(() {
+      editing = isEditing;
     });
   }
 
@@ -284,42 +297,84 @@ class LyricReaderState extends State<LyricsReader>
 
   @override
   Widget build(BuildContext context) {
-    return buildTouchReader(Stack(
-      children: [
-        buildReaderWidget(),
-        if (widget.selectLineBuilder != null &&
-            isShowSelectLineWidget &&
-            lyricPaint.centerY != 0)
-          buildSelectLineWidget()
-      ],
+    return buildTouchReader(
+        Stack(
+          alignment: Alignment.center,
+          children:
+          [
+            Opacity(
+                opacity: editing ? 0.3  : 1.0,
+                child: buildReaderWidget(),
+            ),
+
+            if (widget.selectLineBuilder != null &&
+                  isShowSelectLineWidget &&
+                  lyricPaint.centerY != 0)
+                buildSelectLineWidget()
+          ],
     ));
   }
 
-  Positioned buildSelectLineWidget() {
-    return Positioned(
-      child: Container(
-        height: lyricPaint.centerY * 2,
-        child: Center(
-          child: StreamBuilder<int>(
-              stream: centerLyricIndexStream.stream,
-              builder: (context, snapshot) {
-                var centerIndex = snapshot.data ?? 0;
-                if (lyricPaint.model.isNullOrEmpty) {
-                  return Container();
-                }
-                return widget.selectLineBuilder!.call(
-                    lyricPaint.model?.lyrics[centerIndex].startTime ?? 0, () {
+  Container buildSelectLineWidget() {
+
+    return Container(
+      height: lyricPaint.centerY * 2,
+      width: 360,
+      alignment:Alignment.center,
+      child: Center(
+        child: StreamBuilder<int>(
+            stream: centerLyricIndexStream.stream,
+            builder: (context, snapshot) {
+              var centerIndex = snapshot.data ?? 0;
+              if (lyricPaint.model.isNullOrEmpty) {
+                return Container();
+              }
+              LyricsLineModel? selectLineModel = lyricPaint.model?.lyrics[centerIndex];
+              selectLineModel?.editing = editing;
+              return widget.selectLineBuilder!.call(
+                  lyricPaint.model?.lyrics[centerIndex].startTime ?? 0, selectLineModel , () {
+
+                if(!editing) {
                   setSelectLine(false);
-                  disposeFiling();
-                  disposeSelectLineDelay();
-                });
-              }),
-        ),
+                }
+                disposeFiling();
+                disposeSelectLineDelay();
+              });
+            }),
       ),
-      top: (widget.padding?.top ?? 0),
-      left: 0,
-      right: 0,
     );
+
+
+    // return Positioned(
+    //   child: Container(
+    //     height: lyricPaint.centerY * 2,
+    //     alignment:Alignment.center,
+    //     child: Center(
+    //       child: StreamBuilder<int>(
+    //           stream: centerLyricIndexStream.stream,
+    //           builder: (context, snapshot) {
+    //             var centerIndex = snapshot.data ?? 0;
+    //             if (lyricPaint.model.isNullOrEmpty) {
+    //               return Container();
+    //             }
+    //             LyricsLineModel? selectLineModel = lyricPaint.model?.lyrics[centerIndex];
+    //             selectLineModel?.editing = editing;
+    //             return widget.selectLineBuilder!.call(
+    //                 lyricPaint.model?.lyrics[centerIndex].startTime ?? 0, selectLineModel , () {
+    //
+    //                   if(!editing) {
+    //                     setSelectLine(false);
+    //                   }
+    //                   disposeFiling();
+    //                   disposeSelectLineDelay();
+    //             });
+    //           }),
+    //     ),
+    //   ),
+    //   top: (widget.padding?.top ?? 0),
+    //   left: editing?30:0,
+    //   right: editing?30:0,
+    // );
   }
 
   ///build reader widget
@@ -351,11 +406,15 @@ class LyricReaderState extends State<LyricsReader>
   Widget buildTouchReader(child) {
     return GestureDetector(
       onVerticalDragEnd: handleDragEnd,
+      onLongPress:  () {
+        editing = true;
+      },
       onTap: widget.onTap,
       onTapDown: (event) {
         disposeSelectLineDelay();
         disposeFiling();
         isDrag = true;
+        //editing = false;
       },
       onTapUp: (event) {
         isDrag = false;
@@ -405,7 +464,7 @@ class LyricReaderState extends State<LyricsReader>
     isWait = true;
     var waitSecond = 0;
     waitTimer?.cancel();
-    waitTimer = new Timer.periodic(Duration(milliseconds: 100), (timer) {
+    waitTimer = Timer.periodic(Duration(milliseconds: 100), (timer) {
       waitSecond += 100;
       if (waitSecond == 400) {
         realUpdateOffset(widget.model?.computeScroll(
@@ -417,8 +476,11 @@ class LyricReaderState extends State<LyricsReader>
       }
       if (waitSecond == 3000) {
         disposeSelectLineDelay();
-        setSelectLine(false);
-        scrollToPlayLine();
+        if(!editing) {
+          setSelectLine(false);
+          scrollToPlayLine();
+        }
+
       }
     });
   }
