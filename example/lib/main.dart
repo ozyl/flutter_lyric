@@ -21,7 +21,8 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
   int playProgress = 111658;
   double max_value = 211658;
   bool isTap = false;
-
+  static const mp3Asset = 'music.mp3';
+  static const bgImageAsset = 'assets/bg.jpeg';
   bool useEnhancedLrc = false;
   var lyricModel = LyricsModelBuilder.create()
       .bindLyricToMain(normalLyric)
@@ -83,37 +84,72 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
               style: lyricUI.getOtherMainTextStyle(),
             ),
           ),
-          selectLineBuilder: (progress, confirm) {
-            return Row(
-              children: [
-                IconButton(
-                    onPressed: () {
-                      LyricsLog.logD("点击事件");
-                      confirm.call();
-                      setState(() {
-                        audioPlayer?.seek(Duration(milliseconds: progress));
-                      });
+          selectLineBuilder: (progress, lyricsLineModel,confirm) {
+
+            if(lyricsLineModel != null){
+              _textEditingController.text = lyricsLineModel.mainText!;
+            }
+
+            return (lyricsLineModel != null && lyricsLineModel.editing)
+                ? EditableText(
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    focusNode: _focusNode,
+                    autofocus: true,
+                    cursorColor: const Color.fromRGBO(49,252,18, 1),
+                    controller: _textEditingController,
+                    onSubmitted: (value) {
+                      //setState(() {
+                        _focusNode.unfocus();
+                        lyricsLineModel.mainText =  value;
+                        lyricsLineModel.editing = false;
+                        LyricsReader.getCurrentState().handleSize();
+                        LyricsReader.getCurrentState().setEditState(false);
+                      //});
+                      //FocusScope.of(context).requestFocus(_focusNode);
                     },
-                    icon: Icon(Icons.play_arrow, color: Colors.green)),
-                Expanded(
-                  child: Container(
-                    decoration: BoxDecoration(color: Colors.green),
-                    height: 1,
-                    width: double.infinity,
-                  ),
-                ),
-                Text(
-                  progress.toString(),
-                  style: TextStyle(color: Colors.green),
-                )
-              ],
+                  onTapOutside: (e){
+                    _focusNode.unfocus();
+                    LyricsReader.getCurrentState().setEditState(false);
+                    },
+                    // onChanged: (value){
+                    //   setState(() {
+                    //     lyricsLineModel.mainText =  value;
+                    //   });
+                    // },
+                    style:  const TextStyle(), backgroundCursorColor: Colors.grey,)
+
+                : Row(
+                  children: [
+                    IconButton(
+                        onPressed: () {
+                          LyricsLog.logD("点击事件");
+                          confirm.call();
+                          setState(() {
+                            audioPlayer?.seek(Duration(milliseconds: progress));
+                          });
+                        },
+                        icon: Icon(Icons.play_arrow, color: Colors.green)),
+                    Expanded(
+                      child: Container(
+                        decoration: BoxDecoration(color: Colors.green),
+                        height: 1,
+                        width: double.infinity,
+                      ),
+                    ),
+                    Text(
+                      progress.toString(),
+                      style: TextStyle(color: Colors.green),
+                    )
+                  ],
             );
           },
         )
       ],
     );
   }
-
+  final _textEditingController = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
   List<Widget> buildPlayControl() {
     return [
       Container(
@@ -156,7 +192,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
           TextButton(
               onPressed: () async {
                 if (audioPlayer == null) {
-                  audioPlayer = AudioPlayer()..play(AssetSource("music1.mp3"));
+                  audioPlayer = AudioPlayer()..play(AssetSource(mp3Asset));
                   setState(() {
                     playing = true;
                   });
@@ -211,7 +247,7 @@ class _MyAppState extends State<MyApp> with SingleTickerProviderStateMixin {
     return [
       Positioned.fill(
         child: Image.asset(
-          "bg.jpeg",
+          bgImageAsset,
           fit: BoxFit.cover,
         ),
       ),
