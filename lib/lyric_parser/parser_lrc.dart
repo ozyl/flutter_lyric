@@ -4,11 +4,11 @@ import 'package:flutter_lyric/lyrics_reader_model.dart';
 
 ///normal lyric parser
 class ParserLrc extends LyricsParse {
-  RegExp pattern = RegExp(r"\[\d{2}:\d{2}.\d{2,3}]");
+  RegExp pattern = RegExp(r"\[\d{2,3}:\d{2}.\d{2,3}]");
 
   ///匹配普通格式内容
   ///eg:[00:03.47] -> 00:03.47
-  RegExp valuePattern = RegExp(r"\[(\d{2}:\d{2}.\d{2,3})\]");
+  RegExp valuePattern = RegExp(r"\[(\d{2,3}:\d{2}.\d{2,3})\]");
 
   ParserLrc(String lyric) : super(lyric);
 
