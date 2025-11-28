@@ -1,3 +1,6 @@
+## [3.0.0+1]
+* update plugin config
+
 ## [3.0.0]
 * breaking: Rebuilt `LyricView` and the scrolling/highlight mixins so everything is driven by a single `LyricController`
 * feat: Added translation & word-by-word rendering, touch scrubbing, anchor selection, and tap callbacks
