@@ -21,7 +21,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  LyricStyle style = LyricStyles.default1;
   final player = AudioPlayer();
 
   ValueNotifier<Duration> progressNotifier = ValueNotifier(Duration.zero);
@@ -99,8 +98,8 @@ class _MyAppState extends State<MyApp> {
                             builder: (context, value, child) {
                               final items = [
                                 ShowLyric(
+                                  initStyle: LyricStyles.default2,
                                   initController: (controller) {
-                                    controller.setStyle(LyricStyles.default2);
                                     controller.setOnTapLineCallback(
                                       (duration) async => {
                                         controller.stopSelection(),
@@ -124,6 +123,7 @@ class _MyAppState extends State<MyApp> {
                                       ],
                                 ),
                                 ShowLyric(
+                                  initStyle: LyricStyles.default1,
                                   progress: value,
                                   beforeLyricBuilder:
                                       (lyricController, style) => [
@@ -146,8 +146,7 @@ class _MyAppState extends State<MyApp> {
                                       ],
                                 ),
                                 ShowLyric(
-                                  initController: (p0) =>
-                                      p0.setStyle(LyricStyles.single),
+                                  initStyle: LyricStyles.single,
                                   progress: value,
                                 ),
                               ];

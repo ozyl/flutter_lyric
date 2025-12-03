@@ -21,16 +21,44 @@ mixin LyricLayoutMixin<T extends StatefulWidget> on State<T> {
   void dispose() {
     controller.activeIndexNotifiter.removeListener(updateTotalHeight);
     controller.lyricNotifier.removeListener(computeLyricLayout);
-    controller.styleNotifier.removeListener(computeLyricLayout);
-
     PaintingBinding.instance.systemFonts.removeListener(systemFontsDidChange);
     super.dispose();
+  }
+
+  onStyleChange() {
+    final l = layout;
+    if (l == null) {
+      computeLyricLayout();
+      return;
+    }
+    final oldStyle = l.style;
+    final newStyle = style;
+    if (oldStyle == newStyle) return;
+    layout = l.copyWith(newStyle);
+    final comparison = oldStyle.compareTo(newStyle);
+    if (comparison == RenderComparison.identical) {
+      return;
+    }
+    if (comparison == RenderComparison.layout) {
+      computeLyricLayout();
+      return;
+    }
+    if (comparison == RenderComparison.paint) {
+      layout?.metrics.forEach((element) {
+        element.textPainter.text =
+            TextSpan(text: element.line.text, style: newStyle.textStyle);
+        element.activeTextPainter.text =
+            TextSpan(text: element.line.text, style: newStyle.activeStyle);
+        element.translationTextPainter.text = TextSpan(
+            text: element.line.translation, style: newStyle.translationStyle);
+      });
+      setState(() {});
+    }
   }
 
   @override
   void initState() {
     PaintingBinding.instance.systemFonts.addListener(systemFontsDidChange);
-    controller.styleNotifier.addListener(computeLyricLayout);
     controller.activeIndexNotifiter.addListener(() {
       scheduleMicrotask(() {
         updateTotalHeight();

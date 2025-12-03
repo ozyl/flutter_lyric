@@ -166,7 +166,7 @@ class EditStyle extends StatelessWidget {
                           onChanged: (value) {
                             if (value == null) return;
 
-                            style = style.copyWith(crossAxisAlignment: value);
+                            style = style.copyWith(contentAlignment: value);
                           },
                         ),
                       ],

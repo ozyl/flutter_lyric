@@ -7,6 +7,7 @@ import 'package:flutter_lyric/widgets/mixins/lyric_line_highlight.dart';
 import 'package:flutter_lyric/widgets/mixins/lyric_line_switch_mixin.dart';
 
 import '../core/lyric_style.dart';
+import '../core/lyric_styles.dart';
 import '../render/lyric_layout.dart';
 import 'mixins/lyric_layout_mixin.dart';
 import 'mixins/lyric_mask_mixin.dart';
@@ -17,11 +18,13 @@ class LyricView extends StatefulWidget {
   final LyricController controller;
   final double? width;
   final double? height;
+  final LyricStyle? style;
   const LyricView({
     Key? key,
     required this.controller,
     this.width,
     this.height,
+    this.style,
   }) : super(key: key);
 
   @override
@@ -42,8 +45,7 @@ class _LyricViewState extends State<LyricView>
   LyricController get controller => widget.controller;
 
   @override
-  LyricStyle get style => controller.styleNotifier.value;
-
+  LyricStyle get style => widget.style ?? LyricStyles.default1;
   // 布局相关状态
   @override
   LyricLayout? layout;
@@ -60,6 +62,14 @@ class _LyricViewState extends State<LyricView>
     super.onLayoutChange(layout);
     updateHighlightWidth();
     updateScrollY(animate: false);
+  }
+
+  @override
+  void didUpdateWidget(covariant LyricView oldWidget) {
+    if (widget.style != oldWidget.style) {
+      onStyleChange();
+    }
+    super.didUpdateWidget(oldWidget);
   }
 
   @override

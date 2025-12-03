@@ -178,7 +178,7 @@ class LyricStyle {
     TextStyle? translationStyle,
     TextAlign? textAlign,
     double? lineGap,
-    CrossAxisAlignment? crossAxisAlignment,
+    CrossAxisAlignment? contentAlignment,
     double? translationLineGap,
     EdgeInsets? contentPadding,
     double? anchorPosition,
@@ -215,7 +215,7 @@ class LyricStyle {
       translationStyle: translationStyle ?? this.translationStyle,
       lineTextAlign: textAlign ?? lineTextAlign,
       lineGap: lineGap ?? this.lineGap,
-      contentAlignment: crossAxisAlignment ?? contentAlignment,
+      contentAlignment: contentAlignment ?? this.contentAlignment,
       translationLineGap: translationLineGap ?? this.translationLineGap,
       contentPadding: contentPadding ?? this.contentPadding,
       selectionAnchorPosition: anchorPosition ?? selectionAnchorPosition,
@@ -269,6 +269,31 @@ class LyricStyle {
     return activeAnchorPosition <= 1
         ? viewHeight * activeAnchorPosition
         : activeAnchorPosition;
+  }
+
+  RenderComparison compareTo(LyricStyle other) {
+    if (identical(this, other)) {
+      return RenderComparison.identical;
+    }
+    if (lineGap != other.lineGap ||
+        contentPadding != other.contentPadding ||
+        translationLineGap != other.translationLineGap) {
+      return RenderComparison.layout;
+    }
+    final styles = [textStyle, translationStyle, activeStyle];
+    final otherStyles = [
+      other.textStyle,
+      other.translationStyle,
+      other.activeStyle
+    ];
+    for (var i = 0; i < styles.length; i++) {
+      final element = styles[i];
+      final otherElement = otherStyles[i];
+      if (element.compareTo(otherElement) != RenderComparison.identical) {
+        return element.compareTo(otherElement);
+      }
+    }
+    return RenderComparison.identical;
   }
 }
 

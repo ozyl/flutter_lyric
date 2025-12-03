@@ -2,8 +2,6 @@ import 'dart:ui' show VoidCallback;
 
 import 'package:flutter/widgets.dart' show ValueNotifier;
 import 'package:flutter_lyric/core/lyric_parse.dart';
-import 'package:flutter_lyric/core/lyric_style.dart';
-import 'package:flutter_lyric/core/lyric_styles.dart';
 
 import 'lyric_model.dart';
 
@@ -18,8 +16,6 @@ enum LyricEvent {
 class LyricController {
   // 歌词
   final ValueNotifier<LyricModel?> lyricNotifier = ValueNotifier(null);
-  final ValueNotifier<LyricStyle> styleNotifier =
-      ValueNotifier(LyricStyles.default1);
   // 当前播放行
   final ValueNotifier<int> activeIndexNotifiter = ValueNotifier(0);
   // 锚点位置
@@ -102,10 +98,6 @@ class LyricController {
     lyricOffset = lyricModel.offset;
   }
 
-  setStyle(LyricStyle style) {
-    styleNotifier.value = style;
-  }
-
   setProgress(Duration progress) {
     progressNotifier.value = progress;
     final playIndex = getIndexByProgress(
@@ -143,7 +135,6 @@ class LyricController {
     _eventCallbacks.clear();
     lyricNotifier.dispose();
     progressNotifier.dispose();
-    styleNotifier.dispose();
     activeIndexNotifiter.dispose();
     anchorPositionNotifier.dispose();
     selectedIndexNotifier.dispose();

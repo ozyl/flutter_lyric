@@ -9,6 +9,16 @@ class LyricLayout {
   final double selectionAnchorPosition;
   final double activeAnchorPosition;
 
+  LyricLayout copyWith(LyricStyle style) {
+    return LyricLayout._internal(
+      metrics,
+      style,
+      viewSize,
+      selectionAnchorPosition,
+      activeAnchorPosition,
+    );
+  }
+
   @override
   String toString() {
     return 'LyricLayout(metrics: $metrics, style: $style)';
