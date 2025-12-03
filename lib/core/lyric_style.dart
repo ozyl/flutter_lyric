@@ -258,14 +258,14 @@ class LyricStyle {
   }
 
   /// 计算选中锚点位置 / Calculate selection anchor position
-  calcSelectionAnchorPosition(double viewHeight) {
+  double calcSelectionAnchorPosition(double viewHeight) {
     return selectionAnchorPosition <= 1
         ? viewHeight * selectionAnchorPosition
         : selectionAnchorPosition;
   }
 
   /// 计算播放锚点位置 / Calculate active anchor position
-  calcActiveAnchorPosition(double viewHeight) {
+  double calcActiveAnchorPosition(double viewHeight) {
     return activeAnchorPosition <= 1
         ? viewHeight * activeAnchorPosition
         : activeAnchorPosition;
