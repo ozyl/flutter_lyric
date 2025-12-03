@@ -192,7 +192,6 @@ class LyricPainter extends CustomPainter {
     }
 
     final transX = calcTranslateX(painter.width);
-
     if (index == switchState.enterIndex) {
       final enterAnimationValue = switchState.enterAnimationValue;
       final fromHeight = metric.height;

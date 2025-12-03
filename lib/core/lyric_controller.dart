@@ -11,6 +11,7 @@ enum LyricEvent {
   resumeSelectedLine,
   playSwitchAnimation,
   tapLine,
+  reset,
 }
 
 class LyricController {
@@ -93,6 +94,8 @@ class LyricController {
   }
 
   loadLyricModel(LyricModel lyricModel) {
+    notifyEvent(LyricEvent.stopSelection);
+    notifyEvent(LyricEvent.reset);
     lyricNotifier.value = lyricModel;
     activeIndexNotifiter.value = getIndexByProgress(progressNotifier.value);
     lyricOffset = lyricModel.offset;

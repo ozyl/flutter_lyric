@@ -31,10 +31,18 @@ mixin LyricLineSwitchMixin<T extends StatefulWidget>
     super.initState();
     controller.registerEvent(
         LyricEvent.playSwitchAnimation, onPlaySwitchAnimation);
+    controller.registerEvent(LyricEvent.reset, _reset);
     _exitAnimationController = AnimationController(vsync: this);
     _enterAnimationController = AnimationController(vsync: this);
     _enterIndex = _exitIndex;
     controller.activeIndexNotifiter.addListener(onActiveIndexChange);
+  }
+
+  _reset(_) {
+    _exitIndex = -1;
+    _enterIndex = -1;
+    _exitAnimationController.value = 1.0;
+    _enterAnimationController.value = 1.0;
   }
 
   void onPlaySwitchAnimation(_) {
@@ -75,8 +83,9 @@ mixin LyricLineSwitchMixin<T extends StatefulWidget>
 
   onActiveIndexChange() {
     _exitIndex = _enterIndex;
+    final old = _enterIndex;
     _enterIndex = controller.activeIndexNotifiter.value;
-    if (_enterIndex != _exitIndex) {
+    if (_enterIndex != _exitIndex && old != -1) {
       _exitAnimationController.reset();
       _enterAnimationController.reset();
       _exitAnimationController.duration = style.switchExitDuration;
@@ -90,6 +99,7 @@ mixin LyricLineSwitchMixin<T extends StatefulWidget>
 
   @override
   void dispose() {
+    controller.unregisterEvent(LyricEvent.reset, _reset);
     _exitAnimationController.dispose();
     _enterAnimationController.dispose();
     controller.activeIndexNotifiter.removeListener(onActiveIndexChange);

@@ -118,15 +118,23 @@ mixin LyricLayoutMixin<T extends StatefulWidget> on State<T> {
           ) ??
           0;
     });
-    final currentLine = layout?.metrics[controller.selectedIndexNotifier.value];
-    controller.selectedMaxWidth = max(
-      (isHighlight ? currentLine?.activeWidth : currentLine?.width) ?? 0,
-      currentLine?.translationWidth ?? 0,
-    );
     controller.anchorAlignOffsetY = layout?.anchorAdjustmentOffsetY(
           controller.selectedIndexNotifier.value,
           controller.activeIndexNotifiter.value,
         ) ??
         0;
+    if (layout?.metrics.isEmpty ?? true) {
+      return;
+    }
+    if (controller.selectedIndexNotifier.value < 0 ||
+        controller.selectedIndexNotifier.value >=
+            (layout?.metrics.length ?? 0)) {
+      return;
+    }
+    final currentLine = layout?.metrics[controller.selectedIndexNotifier.value];
+    controller.selectedMaxWidth = max(
+      (isHighlight ? currentLine?.activeWidth : currentLine?.width) ?? 0,
+      currentLine?.translationWidth ?? 0,
+    );
   }
 }

@@ -59,6 +59,7 @@ class LyricLayout {
     double? lineHeight,
     MainAxisAlignment? alignment,
   ) {
+    if (metrics.isEmpty || index < 0 || index >= metrics.length) return 0;
     final lh = lineHeight ?? getLineHeight(isHighlight, index);
     final hasTranslation = metrics[index].translationHeight > 0;
     final align = hasTranslation
@@ -80,6 +81,7 @@ class LyricLayout {
   }
 
   double getLineHeight(bool isHighlight, int index) {
+    if (metrics.isEmpty || index < 0 || index >= metrics.length) return 0;
     final mainHeight =
         isHighlight ? metrics[index].activeHeight : metrics[index].height;
     if (metrics[index].translationHeight == 0) {

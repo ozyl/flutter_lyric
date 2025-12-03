@@ -58,16 +58,17 @@ mixin LyricTouchMixin<T extends StatefulWidget>
   void setDragTranslationY(double value, {bool animate = false}) {
     final l = layout;
     if (l == null) return;
-    final anchorHeight = layout!.selectionAnchorPosition;
+    final anchorPosition = layout!.selectionAnchorPosition;
     final anchorOffset = layout!.anchorOffsetY(
         0,
         0 == controller.activeIndexNotifiter.value,
         null,
         style.selectionAlignment);
-    double minValue = anchorHeight < style.contentPadding.top
-        ? -anchorHeight + anchorOffset
+    double minValue = anchorPosition < style.contentPadding.top ||
+            contentHeight < anchorPosition
+        ? -anchorPosition + anchorOffset
         : -style.contentPadding.top;
-    final maxValue = contentHeight - style.contentPadding.top - anchorHeight;
+    final maxValue = contentHeight - style.contentPadding.top - anchorPosition;
     final newValue = value.clamp(minValue, maxValue);
 
     if (newValue != dragScrollY) {
@@ -119,7 +120,7 @@ mixin LyricTouchMixin<T extends StatefulWidget>
 
   /// 包装触摸组件
   Widget wrapTouchWidget(BuildContext context, Widget child) {
-    if (style.disableTouchEvent) {
+    if (style.disableTouchEvent || (layout?.metrics.isEmpty ?? true)) {
       return child;
     }
     return GestureDetector(

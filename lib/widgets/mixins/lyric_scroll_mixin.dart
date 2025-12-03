@@ -37,7 +37,14 @@ mixin LyricScrollMixin<T extends StatefulWidget>
             }
             scrollY = value;
           });
+    controller.registerEvent(LyricEvent.reset, _reset);
     controller.activeIndexNotifiter.addListener(playIndexListener);
+  }
+
+  _reset(_) {
+    if (_scrollController.isAnimating) {
+      _scrollController.stop();
+    }
   }
 
   double get scrollY => scrollYNotifier.value;
@@ -133,6 +140,7 @@ mixin LyricScrollMixin<T extends StatefulWidget>
   @override
   void dispose() {
     _scrollController.dispose();
+    controller.unregisterEvent(LyricEvent.reset, _reset);
     controller.activeIndexNotifiter.removeListener(playIndexListener);
     super.dispose();
   }
