@@ -1,3 +1,10 @@
+## [3.0.1]
+* feat: Changed style management—now pass styles via the `LyricView.style` parameter instead of using `LyricController.setStyle()`
+* perf: Added `LyricStyle.compareTo()` for smarter/faster detection of when relayout or repaint is needed on style changes
+* fix: In `LyricStyle.copyWith()`, renamed the parameter `crossAxisAlignment` to the correct `contentAlignment`
+* breaking: Removed `LyricController.styleNotifier` and the `setStyle()` method
+* fix: Fixed an issue when switching lyrics
+
 ## [3.0.0+1]
 * update plugin config
 

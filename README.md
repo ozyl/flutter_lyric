@@ -79,6 +79,7 @@ void dispose() {
 Widget build(BuildContext context) {
   return LyricView(
     controller: controller,
+    style: LyricStyles.default1, // 可选，默认使用 LyricStyles.default1
     width: double.infinity,
     height: 320,
   );
@@ -99,15 +100,15 @@ audioPlayer.positionStream.listen(controller.setProgress);
 
 **中文**
 - `LyricController.loadLyric` / `loadLyricModel`：加载文本或自定义模型
-- `setStyle`：传入 `LyricStyle` 或 `LyricStyles` 预设，控制字体、行距、渐隐、滚动曲线等
+- `LyricView.style`：通过 `LyricView` 的 `style` 参数传入 `LyricStyle` 或 `LyricStyles` 预设，控制字体、行距、渐隐、滚动曲线等
 - `lyricOffset`：以毫秒为单位整体校准歌词时间
-- `styleNotifier`、`activeIndexNotifier` 等 ValueNotifier 可与外部 UI 联动
+- `activeIndexNotifier` 等 ValueNotifier 可与外部 UI 联动
 
 **English**
 - `LyricController.loadLyric` / `loadLyricModel`: load plain text or custom lyric models
-- `setStyle`: apply a `LyricStyle` or presets from `LyricStyles` to tweak typography, spacing, fade range, and scroll curves
+- `LyricView.style`: pass a `LyricStyle` or presets from `LyricStyles` via the `style` parameter to tweak typography, spacing, fade range, and scroll curves
 - `lyricOffset`: shift the entire script forward/backward in milliseconds for sync
-- Exposed `ValueNotifier`s (`styleNotifier`, `activeIndexNotifier`, …) let you coordinate external UI
+- Exposed `ValueNotifier`s (`activeIndexNotifier`, …) let you coordinate external UI
 
 ## 🎨 LyricStyle 参数 · LyricStyle Options
 
@@ -171,6 +172,7 @@ controller.loadLyricModel(customModel);
 - 旧的 `changeUI`/`LyricUI` 扩展点合并进 `LyricStyle`
 - 触摸/滚动回调改由 `LyricEvent` 与 `setOnTapLineCallback` 统一管理
 - 逐字高亮、翻译行与遮罩开箱即用，无需再自定义 painter
+- **样式控制方式变更**：从 `controller.setStyle()` 改为通过 `LyricView` 的 `style` 参数传入，更符合 Flutter widget 设计模式，并支持性能优化的样式变更检测
 
 **English**
 
@@ -178,6 +180,7 @@ controller.loadLyricModel(customModel);
 - Previous `changeUI`/`LyricUI` hooks are replaced by the more capable `LyricStyle`
 - Touch/scroll callbacks now flow through `LyricEvent` and `setOnTapLineCallback`
 - Word-level highlight, translation rows, and masks are built in—custom painters are rarely needed
+- **Style control change**: Use `LyricView.style` parameter instead of `controller.setStyle()`, aligning with Flutter widget patterns and enabling optimized style change detection
 
 ## 🧪 示例与调试 · Examples & Debugging
 

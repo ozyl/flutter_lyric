@@ -41,7 +41,7 @@ mixin LyricScrollMixin<T extends StatefulWidget>
     controller.activeIndexNotifiter.addListener(playIndexListener);
   }
 
-  _reset(_) {
+  void _reset(_) {
     if (_scrollController.isAnimating) {
       _scrollController.stop();
     }
@@ -72,7 +72,7 @@ mixin LyricScrollMixin<T extends StatefulWidget>
     return duration;
   }
 
-  calcActiveLineOffsetY() {
+  double calcActiveLineOffsetY() {
     final l = layout;
     if (l == null) {
       return 0;

@@ -81,11 +81,11 @@ class LyricController {
     };
   }
 
-  unregisterEvent(LyricEvent event, Function(dynamic) callback) {
+  void unregisterEvent(LyricEvent event, Function(dynamic) callback) {
     _eventCallbacks[event]?.remove(callback);
   }
 
-  loadLyric(String lyric, {String? translationLyric}) {
+  void loadLyric(String lyric, {String? translationLyric}) {
     final lyricModel = LyricParse.parse(
       lyric,
       translationLyric: translationLyric,
@@ -93,7 +93,7 @@ class LyricController {
     loadLyricModel(lyricModel);
   }
 
-  loadLyricModel(LyricModel lyricModel) {
+  void loadLyricModel(LyricModel lyricModel) {
     notifyEvent(LyricEvent.stopSelection);
     notifyEvent(LyricEvent.reset);
     lyricNotifier.value = lyricModel;
