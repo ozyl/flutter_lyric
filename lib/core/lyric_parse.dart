@@ -9,7 +9,7 @@ abstract class LyricParse {
     String? translationLyric,
     List<LyricParse>? parsers,
   }) {
-    return (parsers ?? [LrcParser(), QrcParser()])
+    return (parsers ?? [LrcParser(), QrcParser(), FallbackParser()])
         .firstWhere((parser) => parser.isMatch(mainLyric))
         .parseRaw(mainLyric, translationLyric: translationLyric);
   }
@@ -220,5 +220,17 @@ class QrcParser extends LyricParse {
     return Pair(
         first: Duration(milliseconds: int.parse(start)),
         second: Duration(milliseconds: int.parse(duration)));
+  }
+}
+
+class FallbackParser extends LyricParse {
+  @override
+  bool isMatch(String mainLyric) {
+    return true;
+  }
+
+  @override
+  LyricModel parseRaw(String mainLyric, {String? translationLyric}) {
+    return LyricModel(lines: []);
   }
 }

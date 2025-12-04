@@ -1,3 +1,6 @@
+## [3.0.2]
+* feat: add FallbackParser to provide safe handling for unsupported lyric formats
+
 ## [3.0.1]
 * feat: Changed style management—now pass styles via the `LyricView.style` parameter instead of using `LyricController.setStyle()`
 * perf: Added `LyricStyle.compareTo()` for smarter/faster detection of when relayout or repaint is needed on style changes
