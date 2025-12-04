@@ -92,7 +92,7 @@ class LyricLayout {
         style.translationLineGap;
   }
 
-  double contentHeight(highlightIndex) {
+  double contentHeight(int highlightIndex) {
     double totalHeight = 0;
     for (var i = 0; i < metrics.length; i++) {
       totalHeight += getLineHeight(i == highlightIndex, i);
