@@ -165,6 +165,32 @@ final customModel = CustomParser().parseRaw(rawLyric);
 controller.loadLyricModel(customModel);
 ```
 
+## 🔄 LRC 转 QRC 格式 · LRC to QRC Conversion
+
+**中文**  
+使用 `LrcToQrcUtil.convert` 可以将 LRC 格式转换为 QRC 格式，以实现逐字高亮的渐变效果。转换时需要指定最后一行歌词的时长（`lastDuration`）或歌曲总时长（`totalDuration`）。
+
+**English**  
+Use `LrcToQrcUtil.convert` to convert LRC format to QRC format for word-by-word gradient highlighting. You must provide either the last line duration (`lastDuration`) or the total song duration (`totalDuration`).
+
+```dart
+import 'package:flutter_lyric/utils/lyric_lrc_to_qrc.dart';
+
+// 方式一：指定最后一行时长
+final qrcLyric = LrcToQrcUtil.convert(
+  lrcString,
+  lastDuration: Duration(seconds: 3), // 最后一行歌词持续 3 秒
+);
+
+// 方式二：传入歌曲总时长
+final qrcLyric = LrcToQrcUtil.convert(
+  lrcString,
+  totalDuration: Duration(minutes: 3, seconds: 45), // 歌曲总时长
+);
+
+controller.loadLyric(qrcLyric);
+```
+
 ## 🔁 从 2.x 升级到 3.0.0 · Upgrade Guide
 
 **中文**
