@@ -107,8 +107,9 @@ class LyricPainter extends CustomPainter {
     Size size,
     List<ui.LineMetrics> metrics, {
     double highlightTotalWidth = 0,
+    double animationOpacity = 1.0,
   }) {
-    if (highlightTotalWidth < 0) return;
+    if (highlightTotalWidth < 0 || animationOpacity <= 0) return;
     final activeHighlightColor = layout.style.activeHighlightColor;
     final activeHighlightGradient = layout.style.activeHighlightGradient;
     if (activeHighlightColor == null && activeHighlightGradient == null) {
@@ -118,7 +119,7 @@ class LyricPainter extends CustomPainter {
     final highlightFullMode = highlightTotalWidth == double.infinity;
     var accWidth = 0.0;
 
-    final Paint paint = Paint()..blendMode = BlendMode.srcIn;
+    final Paint paint = Paint()..blendMode = BlendMode.srcATop;
 
     for (var line in metrics) {
       double lineDrawWidth;
@@ -149,11 +150,22 @@ class LyricPainter extends CustomPainter {
 
       final grad = style.activeHighlightGradient ??
           LinearGradient(colors: [activeHighlightColor!, activeHighlightColor]);
+      
+      final opGrad = LinearGradient(
+        colors: grad.colors.map((c) => c.withOpacity((c.opacity * animationOpacity).clamp(0.0, 1.0))).toList(),
+        stops: grad.stops,
+        begin: grad.begin,
+        end: grad.end,
+        tileMode: grad.tileMode,
+        transform: grad.transform,
+      );
+
       handleExtraFadeWidth() {
         if (extraFadeWidth <= 0) return 0;
+        final baseEndColor = style.activeStyle.color ?? grad.colors.last;
         paint.shader = LinearGradient(colors: [
-          grad.colors.last,
-          style.activeStyle.color ?? grad.colors.last
+          opGrad.colors.last,
+          baseEndColor.withOpacity((baseEndColor.opacity * animationOpacity).clamp(0.0, 1.0))
         ]).createShader(Rect.fromLTWH(
             rect.left + rect.width, rect.top, extraFadeWidth, rect.height));
         canvas.drawRect(
@@ -163,7 +175,7 @@ class LyricPainter extends CustomPainter {
       }
 
       handleExtraFadeWidth();
-      paint.shader = grad.createShader(
+      paint.shader = opGrad.createShader(
           Rect.fromLTWH(rect.left, rect.top, rect.width, rect.height));
       canvas.drawRect(rect, paint);
       accWidth += line.width;
@@ -226,14 +238,34 @@ class LyricPainter extends CustomPainter {
     bool isInAnchorArea,
   ) {
     final isActive = playIndex == index;
-    TextStyle replaceTextStyle(TextStyle style, Color color) {
+    TextStyle replaceTextStyle(TextStyle style, Color selectColor,
+        {Color? customColor}) {
       return style.copyWith(
-          color: isSelecting && isInAnchorArea ? color : style.color);
+          color: isSelecting && isInAnchorArea
+              ? selectColor
+              : (customColor ?? style.color));
     }
 
     final painter = isActive ? metric.activeTextPainter : metric.textPainter;
     // 获取原来的 TextSpan
     final oldSpan = painter.text!;
+
+    double highlightOpacity = 1.0;
+    Color? animatedMainColor;
+    if (style.enableSwitchAnimation) {
+      final normalColor = layout.style.textStyle.color;
+      final activeColor = layout.style.activeStyle.color;
+
+      if (index == switchState.enterIndex) {
+        animatedMainColor = Color.lerp(
+            normalColor, activeColor, switchState.enterAnimationValue);
+        highlightOpacity = switchState.enterAnimationValue;
+      } else if (index == switchState.exitIndex) {
+        animatedMainColor = Color.lerp(
+            activeColor, normalColor, switchState.exitAnimationValue);
+        highlightOpacity = 1.0 - switchState.exitAnimationValue;
+      }
+    }
 
     // 创建一个新的 TextSpan，只修改 color
     painter.text = TextSpan(
@@ -241,6 +273,7 @@ class LyricPainter extends CustomPainter {
       style: replaceTextStyle(
         oldSpan.style!,
         layout.style.selectedColor,
+        customColor: animatedMainColor,
       ),
     );
     canvas.save();
@@ -264,24 +297,44 @@ class LyricPainter extends CustomPainter {
       drawHighlight(canvas, size, metric.activeMetrics,
           highlightTotalWidth: metric.words?.isNotEmpty == true
               ? activeHighlightWidth
-              : double.infinity);
+              : double.infinity,
+          animationOpacity: highlightOpacity);
     } else if (index == switchState.exitIndex &&
         switchState.exitAnimationValue < 1 &&
         style.enableSwitchAnimation) {
       drawHighlight(canvas, size, metric.metrics,
-          highlightTotalWidth: double.infinity);
+          highlightTotalWidth: double.infinity,
+          animationOpacity: highlightOpacity);
     }
     canvas.restore();
     final mainHeight = isActive ? metric.activeHeight : metric.height;
     if (metric.line.translation?.isNotEmpty == true) {
       final tPainter = metric.translationTextPainter;
-      final tOldSpan = tPainter.text;
+      final tOldSpan = tPainter.text!;
+
+      Color? animatedTranslationColor;
+      if (style.enableSwitchAnimation) {
+        final normalTransColor =
+            tOldSpan.style!.color ?? layout.style.translationStyle.color;
+        final activeTransColor =
+            layout.style.translationActiveColor ?? normalTransColor;
+
+        if (index == switchState.enterIndex) {
+          animatedTranslationColor = Color.lerp(normalTransColor,
+              activeTransColor, switchState.enterAnimationValue);
+        } else if (index == switchState.exitIndex) {
+          animatedTranslationColor = Color.lerp(activeTransColor,
+              normalTransColor, switchState.exitAnimationValue);
+        }
+      }
+
       tPainter.text = TextSpan(
         text: metric.line.translation,
         style: replaceTextStyle(
           tPainter.text!.style!.copyWith(
               color: isActive ? layout.style.translationActiveColor : null),
           layout.style.selectedTranslationColor,
+          customColor: animatedTranslationColor,
         ),
       );
       canvas.save();
