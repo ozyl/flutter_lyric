@@ -82,8 +82,7 @@ class LyricPainter extends CustomPainter {
         break;
       }
       if (totalTranslateY > 0) {
-        showLineRects[i] = Rect.fromLTWH(
-            0, totalTranslateY - lineHeight,
+        showLineRects[i] = Rect.fromLTWH(0, totalTranslateY - lineHeight,
             size.width + contentHorizontal, lineHeight);
         if (!activeLineOnly || isActive) {
           drawLine(canvas, metrics[i], size, i, selectedIndex == i);
@@ -168,8 +167,8 @@ class LyricPainter extends CustomPainter {
       if (extraFadeWidth > 0) {
         final fadeRect = Rect.fromLTWH(
             rect.left + rect.width, rect.top, extraFadeWidth, rect.height);
-        paint.shader = LinearGradient(
-            colors: [opColors.last, fadeEndColor!]).createShader(fadeRect);
+        paint.shader = LinearGradient(colors: [opColors.last, fadeEndColor!])
+            .createShader(fadeRect);
         canvas.drawRect(fadeRect, paint);
       }
 
@@ -234,8 +233,8 @@ class LyricPainter extends CustomPainter {
     return 0;
   }
 
-  Color _resolveColor(TextStyle baseStyle, Color selectColor,
-      bool isSelecting, bool isInAnchorArea, Color? customColor) {
+  Color _resolveColor(TextStyle baseStyle, Color selectColor, bool isSelecting,
+      bool isInAnchorArea, Color? customColor) {
     if (isSelecting && isInAnchorArea) return selectColor;
     return customColor ?? baseStyle.color!;
   }
@@ -331,8 +330,9 @@ class LyricPainter extends CustomPainter {
         }
       }
 
-      final tBaseColor =
-          isActive ? (layoutStyle.translationActiveColor ?? tOldSpan.style!.color) : tOldSpan.style!.color;
+      final tBaseColor = isActive
+          ? (layoutStyle.translationActiveColor ?? tOldSpan.style!.color)
+          : tOldSpan.style!.color;
       final tTargetColor = _resolveColor(
           tOldSpan.style!.copyWith(color: tBaseColor),
           layoutStyle.selectedTranslationColor,
