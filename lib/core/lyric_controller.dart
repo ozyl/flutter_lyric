@@ -101,7 +101,7 @@ class LyricController {
     lyricOffset = lyricModel.offset;
   }
 
-  void setProgress(Duration progress) {
+  setProgress(Duration progress) {
     progressNotifier.value = progress;
     final playIndex = getIndexByProgress(
       progress,
