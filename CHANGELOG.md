@@ -1,3 +1,8 @@
+## [3.0.3]
+* fix: Skip exit animation on the first line switch to avoid unwanted transition
+* feat: `enableSwitchAnimation` now also animates text color transitions for both main and translation lyrics [#40](https://github.com/ozyl/flutter_lyric/pull/40) by [HBWuChang](https://github.com/HBWuChang)
+* perf: Optimize `LyricPainter` — cache style lookups, reduce redundant object creation, only rebuild TextSpan when color changes
+
 ## [3.0.2]
 * feat: add FallbackParser to provide safe handling for unsupported lyric formats
 
