@@ -59,8 +59,10 @@ mixin LyricLineHightlightMixin<T extends StatefulWidget>
     final currentProgress = controller.progressNotifier.value +
         Duration(milliseconds: controller.lyricOffset);
 
-    line.words?.forEach((wordMetric) {
-      if (currentProgress >= wordMetric.word.start) {
+    final words = line.words;
+    if (words != null) {
+      for (final wordMetric in words) {
+        if (currentProgress < wordMetric.word.start) break;
         newWidth += wordMetric.highlightWidth;
         final endTime = (wordMetric.word.end ?? Duration.zero);
         if (currentProgress < endTime) {
@@ -74,7 +76,7 @@ mixin LyricLineHightlightMixin<T extends StatefulWidget>
           }
         }
       }
-    });
+    }
     _animateWidth(newWidth);
   }
 
