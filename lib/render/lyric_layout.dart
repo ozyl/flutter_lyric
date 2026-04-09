@@ -128,6 +128,7 @@ class LyricLayout {
       line.words;
       final words = _calcWordMetrics(line.line, line.textPainter,
           line.activeTextPainter, line.translationTextPainter);
+      final allCharRects = words?.expand((w) => w.charRects).toList();
       lineMetrics.add(line.copyWith(
         height: line.textPainter.height,
         width: line.textPainter.width,
@@ -140,6 +141,7 @@ class LyricLayout {
         activeMetrics: line.activeTextPainter.computeLineMetrics(),
         metrics: line.textPainter.computeLineMetrics(),
         words: words,
+        allCharRects: allCharRects,
       ));
     }
     return LyricLayout._internal(
@@ -161,7 +163,6 @@ class LyricLayout {
       // 从当前位置开始查找单词，确保按顺序匹配
       final wordStart = line.text.indexOf(word.text, currentOffset);
       if (wordStart == -1) {
-        // 如果找不到单词，使用默认值
         return WordMetrics(
           word: word,
           width: 0,
@@ -171,10 +172,8 @@ class LyricLayout {
         );
       }
       final wordEnd = wordStart + word.text.length;
-      // 更新当前位置，为下一个单词查找做准备
       currentOffset = wordEnd;
 
-      // 使用 textPainter 获取普通样式的文本框
       final textSelection =
           TextSelection(baseOffset: wordStart, extentOffset: wordEnd);
       final textBoxes = textPainter.getBoxesForSelection(textSelection);
@@ -197,11 +196,19 @@ class LyricLayout {
       final width = tWidth;
       final wordHeight = tHeight;
 
-      // 使用 activeTextPainter 获取高亮样式的文本框
       final activeBoxes = activeTextPainter.getBoxesForSelection(textSelection);
       calcWordSize(activeBoxes);
       final highlightWidth = tWidth;
       final wordHighlightHeight = tHeight;
+
+      final charRects = <Rect>[];
+      for (int j = wordStart; j < wordEnd; j++) {
+        final charSel = TextSelection(baseOffset: j, extentOffset: j + 1);
+        final charBoxes = activeTextPainter.getBoxesForSelection(charSel);
+        if (charBoxes.isNotEmpty) {
+          charRects.add(charBoxes.first.toRect());
+        }
+      }
 
       return WordMetrics(
         word: word,
@@ -209,6 +216,7 @@ class LyricLayout {
         height: wordHeight,
         highlightWidth: highlightWidth,
         highlightHeight: wordHighlightHeight,
+        charRects: charRects,
       );
     }).toList();
     return words;
@@ -262,6 +270,7 @@ class LyricLayout {
       }
       final words = _calcWordMetrics(
           line, textPainter, activeTextPainter, translationTextPainter);
+      final allCharRects = words?.expand((w) => w.charRects).toList();
       lineMetrics.add(
         LineMetrics(
           line: line,
@@ -274,6 +283,7 @@ class LyricLayout {
           activeMetrics: activceLineMetrics,
           metrics: metrics,
           words: words,
+          allCharRects: allCharRects,
           textPainter: textPainter,
           activeTextPainter: activeTextPainter,
           translationTextPainter: translationTextPainter,

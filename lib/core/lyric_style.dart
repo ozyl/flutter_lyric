@@ -121,6 +121,20 @@ class LyricStyle {
   /// 切换退出动画曲线 / Switch exit animation curve
   final Curve switchExitCurve;
 
+  // ==================== 逐字动画 Char Animation ====================
+
+  /// 是否启用逐字动画 / Enable per-character wave animation
+  final bool enableCharAnimation;
+
+  /// 高斯波 k 值，越大波越窄 / Gaussian wave width (larger = narrower wave)
+  final double charAnimationWaveK;
+
+  /// 最大缩放量（如 0.15 表示最大 1.15x）/ Max scale amount (e.g. 0.15 means 1.15x)
+  final double charAnimationMaxScale;
+
+  /// 最大 Y 偏移（负值=向上）/ Max Y offset (negative = upward)
+  final double charAnimationMaxOffsetY;
+
   // ==================== 其他功能 Other Features ====================
 
   /// 是否只绘制播放行 / Whether to only draw the active line
@@ -165,6 +179,10 @@ class LyricStyle {
     this.activeHighlightGradient,
     MainAxisAlignment? activeAlignment,
     this.activeLineOnly = false,
+    this.enableCharAnimation = false,
+    this.charAnimationWaveK = 2.0,
+    this.charAnimationMaxScale = 0.15,
+    this.charAnimationMaxOffsetY = -4.0,
   })  : activeAnchorPosition = activeAnchorPosition ?? selectionAnchorPosition,
         activeAlignment = activeAlignment ?? selectionAlignment,
         assert(selectionAutoResumeDuration < activeAutoResumeDuration,
@@ -205,6 +223,10 @@ class LyricStyle {
     Object? activeHighlightGradient = _unset,
     bool? activeLineOnly,
     bool? disableTouchEvent,
+    bool? enableCharAnimation,
+    double? charAnimationWaveK,
+    double? charAnimationMaxScale,
+    double? charAnimationMaxOffsetY,
   }) {
     return LyricStyle(
       activeHighlightColor: activeHighlightColor == _unset
@@ -254,6 +276,12 @@ class LyricStyle {
           : activeHighlightGradient as LinearGradient?,
       activeLineOnly: activeLineOnly ?? this.activeLineOnly,
       disableTouchEvent: disableTouchEvent ?? this.disableTouchEvent,
+      enableCharAnimation: enableCharAnimation ?? this.enableCharAnimation,
+      charAnimationWaveK: charAnimationWaveK ?? this.charAnimationWaveK,
+      charAnimationMaxScale:
+          charAnimationMaxScale ?? this.charAnimationMaxScale,
+      charAnimationMaxOffsetY:
+          charAnimationMaxOffsetY ?? this.charAnimationMaxOffsetY,
     );
   }
 

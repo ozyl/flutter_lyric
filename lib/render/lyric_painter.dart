@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -13,6 +14,7 @@ class LyricPainter extends CustomPainter {
   final int playIndex;
   final double scrollY;
   final double activeHighlightWidth;
+  final double charAnimationCenter;
   final LyricLineSwitchState switchState;
   final bool isSelecting;
   final LyricStyle style;
@@ -29,6 +31,7 @@ class LyricPainter extends CustomPainter {
     required this.scrollY,
     required this.onAnchorIndexChange,
     required this.activeHighlightWidth,
+    this.charAnimationCenter = -1.0,
     required this.switchState,
     required this.isSelecting,
     required this.onShowLineRectsChange,
@@ -98,92 +101,229 @@ class LyricPainter extends CustomPainter {
     onShowLineRectsChange(showLineRects);
   }
 
+  /// 计算单字矩形与逐行推进高亮区域的交集（与 [drawHighlight] 条带逻辑一致）。
+  Rect? _highlightRectForChar(
+    Rect charRect,
+    List<ui.LineMetrics> metrics,
+    double highlightTotalWidth,
+  ) {
+    if (highlightTotalWidth < 0) return null;
+    if (highlightTotalWidth == double.infinity) {
+      return charRect;
+    }
+    var accWidth = 0.0;
+    for (final line in metrics) {
+      final top = line.baseline - line.ascent;
+      final bottom = top + line.ascent + line.descent;
+      final overlapsV = charRect.top < bottom && charRect.bottom > top;
+      if (!overlapsV) {
+        accWidth += line.width;
+        continue;
+      }
+      final remain = highlightTotalWidth - accWidth;
+      if (remain <= 0) return null;
+      final lineDrawWidth = remain < line.width ? remain : line.width;
+      final hlLeft = line.left;
+      final hlRight = line.left + lineDrawWidth;
+      final ix1 = math.max(charRect.left, hlLeft);
+      final ix2 = math.min(charRect.right, hlRight);
+      if (ix2 <= ix1) return null;
+      final iy1 = math.max(charRect.top, top);
+      final iy2 = math.min(charRect.bottom, bottom);
+      if (iy2 <= iy1) return null;
+      return Rect.fromLTRB(ix1, iy1, ix2, iy2);
+    }
+    return null;
+  }
+
   drawHighlight(
     Canvas canvas,
     Size size,
     List<ui.LineMetrics> metrics, {
     double highlightTotalWidth = 0,
     double animationOpacity = 1.0,
+    LineMetrics? charAnimLineMetric,
+    TextPainter? charAnimPainter,
+    double charAnimCenter = -1.0,
   }) {
     if (highlightTotalWidth < 0 || animationOpacity <= 0) return;
+
     final activeHighlightColor = layout.style.activeHighlightColor;
     final activeHighlightGradient = layout.style.activeHighlightGradient;
-    if (activeHighlightColor == null && activeHighlightGradient == null) {
-      return;
-    }
+    final hasHighlight =
+        activeHighlightColor != null || activeHighlightGradient != null;
 
-    final highlightFullMode = highlightTotalWidth == double.infinity;
-    var accWidth = 0.0;
+    final hasCharAnim = style.enableCharAnimation &&
+        charAnimLineMetric?.allCharRects?.isNotEmpty == true &&
+        charAnimPainter != null &&
+        charAnimCenter >= 0;
+
+    if (!hasHighlight && !hasCharAnim) return;
 
     final Paint paint = Paint()
       ..blendMode =
           animationOpacity < 1.0 ? BlendMode.srcATop : BlendMode.srcIn;
 
-    final grad = activeHighlightGradient ??
-        LinearGradient(colors: [activeHighlightColor!, activeHighlightColor]);
-
-    final opColors = animationOpacity < 1.0
-        ? grad.colors
-            .map((c) =>
-                c.withValues(alpha: (c.a * animationOpacity).clamp(0.0, 1.0)))
-            .toList()
-        : grad.colors;
-
-    final extraFadeWidth = style.activeHighlightExtraFadeWidth;
+    LinearGradient? grad;
+    List<Color>? opColors;
     Color? fadeEndColor;
-    if (extraFadeWidth > 0) {
-      final baseEndColor = style.activeStyle.color ?? grad.colors.last;
-      fadeEndColor = baseEndColor.withValues(
-          alpha: (baseEndColor.a * animationOpacity).clamp(0.0, 1.0));
-    }
-
     const pad = 2;
 
-    for (var line in metrics) {
-      double lineDrawWidth;
-      bool isFullLine;
+    if (hasHighlight) {
+      grad = activeHighlightGradient ??
+          LinearGradient(
+              colors: [activeHighlightColor!, activeHighlightColor]);
+      opColors = animationOpacity < 1.0
+          ? grad.colors
+              .map((c) =>
+                  c.withValues(alpha: (c.a * animationOpacity).clamp(0.0, 1.0)))
+              .toList()
+          : grad.colors;
 
-      if (highlightFullMode) {
-        isFullLine = true;
-        lineDrawWidth = line.width;
-      } else {
-        final remain = highlightTotalWidth - accWidth;
-        if (remain <= 0) break;
-
-        lineDrawWidth = remain < line.width ? remain : line.width;
-        isFullLine = remain >= line.width;
-      }
-
-      final top = line.baseline - line.ascent;
-      final height = line.ascent + line.descent;
-
-      final rect = Rect.fromLTWH(
-        line.left - pad,
-        top,
-        lineDrawWidth + pad,
-        height,
-      );
-
+      final extraFadeWidth = style.activeHighlightExtraFadeWidth;
       if (extraFadeWidth > 0) {
-        final fadeRect = Rect.fromLTWH(
-            rect.left + rect.width, rect.top, extraFadeWidth, rect.height);
-        paint.shader = LinearGradient(colors: [opColors.last, fadeEndColor!])
-            .createShader(fadeRect);
-        canvas.drawRect(fadeRect, paint);
+        final baseEndColor = style.activeStyle.color ?? grad.colors.last;
+        fadeEndColor = baseEndColor.withValues(
+            alpha: (baseEndColor.a * animationOpacity).clamp(0.0, 1.0));
       }
 
-      paint.shader = LinearGradient(
-        colors: opColors,
-        stops: grad.stops,
-        begin: grad.begin,
-        end: grad.end,
-        tileMode: grad.tileMode,
-        transform: grad.transform,
-      ).createShader(rect);
-      canvas.drawRect(rect, paint);
-      accWidth += line.width;
+      final highlightFullMode = highlightTotalWidth == double.infinity;
+      var accWidth = 0.0;
 
-      if (!isFullLine) break;
+      for (var line in metrics) {
+        double lineDrawWidth;
+        bool isFullLine;
+
+        if (highlightFullMode) {
+          isFullLine = true;
+          lineDrawWidth = line.width;
+        } else {
+          final remain = highlightTotalWidth - accWidth;
+          if (remain <= 0) break;
+
+          lineDrawWidth = remain < line.width ? remain : line.width;
+          isFullLine = remain >= line.width;
+        }
+
+        final top = line.baseline - line.ascent;
+        final height = line.ascent + line.descent;
+
+        final rect = Rect.fromLTWH(
+          line.left - pad,
+          top,
+          lineDrawWidth + pad,
+          height,
+        );
+
+        if (extraFadeWidth > 0) {
+          final fadeRect = Rect.fromLTWH(
+              rect.left + rect.width, rect.top, extraFadeWidth, rect.height);
+          paint.shader = LinearGradient(colors: [opColors.last, fadeEndColor!])
+              .createShader(fadeRect);
+          canvas.drawRect(fadeRect, paint);
+        }
+
+        paint.shader = LinearGradient(
+          colors: opColors,
+          stops: grad.stops,
+          begin: grad.begin,
+          end: grad.end,
+          tileMode: grad.tileMode,
+          transform: grad.transform,
+        ).createShader(rect);
+        canvas.drawRect(rect, paint);
+        accWidth += line.width;
+
+        if (!isFullLine) break;
+      }
+    }
+
+    if (!hasCharAnim || grad == null || opColors == null) {
+      if (hasCharAnim && charAnimPainter != null) {
+        _drawCharAnimationOnly(canvas, charAnimLineMetric!, charAnimCenter,
+            charAnimPainter);
+      }
+      return;
+    }
+
+    final waveK = style.charAnimationWaveK;
+    final maxScale = style.charAnimationMaxScale;
+    final maxOffsetY = style.charAnimationMaxOffsetY;
+    final allCharRects = charAnimLineMetric!.allCharRects!;
+    final animPainter = charAnimPainter!;
+
+    for (int i = 0; i < allCharRects.length; i++) {
+      final d = i - charAnimCenter;
+      final weight = math.exp(-d * d * waveK);
+      if (weight < 0.01) continue;
+
+      final scale = 1.0 + maxScale * weight;
+      final offsetY = maxOffsetY * math.sin(weight * math.pi);
+
+      final rect = allCharRects[i];
+      final cx = rect.center.dx;
+      final cy = rect.center.dy;
+      final inflate = rect.height * 0.5;
+
+      canvas.save();
+      canvas.clipRect(rect.inflate(inflate));
+      canvas.translate(cx, cy);
+      canvas.scale(scale);
+      canvas.translate(0, offsetY);
+      canvas.translate(-cx, -cy);
+      animPainter.paint(canvas, Offset.zero);
+
+      final hlRect =
+          _highlightRectForChar(rect, metrics, highlightTotalWidth);
+      if (hlRect != null) {
+        paint.shader = LinearGradient(
+          colors: opColors,
+          stops: grad.stops,
+          begin: grad.begin,
+          end: grad.end,
+          tileMode: grad.tileMode,
+          transform: grad.transform,
+        ).createShader(hlRect);
+        canvas.drawRect(hlRect, paint);
+      }
+      canvas.restore();
+    }
+  }
+
+  void _drawCharAnimationOnly(
+    Canvas canvas,
+    LineMetrics metric,
+    double center,
+    TextPainter painter,
+  ) {
+    final allCharRects = metric.allCharRects;
+    if (allCharRects == null || allCharRects.isEmpty || center < 0) return;
+
+    final waveK = style.charAnimationWaveK;
+    final maxScale = style.charAnimationMaxScale;
+    final maxOffsetY = style.charAnimationMaxOffsetY;
+
+    for (int i = 0; i < allCharRects.length; i++) {
+      final d = i - center;
+      final weight = math.exp(-d * d * waveK);
+      if (weight < 0.01) continue;
+
+      final scale = 1.0 + maxScale * weight;
+      final offsetY = maxOffsetY * math.sin(weight * math.pi);
+
+      final rect = allCharRects[i];
+      final cx = rect.center.dx;
+      final cy = rect.center.dy;
+      final inflate = rect.height * 0.5;
+
+      canvas.save();
+      canvas.clipRect(rect.inflate(inflate));
+      canvas.translate(cx, cy);
+      canvas.scale(scale);
+      canvas.translate(0, offsetY);
+      canvas.translate(-cx, -cy);
+      painter.paint(canvas, Offset.zero);
+      canvas.restore();
     }
   }
 
@@ -292,21 +432,28 @@ class LyricPainter extends CustomPainter {
     final switchOffset = handleSwitchAnimation(
         canvas, metric, index, switchState, painter, size);
     painter.paint(canvas, Offset.zero);
-    if (needsRestyle) {
-      painter.text = oldSpan;
-    }
     if (isActive) {
-      drawHighlight(canvas, size, metric.activeMetrics,
-          highlightTotalWidth: metric.words?.isNotEmpty == true
-              ? activeHighlightWidth
-              : double.infinity,
-          animationOpacity: highlightOpacity);
+      drawHighlight(
+        canvas,
+        size,
+        metric.activeMetrics,
+        highlightTotalWidth: metric.words?.isNotEmpty == true
+            ? activeHighlightWidth
+            : double.infinity,
+        animationOpacity: highlightOpacity,
+        charAnimLineMetric: metric,
+        charAnimPainter: painter,
+        charAnimCenter: charAnimationCenter,
+      );
     } else if (index == switchState.exitIndex &&
         switchState.exitAnimationValue < 1 &&
         style.enableSwitchAnimation) {
       drawHighlight(canvas, size, metric.metrics,
           highlightTotalWidth: double.infinity,
           animationOpacity: highlightOpacity);
+    }
+    if (needsRestyle) {
+      painter.text = oldSpan;
     }
     canvas.restore();
     final mainHeight = isActive ? metric.activeHeight : metric.height;
@@ -385,6 +532,7 @@ class LyricPainter extends CustomPainter {
         playIndex != oldDelegate.playIndex ||
         scrollY != oldDelegate.scrollY ||
         activeHighlightWidth != oldDelegate.activeHighlightWidth ||
+        charAnimationCenter != oldDelegate.charAnimationCenter ||
         switchState != oldDelegate.switchState;
     return shouldRepaint;
   }

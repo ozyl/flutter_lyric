@@ -94,29 +94,37 @@ class _LyricViewState extends State<LyricView>
               if (layout == null) return const SizedBox.shrink();
               Widget result = buildLineSwitch((context, switchState) {
                 return buildActiveHighlightWidth((double value) {
-                  return ValueListenableBuilder(
-                      valueListenable: scrollYNotifier,
-                      builder: (context, double scrollY, child) {
-                        return CustomPaint(
-                          painter: LyricPainter(
-                            layout: layout!,
-                            onShowLineRectsChange: (rects) {
-                              showLineRects = rects;
-                            },
-                            style: style,
-                            playIndex: controller.activeIndexNotifiter.value,
-                            activeHighlightWidth: value,
-                            isSelecting: controller.isSelectingNotifier.value,
-                            scrollY: scrollY,
-                            onAnchorIndexChange: (index) {
-                              scheduleMicrotask(() {
-                                controller.selectedIndexNotifier.value = index;
-                              });
-                            },
-                            switchState: switchState,
-                          ),
-                          size: lyricSize,
-                        );
+                  return ValueListenableBuilder<double>(
+                      valueListenable: charAnimationCenterNotifier,
+                      builder: (context, charCenter, _) {
+                        return ValueListenableBuilder(
+                            valueListenable: scrollYNotifier,
+                            builder: (context, double scrollY, child) {
+                              return CustomPaint(
+                                painter: LyricPainter(
+                                  layout: layout!,
+                                  onShowLineRectsChange: (rects) {
+                                    showLineRects = rects;
+                                  },
+                                  style: style,
+                                  playIndex:
+                                      controller.activeIndexNotifiter.value,
+                                  activeHighlightWidth: value,
+                                  charAnimationCenter: charCenter,
+                                  isSelecting:
+                                      controller.isSelectingNotifier.value,
+                                  scrollY: scrollY,
+                                  onAnchorIndexChange: (index) {
+                                    scheduleMicrotask(() {
+                                      controller.selectedIndexNotifier.value =
+                                          index;
+                                    });
+                                  },
+                                  switchState: switchState,
+                                ),
+                                size: lyricSize,
+                              );
+                            });
                       });
                 });
               });

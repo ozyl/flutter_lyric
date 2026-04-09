@@ -11,6 +11,7 @@ mixin LyricLineHightlightMixin<T extends StatefulWidget>
   Animation<double>? _widthAnimation;
 
   var activeHighlightWidthNotifier = ValueNotifier(0.0);
+  var charAnimationCenterNotifier = ValueNotifier(-1.0);
 
   @override
   void initState() {
@@ -42,6 +43,7 @@ mixin LyricLineHightlightMixin<T extends StatefulWidget>
     controller.progressNotifier.removeListener(updateHighlightWidth);
     _animationController.dispose();
     activeHighlightWidthNotifier.dispose();
+    charAnimationCenterNotifier.dispose();
     super.dispose();
   }
 
@@ -51,15 +53,19 @@ mixin LyricLineHightlightMixin<T extends StatefulWidget>
 
     if (index >= metrics.length || index < 0) {
       _animateWidth(0.0);
+      charAnimationCenterNotifier.value = -1.0;
       return;
     }
 
     final line = metrics[index];
     var newWidth = 0.0;
+    double charCenter = -1.0;
+    int globalCharIndex = 0;
     final currentProgress = controller.progressNotifier.value +
         Duration(milliseconds: controller.lyricOffset);
 
     line.words?.forEach((wordMetric) {
+      final charCount = wordMetric.charRects.length;
       if (currentProgress >= wordMetric.word.start) {
         newWidth += wordMetric.highlightWidth;
         final endTime = (wordMetric.word.end ?? Duration.zero);
@@ -69,13 +75,19 @@ mixin LyricLineHightlightMixin<T extends StatefulWidget>
               (currentProgress - wordMetric.word.start).inMilliseconds;
 
           if (wordDuration > 0) {
+            final wordProgress = elapsed / wordDuration;
             newWidth -=
-                wordMetric.highlightWidth * (1 - elapsed / wordDuration);
+                wordMetric.highlightWidth * (1 - wordProgress);
+            charCenter = globalCharIndex + wordProgress * charCount;
           }
+        } else {
+          charCenter = (globalCharIndex + charCount).toDouble();
         }
       }
+      globalCharIndex += charCount;
     });
     _animateWidth(newWidth);
+    charAnimationCenterNotifier.value = charCenter;
   }
 
   void _animateWidth(double newWidth) {
