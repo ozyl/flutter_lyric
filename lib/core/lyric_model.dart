@@ -78,11 +78,13 @@ class LineMetrics {
   final TextPainter translationTextPainter;
 
   final List<WordMetrics>? words;
+  final List<Rect>? allCharRects;
 
   LineMetrics({
     required this.line,
     required this.height,
     this.words,
+    this.allCharRects,
     required this.width,
     required this.activeWidth,
     required this.activeHeight,
@@ -114,6 +116,7 @@ class LineMetrics {
     TextPainter? activeTextPainter,
     TextPainter? translationTextPainter,
     List<WordMetrics>? words,
+    List<Rect>? allCharRects,
   }) {
     return LineMetrics(
       line: line ?? this.line,
@@ -130,6 +133,7 @@ class LineMetrics {
       translationTextPainter:
           translationTextPainter ?? this.translationTextPainter,
       words: words ?? this.words,
+      allCharRects: allCharRects ?? this.allCharRects,
     );
   }
 }
@@ -140,6 +144,7 @@ class WordMetrics {
   final LyricWord word;
   final double highlightWidth;
   final double highlightHeight;
+  final List<Rect> charRects;
 
   WordMetrics({
     required this.word,
@@ -147,11 +152,12 @@ class WordMetrics {
     required this.height,
     required this.highlightWidth,
     required this.highlightHeight,
+    this.charRects = const [],
   });
 
   @override
   String toString() {
-    return 'WordMetrics(word: $word, width: $width, height: $height, highlightWidth: $highlightWidth, highlightHeight: $highlightHeight)';
+    return 'WordMetrics(word: $word, width: $width, height: $height, highlightWidth: $highlightWidth, highlightHeight: $highlightHeight, charRects: ${charRects.length})';
   }
 }
 
