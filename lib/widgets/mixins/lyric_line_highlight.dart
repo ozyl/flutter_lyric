@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_lyric/render/lyric_animation_notifier.dart';
 import 'package:flutter_lyric/widgets/mixins/lyric_layout_mixin.dart';
 
 // 动画时长：例如 50 毫秒
@@ -12,8 +13,11 @@ mixin LyricLineHightlightMixin<T extends StatefulWidget>
 
   var activeHighlightWidthNotifier = ValueNotifier(0.0);
 
+  late final LyricAnimationNotifier lyricAnimationNotifier;
+
   @override
   void initState() {
+    lyricAnimationNotifier = LyricAnimationNotifier(this);
     _animationController = AnimationController(
       vsync: this,
       duration: _kHighlightTransitionDuration,
@@ -41,6 +45,7 @@ mixin LyricLineHightlightMixin<T extends StatefulWidget>
     controller.activeIndexNotifiter.removeListener(_onActiveIndexChange);
     controller.progressNotifier.removeListener(updateHighlightWidth);
     _animationController.dispose();
+    lyricAnimationNotifier.dispose();
     activeHighlightWidthNotifier.dispose();
     super.dispose();
   }

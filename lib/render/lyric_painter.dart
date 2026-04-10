@@ -1,16 +1,25 @@
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/core/lyric_model.dart';
 import 'package:flutter_lyric/core/lyric_style.dart';
+import 'package:flutter_lyric/render/lyric_animation_notifier.dart';
 import 'package:flutter_lyric/render/lyric_layout.dart';
 import 'package:flutter_lyric/widgets/mixins/lyric_line_switch_mixin.dart';
 
 const _debugLyric = false;
 
 /// 逐字高亮时单字向上弹起的最大位移（逻辑像素，负值表示向上）。
-const _kLyricCharPopUpOffset = 3.0;
+const _kLyricCharPopUpOffset = 21.0;
+
+/// 单字 [charPainter] 已 [layout] 后，按段落内 [glyphBox] 与字母基线对齐绘制顶边 y（单字高度常与整段 box 不一致）。
+double _glyphPaintTop(TextPainter charPainter, Rect glyphBox) {
+  final clm = charPainter.computeLineMetrics();
+  if (clm.isEmpty) return glyphBox.top;
+  final baselineY = glyphBox.bottom - clm.first.descent;
+  return baselineY -
+      charPainter.computeDistanceToActualBaseline(TextBaseline.alphabetic);
+}
 
 class LyricPainter extends CustomPainter {
   final LyricLayout layout;
@@ -20,6 +29,7 @@ class LyricPainter extends CustomPainter {
   final LyricLineSwitchState switchState;
   final bool isSelecting;
   final LyricStyle style;
+  final LyricAnimationNotifier animationNotifier;
   final Function(
     int,
   ) onAnchorIndexChange;
@@ -37,10 +47,12 @@ class LyricPainter extends CustomPainter {
     required this.isSelecting,
     required this.onShowLineRectsChange,
     required this.style,
-  });
+    required this.animationNotifier,
+  }) : super(repaint: animationNotifier);
 
   @override
   void paint(Canvas canvas, Size size) {
+    animationNotifier.syncPlayIndex(playIndex);
     final layoutStyle = layout.style;
     final lineGap = layoutStyle.lineGap;
     final metrics = layout.metrics;
@@ -160,12 +172,14 @@ class LyricPainter extends CustomPainter {
 
       final top = line.baseline - line.ascent;
       final height = line.ascent + line.descent;
+      // 上弹只抬高字形，只需向上扩高亮；上下对称扩会在换行时把第一行矩形挤进下一行区域。
+      final pop = _kLyricCharPopUpOffset;
 
       final rect = Rect.fromLTWH(
         line.left - pad,
-        top - _kLyricCharPopUpOffset,
+        top - pop,
         lineDrawWidth + pad,
-        height + _kLyricCharPopUpOffset * 2,
+        height + pop,
       );
 
       if (extraFadeWidth > 0) {
@@ -237,46 +251,6 @@ class LyricPainter extends CustomPainter {
     return 0;
   }
 
-  /// 网易云式逐字上弹：高亮扫过该字时向上偏移，最大 [maxUp]（逻辑像素）。
-  static double _charHighlightPopDy({
-    required double localHighlightInWord,
-    required int charIndexInWord,
-    required List<Rect> charRects,
-    // 你需要从外部传入一个“当前字符开始播放动画的时间进度”或者通过 logic 计算
-    // 如果没有外部 Timer，我们可以根据 localHighlightInWord 模拟一个触发
-    double maxUp = 10,
-  }) {
-    if (charRects.isEmpty) return 0;
-
-    // 1. 获取当前字符的触发阈值（比如扫描线到达字符宽度的 20% 时触发）
-    double triggerX = 0;
-    for (var i = 0; i < charIndexInWord; i++) {
-      triggerX += charRects[i].width;
-    }
-    // 稍微提前一点触发，视觉感官更好
-    triggerX += charRects[charIndexInWord].width * 0.2;
-
-    // 2. 计算“超出距离”
-    double overDistance = localHighlightInWord - triggerX;
-
-    // 3. 将距离转化为一个“固定步长”的虚拟时间
-    // 假设我们希望在扫描线扫过 50 像素的时间内完成动画
-    // 这样即便语速不同，只要这一段位移发生，动画就会执行
-    const double animationDurationWindow = 150.0;
-
-    if (overDistance <= 0) return 0;
-    if (overDistance >= animationDurationWindow) return 0; // 动画结束，收回
-
-    // 4. 归一化进度 (0.0 -> 1.0)
-    double t = overDistance / animationDurationWindow;
-
-    // 5. 使用更平滑的曲线
-    // Curves.easeInOut 或简单的 sin
-    double curve = math.sin(t * math.pi);
-
-    return -maxUp * curve;
-  }
-
   void _paintTextUtf16Range(
     Canvas canvas,
     LineMetrics metric,
@@ -300,25 +274,27 @@ class LyricPainter extends CustomPainter {
         charPainter.text = TextSpan(text: g, style: spanStyle);
         charPainter.layout();
         final dy = dyForChar(r);
-        charPainter.paint(canvas, Offset(r.left, r.top + dy));
+        final paintY = _glyphPaintTop(charPainter, r) + dy;
+        charPainter.paint(canvas, Offset(r.left, paintY));
       }
       offset = next;
     }
   }
 
-  /// 按词绘制当前行主歌词：词间空隙无位移；词内单字按 [highlightTotalWidth] 做上弹。
+  /// 按词绘制当前行主歌词：词间空隙无位移；词内单字由上弹动画 [animationNotifier] 驱动。
   void _paintActiveLineWithWordPop(
     Canvas canvas,
     LineMetrics metric,
     TextPainter charPainter,
     TextStyle spanStyle,
-    double highlightTotalWidth,
   ) {
     final lineText = metric.line.text;
     final words = metric.line.words!;
     final wordMetrics = metric.words!;
-    var accWordHighlight = 0.0;
     var currentOffset = 0;
+    var globalCharIndex = 0;
+    // 一维累加宽度与 activeHighlightWidth 对齐；换行后 Rect.left 会变小，不能用作触发比较。
+    var accWordHighlight = 0.0;
 
     for (var wi = 0; wi < words.length; wi++) {
       final word = words[wi];
@@ -342,20 +318,28 @@ class LyricPainter extends CustomPainter {
         );
       }
 
-      final local = highlightTotalWidth - accWordHighlight;
+      var widthBeforeCharInWord = 0.0;
       final graphemes = word.text.characters.toList();
       for (var j = 0; j < graphemes.length; j++) {
         if (j >= wm.charRects.length) break;
         final charRect = wm.charRects[j];
-        final dy = _charHighlightPopDy(
-          localHighlightInWord: local,
-          charRects: wm.charRects,
-          charIndexInWord: j,
-          maxUp: _kLyricCharPopUpOffset,
+        final triggerEdge =
+            accWordHighlight + widthBeforeCharInWord + charRect.width * 0.2;
+        animationNotifier.checkAndTrigger(
+          globalCharIndex,
+          activeHighlightWidth,
+          triggerEdge,
         );
+        final dy = animationNotifier.getOffsetForChar(
+          globalCharIndex,
+          _kLyricCharPopUpOffset,
+        );
+        globalCharIndex++;
+        widthBeforeCharInWord += charRect.width;
         charPainter.text = TextSpan(text: graphemes[j], style: spanStyle);
         charPainter.layout();
-        charPainter.paint(canvas, Offset(charRect.left, charRect.top + dy));
+        final paintY = _glyphPaintTop(charPainter, charRect) + dy;
+        charPainter.paint(canvas, Offset(charRect.left, paintY));
       }
 
       currentOffset = wordStart + word.text.length;
@@ -446,13 +430,13 @@ class LyricPainter extends CustomPainter {
         textScaler: painter.textScaler,
         locale: painter.locale,
         strutStyle: painter.strutStyle,
+        textHeightBehavior: painter.textHeightBehavior,
       );
       _paintActiveLineWithWordPop(
         canvas,
         metric,
         charPainter,
         spanStyle!,
-        activeHighlightWidth,
       );
     } else {
       painter.paint(canvas, Offset.zero);
@@ -552,7 +536,8 @@ class LyricPainter extends CustomPainter {
         playIndex != oldDelegate.playIndex ||
         scrollY != oldDelegate.scrollY ||
         activeHighlightWidth != oldDelegate.activeHighlightWidth ||
-        switchState != oldDelegate.switchState;
+        switchState != oldDelegate.switchState ||
+        animationNotifier != oldDelegate.animationNotifier;
     return shouldRepaint;
   }
 }

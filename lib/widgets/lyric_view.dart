@@ -100,6 +100,7 @@ class _LyricViewState extends State<LyricView>
                         return CustomPaint(
                           painter: LyricPainter(
                             layout: layout!,
+                            animationNotifier: lyricAnimationNotifier,
                             onShowLineRectsChange: (rects) {
                               showLineRects = rects;
                             },

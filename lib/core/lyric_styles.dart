@@ -90,7 +90,7 @@ abstract class LyricStyles {
     textStyle: TextStyle(fontSize: 14, color: Colors.white70, height: 1.2),
     activeStyle: TextStyle(
       fontSize: 24,
-      height: 1.2,
+      height: 3.2,
       color: Colors.white,
       fontWeight: FontWeight.w600,
     ),
