@@ -75,6 +75,14 @@ mixin LyricLineHightlightMixin<T extends StatefulWidget>
         }
       }
     });
+    final words = line.words;
+    if (words != null && words.isNotEmpty) {
+      final lastWord = words.last.word;
+      final lastEnd = lastWord.end ?? Duration.zero;
+      if (lastEnd > lastWord.start && currentProgress >= lastEnd) {
+        newWidth += style.activeHighlightExtraFadeWidth;
+      }
+    }
     _animateWidth(newWidth);
   }
 

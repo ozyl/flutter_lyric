@@ -49,6 +49,10 @@ mixin LyricLayoutMixin<T extends StatefulWidget> on State<T> {
             TextSpan(text: element.line.text, style: newStyle.textStyle);
         element.activeTextPainter.text =
             TextSpan(text: element.line.text, style: newStyle.activeStyle);
+        element.textMaskPainter.text = LyricLayout.buildHighlightMaskTextSpan(
+            element.textPainter.text! as TextSpan);
+        element.activeMaskPainter.text = LyricLayout.buildHighlightMaskTextSpan(
+            element.activeTextPainter.text! as TextSpan);
         element.translationTextPainter.text = TextSpan(
             text: element.line.translation, style: newStyle.translationStyle);
       });

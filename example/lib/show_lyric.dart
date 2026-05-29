@@ -13,11 +13,15 @@ class ShowLyric extends StatefulWidget {
     this.beforeLyricBuilder,
     this.afterLyricBuilder,
     this.initStyle,
+    this.stylePresets = const {},
     this.initController,
+    this.preserveStyleOnDarkMode = false,
   });
   final Duration progress;
   final LyricStyle? initStyle;
+  final Map<String, LyricStyle> stylePresets;
   final Function(LyricController)? initController;
+  final bool preserveStyleOnDarkMode;
   final List<Widget> Function(LyricController, LyricStyle)? beforeLyricBuilder;
   final List<Widget> Function(LyricController, LyricStyle)? afterLyricBuilder;
 
@@ -64,7 +68,7 @@ class _ShowLyricState extends State<ShowLyric> {
           final isDark =
               MediaQuery.of(context).platformBrightness == Brightness.dark;
           // For performance, you should avoid creating a new style on every build. This is just a demo and not recommended.
-          if (isDark) {
+          if (isDark && !widget.preserveStyleOnDarkMode) {
             style = style.copyWith(
               textStyle: style.textStyle.copyWith(
                 color: Colors.black.withValues(alpha: 0.4),
@@ -105,6 +109,7 @@ class _ShowLyricState extends State<ShowLyric> {
                             builder: (context, value, child) {
                               return EditStyle(
                                 style: value,
+                                presets: widget.stylePresets,
                                 onStyleChanged: (style) {
                                   setState(() {
                                     _currentStyleNotifier.value = style;

@@ -118,9 +118,13 @@ class LyricLayout {
     for (var line in layout.metrics) {
       line.textPainter.markNeedsLayout();
       line.activeTextPainter.markNeedsLayout();
+      line.textMaskPainter.markNeedsLayout();
+      line.activeMaskPainter.markNeedsLayout();
       line.translationTextPainter.markNeedsLayout();
       line.textPainter.layout(maxWidth: layout.viewSize.width);
       line.activeTextPainter.layout(maxWidth: layout.viewSize.width);
+      line.textMaskPainter.layout(maxWidth: layout.viewSize.width);
+      line.activeMaskPainter.layout(maxWidth: layout.viewSize.width);
       final hasTranslation = line.translationTextPainter.text != null;
       if (hasTranslation) {
         line.translationTextPainter.layout(maxWidth: layout.viewSize.width);
@@ -143,11 +147,37 @@ class LyricLayout {
       ));
     }
     return LyricLayout._internal(
-      layout.metrics,
+      lineMetrics,
       layout.style,
       layout.viewSize,
       layout.selectionAnchorPosition,
       layout.activeAnchorPosition,
+    );
+  }
+
+  static TextPainter createHighlightMaskPainter(
+    TextPainter sourcePainter,
+    double maxWidth,
+  ) {
+    final maskPainter = TextPainter(
+      text: buildHighlightMaskTextSpan(sourcePainter.text! as TextSpan),
+      textAlign: sourcePainter.textAlign,
+      textDirection: sourcePainter.textDirection,
+    );
+    maskPainter.layout(maxWidth: maxWidth);
+    return maskPainter;
+  }
+
+  static TextSpan buildHighlightMaskTextSpan(TextSpan source) {
+    final style = source.style;
+    return TextSpan(
+      text: source.text,
+      children: source.children?.map((child) {
+        return child is TextSpan ? buildHighlightMaskTextSpan(child) : child;
+      }).toList(),
+      style: style?.copyWith(
+        color: (style.color ?? const Color(0xFFFFFFFF)).withValues(alpha: 1.0),
+      ),
     );
   }
 
@@ -247,6 +277,9 @@ class LyricLayout {
       final activceLineMetrics = activeTextPainter.computeLineMetrics();
       final highlightWidth = activeTextPainter.width;
       final highlightHeight = activeTextPainter.height;
+      final textMaskPainter = createHighlightMaskPainter(textPainter, maxWidth);
+      final activeMaskPainter =
+          createHighlightMaskPainter(activeTextPainter, maxWidth);
 
       double translationWidth = 0;
       double translationHeight = 0;
@@ -276,6 +309,8 @@ class LyricLayout {
           words: words,
           textPainter: textPainter,
           activeTextPainter: activeTextPainter,
+          textMaskPainter: textMaskPainter,
+          activeMaskPainter: activeMaskPainter,
           translationTextPainter: translationTextPainter,
         ),
       );

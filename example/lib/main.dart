@@ -4,6 +4,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
+import 'package:flutter_lyric_example/issue41_demo_style.dart';
 import 'package:flutter_lyric_example/show_lyric.dart';
 import 'package:just_audio/just_audio.dart';
 
@@ -99,6 +100,8 @@ class _MyAppState extends State<MyApp> {
                               final items = [
                                 ShowLyric(
                                   initStyle: LyricStyles.default2,
+                                  stylePresets: issue41DemoStylePresets,
+                                  preserveStyleOnDarkMode: true,
                                   initController: (controller) {
                                     controller.setOnTapLineCallback(
                                       (duration) async => {

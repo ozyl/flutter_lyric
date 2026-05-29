@@ -3,10 +3,12 @@ import 'package:flutter_lyric/core/lyric_style.dart';
 
 class EditStyle extends StatelessWidget {
   final LyricStyle style;
+  final Map<String, LyricStyle> presets;
   final Function(LyricStyle) onStyleChanged;
   const EditStyle({
     super.key,
     required this.style,
+    this.presets = const {},
     required this.onStyleChanged,
   });
 
@@ -33,6 +35,21 @@ class EditStyle extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                if (presets.isNotEmpty) ...[
+                  const Text('Style Presets'),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: presets.entries.map((preset) {
+                      return OutlinedButton(
+                        onPressed: () => onStyleChanged(preset.value),
+                        child: Text(preset.key),
+                      );
+                    }).toList(),
+                  ),
+                  const SizedBox(height: 24),
+                ],
                 const SizedBox(height: 24),
                 Text(
                   'Lyric Style: ${(style.textStyle.fontSize ?? 16).toStringAsFixed(0)}',

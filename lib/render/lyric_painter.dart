@@ -8,6 +8,13 @@ import 'package:flutter_lyric/widgets/mixins/lyric_line_switch_mixin.dart';
 
 const _debugLyric = false;
 
+class _HighlightSegment {
+  final Rect rect;
+  final ui.Shader shader;
+
+  _HighlightSegment(this.rect, this.shader);
+}
+
 class LyricPainter extends CustomPainter {
   final LyricLayout layout;
   final int playIndex;
@@ -101,6 +108,7 @@ class LyricPainter extends CustomPainter {
   drawHighlight(
     Canvas canvas,
     Size size,
+    TextPainter maskPainter,
     List<ui.LineMetrics> metrics, {
     double highlightTotalWidth = 0,
     double animationOpacity = 1.0,
@@ -115,10 +123,6 @@ class LyricPainter extends CustomPainter {
     final highlightFullMode = highlightTotalWidth == double.infinity;
     var accWidth = 0.0;
 
-    final Paint paint = Paint()
-      ..blendMode =
-          animationOpacity < 1.0 ? BlendMode.srcATop : BlendMode.srcIn;
-
     final grad = activeHighlightGradient ??
         LinearGradient(colors: [activeHighlightColor!, activeHighlightColor]);
 
@@ -130,61 +134,118 @@ class LyricPainter extends CustomPainter {
         : grad.colors;
 
     final extraFadeWidth = style.activeHighlightExtraFadeWidth;
-    Color? fadeEndColor;
-    if (extraFadeWidth > 0) {
-      final baseEndColor = style.activeStyle.color ?? grad.colors.last;
-      fadeEndColor = baseEndColor.withValues(
-          alpha: (baseEndColor.a * animationOpacity).clamp(0.0, 1.0));
-    }
+    final fadeEndColor = opColors.last.withValues(alpha: 0);
 
     const pad = 2;
+    final segments = <_HighlightSegment>[];
+    Rect? layerBounds;
+
+    void addSegment(Rect rect, ui.Shader shader) {
+      segments.add(_HighlightSegment(rect, shader));
+      layerBounds =
+          layerBounds == null ? rect : layerBounds!.expandToInclude(rect);
+    }
 
     for (var line in metrics) {
-      double lineDrawWidth;
-      bool isFullLine;
-
       if (highlightFullMode) {
-        isFullLine = true;
-        lineDrawWidth = line.width;
-      } else {
-        final remain = highlightTotalWidth - accWidth;
-        if (remain <= 0) break;
-
-        lineDrawWidth = remain < line.width ? remain : line.width;
-        isFullLine = remain >= line.width;
+        final rect = Rect.fromLTWH(
+          line.left - pad,
+          line.baseline - line.ascent,
+          line.width + pad,
+          line.ascent + line.descent,
+        );
+        addSegment(
+          rect,
+          LinearGradient(
+            colors: opColors,
+            stops: grad.stops,
+            begin: grad.begin,
+            end: grad.end,
+            tileMode: grad.tileMode,
+            transform: grad.transform,
+          ).createShader(rect),
+        );
+        accWidth += line.width;
+        continue;
       }
+
+      final fadeEnd = highlightTotalWidth - accWidth;
+      if (fadeEnd <= 0) break;
 
       final top = line.baseline - line.ascent;
       final height = line.ascent + line.descent;
+      final fadeWidth = extraFadeWidth > 0 ? extraFadeWidth : 0.0;
+      final fadeStart = fadeEnd - fadeWidth;
+      final solidEnd = fadeWidth > 0 ? fadeStart : fadeEnd;
 
-      final rect = Rect.fromLTWH(
-        line.left - pad,
-        top,
-        lineDrawWidth + pad,
-        height,
-      );
-
-      if (extraFadeWidth > 0) {
-        final fadeRect = Rect.fromLTWH(
-            rect.left + rect.width, rect.top, extraFadeWidth, rect.height);
-        paint.shader = LinearGradient(colors: [opColors.last, fadeEndColor!])
-            .createShader(fadeRect);
-        canvas.drawRect(fadeRect, paint);
+      if (solidEnd > 0) {
+        final solidRect = Rect.fromLTRB(
+          line.left - pad,
+          top,
+          line.left + solidEnd.clamp(0.0, line.width),
+          top + height,
+        );
+        addSegment(
+          solidRect,
+          LinearGradient(
+            colors: opColors,
+            stops: grad.stops,
+            begin: grad.begin,
+            end: grad.end,
+            tileMode: grad.tileMode,
+            transform: grad.transform,
+          ).createShader(solidRect),
+        );
       }
 
-      paint.shader = LinearGradient(
-        colors: opColors,
-        stops: grad.stops,
-        begin: grad.begin,
-        end: grad.end,
-        tileMode: grad.tileMode,
-        transform: grad.transform,
-      ).createShader(rect);
-      canvas.drawRect(rect, paint);
+      if (fadeWidth > 0 && fadeStart < line.width) {
+        final fadeRect = Rect.fromLTRB(
+          line.left + fadeStart,
+          top,
+          line.left + fadeEnd,
+          top + height,
+        );
+        addSegment(
+          fadeRect,
+          LinearGradient(colors: [opColors.last, fadeEndColor])
+              .createShader(fadeRect),
+        );
+      }
+
       accWidth += line.width;
 
-      if (!isFullLine) break;
+      if (highlightTotalWidth <= accWidth) break;
     }
+
+    if (segments.isNotEmpty && layerBounds != null) {
+      _drawMaskedHighlightSegments(
+        canvas,
+        maskPainter,
+        layerBounds!,
+        segments,
+      );
+    }
+  }
+
+  void _drawMaskedHighlightSegments(
+    Canvas canvas,
+    TextPainter maskPainter,
+    Rect bounds,
+    List<_HighlightSegment> segments,
+  ) {
+    canvas.save();
+    canvas.clipRect(bounds);
+    canvas.saveLayer(bounds, Paint());
+    final paint = Paint();
+    for (final segment in segments) {
+      paint.shader = segment.shader;
+      canvas.drawRect(segment.rect, paint);
+    }
+    canvas.saveLayer(bounds, Paint()..blendMode = BlendMode.dstIn);
+    maskPainter.paint(canvas, Offset.zero);
+    canvas.restore();
+    canvas.restore();
+    canvas.restore();
   }
 
   double handleSwitchAnimation(
@@ -296,7 +357,8 @@ class LyricPainter extends CustomPainter {
       painter.text = oldSpan;
     }
     if (isActive) {
-      drawHighlight(canvas, size, metric.activeMetrics,
+      drawHighlight(
+          canvas, size, metric.activeMaskPainter, metric.activeMetrics,
           highlightTotalWidth: metric.words?.isNotEmpty == true
               ? activeHighlightWidth
               : double.infinity,
@@ -304,7 +366,7 @@ class LyricPainter extends CustomPainter {
     } else if (index == switchState.exitIndex &&
         switchState.exitAnimationValue < 1 &&
         style.enableSwitchAnimation) {
-      drawHighlight(canvas, size, metric.metrics,
+      drawHighlight(canvas, size, metric.textMaskPainter, metric.metrics,
           highlightTotalWidth: double.infinity,
           animationOpacity: highlightOpacity);
     }

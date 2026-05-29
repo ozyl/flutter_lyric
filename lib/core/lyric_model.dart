@@ -75,6 +75,8 @@ class LineMetrics {
   final List<ui.LineMetrics> metrics;
   final TextPainter textPainter;
   final TextPainter activeTextPainter;
+  final TextPainter textMaskPainter;
+  final TextPainter activeMaskPainter;
   final TextPainter translationTextPainter;
 
   final List<WordMetrics>? words;
@@ -92,6 +94,8 @@ class LineMetrics {
     required this.metrics,
     required this.textPainter,
     required this.activeTextPainter,
+    required this.textMaskPainter,
+    required this.activeMaskPainter,
     required this.translationTextPainter,
   });
 
@@ -112,6 +116,8 @@ class LineMetrics {
     List<ui.LineMetrics>? metrics,
     TextPainter? textPainter,
     TextPainter? activeTextPainter,
+    TextPainter? textMaskPainter,
+    TextPainter? activeMaskPainter,
     TextPainter? translationTextPainter,
     List<WordMetrics>? words,
   }) {
@@ -127,6 +133,8 @@ class LineMetrics {
       metrics: metrics ?? this.metrics,
       textPainter: textPainter ?? this.textPainter,
       activeTextPainter: activeTextPainter ?? this.activeTextPainter,
+      textMaskPainter: textMaskPainter ?? this.textMaskPainter,
+      activeMaskPainter: activeMaskPainter ?? this.activeMaskPainter,
       translationTextPainter:
           translationTextPainter ?? this.translationTextPainter,
       words: words ?? this.words,
