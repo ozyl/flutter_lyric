@@ -19,6 +19,79 @@ final issue41HighlightOpacityDemo = LyricStyles.default2.copyWith(
   translationActiveColor: Colors.white.withValues(alpha: 0.8),
 );
 
+/// 演示用时长：单行切换距离通常只有几十 px，需抬高最小时长才能看出 curve 差异。
+Duration _demoScrollDuration(double offset, {int minMs = 900, int maxMs = 1800}) {
+  return Duration(
+    milliseconds: (minMs + offset * 1.5).clamp(minMs, maxMs).round(),
+  );
+}
+
+/// 匀速 — 对比基准，速度恒定。
+LyricScrollAnimationConfig _issue41ScrollLinear(double offset) {
+  return LyricScrollAnimationConfig(
+    duration: _demoScrollDuration(offset),
+    curve: Curves.linear,
+  );
+}
+
+/// 先慢后快 — easeIn 特征明显。
+LyricScrollAnimationConfig _issue41ScrollEaseIn(double offset) {
+  return LyricScrollAnimationConfig(
+    duration: _demoScrollDuration(offset),
+    curve: Curves.easeInCubic,
+  );
+}
+
+/// 先快后慢 — easeOut 特征明显。
+LyricScrollAnimationConfig _issue41ScrollEaseOut(double offset) {
+  return LyricScrollAnimationConfig(
+    duration: _demoScrollDuration(offset),
+    curve: Curves.easeOutCubic,
+  );
+}
+
+/// 冲过终点再回弹 — overshoot 非常明显。
+LyricScrollAnimationConfig _issue41ScrollOvershoot(double offset) {
+  return LyricScrollAnimationConfig(
+    duration: _demoScrollDuration(offset, minMs: 1000, maxMs: 2000),
+    curve: Curves.easeOutBack,
+  );
+}
+
+/// 末端弹跳 — bounceOut 特征明显。
+LyricScrollAnimationConfig _issue41ScrollBounce(double offset) {
+  return LyricScrollAnimationConfig(
+    duration: _demoScrollDuration(offset, minMs: 1100, maxMs: 2200),
+    curve: Curves.bounceOut,
+  );
+}
+
+/// 弹簧振荡 — elasticOut 需要更长时长才能看到回弹。
+LyricScrollAnimationConfig _issue41ScrollElastic(double offset) {
+  return LyricScrollAnimationConfig(
+    duration: _demoScrollDuration(offset, minMs: 1200, maxMs: 2400),
+    curve: Curves.elasticOut,
+  );
+}
+
 final issue41DemoStylePresets = <String, LyricStyle>{
   'Issue #41 Gradient': issue41HighlightOpacityDemo,
+  'Scroll · Linear': issue41HighlightOpacityDemo.copyWith(
+    scrollAnimationBuilder: _issue41ScrollLinear,
+  ),
+  'Scroll · Ease In': issue41HighlightOpacityDemo.copyWith(
+    scrollAnimationBuilder: _issue41ScrollEaseIn,
+  ),
+  'Scroll · Ease Out': issue41HighlightOpacityDemo.copyWith(
+    scrollAnimationBuilder: _issue41ScrollEaseOut,
+  ),
+  'Scroll · Overshoot': issue41HighlightOpacityDemo.copyWith(
+    scrollAnimationBuilder: _issue41ScrollOvershoot,
+  ),
+  'Scroll · Bounce': issue41HighlightOpacityDemo.copyWith(
+    scrollAnimationBuilder: _issue41ScrollBounce,
+  ),
+  'Scroll · Elastic': issue41HighlightOpacityDemo.copyWith(
+    scrollAnimationBuilder: _issue41ScrollElastic,
+  ),
 };

@@ -57,8 +57,13 @@ mixin LyricScrollMixin<T extends StatefulWidget>
     updateScrollY();
   }
 
-  /// 根据偏移量计算动画时长
-  Duration calculateAnimationDuration(double offset) {
+  /// 根据偏移量计算动画配置
+  LyricScrollAnimationConfig calculateAnimationConfig(double offset) {
+    final customConfig = style.scrollAnimationBuilder?.call(offset);
+    if (customConfig != null) {
+      return customConfig;
+    }
+
     var duration = style.scrollDuration;
     if (style.scrollDurations.isNotEmpty == true) {
       for (var entry in style.scrollDurations.entries) {
@@ -69,7 +74,10 @@ mixin LyricScrollMixin<T extends StatefulWidget>
         }
       }
     }
-    return duration;
+    return LyricScrollAnimationConfig(
+      duration: duration,
+      curve: style.scrollCurve,
+    );
   }
 
   double calcActiveLineOffsetY() {
@@ -118,16 +126,16 @@ mixin LyricScrollMixin<T extends StatefulWidget>
         scrollY = target;
         return;
       }
-      // 根据偏移量动态计算动画时长
-      final animationDuration = calculateAnimationDuration(offset);
-      _scrollController.duration = animationDuration;
-      if (animationDuration == Duration.zero) {
+      // 根据偏移量动态计算动画配置
+      final animationConfig = calculateAnimationConfig(offset);
+      _scrollController.duration = animationConfig.duration;
+      if (animationConfig.duration == Duration.zero) {
         scrollY = target;
         return;
       }
       final curvedAnimation = CurvedAnimation(
         parent: _scrollController,
-        curve: style.scrollCurve,
+        curve: animationConfig.curve,
       );
       _translationAnimation = Tween<double>(
         begin: scrollY,

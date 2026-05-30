@@ -12,6 +12,25 @@ enum SelectionAutoResumeMode {
   neverResume,
 }
 
+/// 滚动动画配置 / Scroll animation configuration
+class LyricScrollAnimationConfig {
+  /// 滚动动画时长 / Scroll animation duration
+  final Duration duration;
+
+  /// 滚动动画曲线 / Scroll animation curve
+  final Curve curve;
+
+  const LyricScrollAnimationConfig({
+    required this.duration,
+    required this.curve,
+  });
+}
+
+/// 根据滚动距离返回动画配置 / Builds scroll animation config by scroll distance
+typedef LyricScrollAnimationBuilder = LyricScrollAnimationConfig Function(
+  double offset,
+);
+
 class LyricStyle {
   // ==================== 文本样式相关 Text Style ====================
 
@@ -93,6 +112,9 @@ class LyricStyle {
   /// 滚动动画曲线 / Scroll animation curve
   final Curve scrollCurve;
 
+  /// 自定义滚动动画配置 / Custom scroll animation config
+  final LyricScrollAnimationBuilder? scrollAnimationBuilder;
+
   // ==================== 自动恢复相关 Auto Resume ====================
 
   /// 选中行自动恢复时长 / Selection auto resume duration
@@ -158,6 +180,7 @@ class LyricStyle {
     this.switchEnterCurve = Curves.easeIn,
     this.switchExitCurve = Curves.easeOut,
     this.scrollCurve = Curves.easeOutCubic,
+    this.scrollAnimationBuilder,
     this.translationActiveColor,
     this.disableTouchEvent = false,
     double? activeAnchorPosition,
@@ -196,6 +219,7 @@ class LyricStyle {
     Curve? switchEnterCurve,
     Curve? switchExitCurve,
     Curve? scrollCurve,
+    Object? scrollAnimationBuilder = _unset,
     Object? translationActiveColor = _unset,
     Object? activeAnchorPosition = _unset,
     Color? selectedColor,
@@ -244,6 +268,9 @@ class LyricStyle {
       switchEnterCurve: switchEnterCurve ?? this.switchEnterCurve,
       switchExitCurve: switchExitCurve ?? this.switchExitCurve,
       scrollCurve: scrollCurve ?? this.scrollCurve,
+      scrollAnimationBuilder: scrollAnimationBuilder == _unset
+          ? this.scrollAnimationBuilder
+          : scrollAnimationBuilder as LyricScrollAnimationBuilder?,
       translationActiveColor: translationActiveColor == _unset
           ? this.translationActiveColor
           : translationActiveColor as Color?,
