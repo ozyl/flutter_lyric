@@ -1,3 +1,25 @@
+## [3.0.4]
+
+### Breaking changes
+
+* **None.** Both updates are backward compatible for public API consumers.
+
+### Behavior changes (non-breaking)
+
+* **Active highlight vs. text opacity:** Gradients/highlights on the playing line are no longer tied to `activeStyle` text opacity. You can use a semi-transparent `activeStyle.color` for unplayed syllables while keeping full-strength highlight colors/gradients ([#41](https://github.com/ozyl/flutter_lyric/issues/41)). Existing apps that depended on highlight fading together with text opacity will see different visuals; adjust `activeStyle` / `activeHighlightGradient` (or related highlight settings) if needed.
+
+### Added
+
+* `LyricScrollAnimationConfig` and `LyricScrollAnimationBuilder` on `LyricStyle.scrollAnimationBuilder` — override scroll **duration** and **curve** per scroll distance (`offset` in pixels). When unset, behavior matches previous `scrollDuration` / `scrollDurations` / `scrollCurve` logic ([#41](https://github.com/ozyl/flutter_lyric/issues/41)).
+
+### Fixed
+
+* Decouple active highlight rendering from active text opacity: dedicated mask painters avoid per-frame text relayout while preserving fade behavior.
+
+### Example
+
+* Issue #41 demo presets in `example/lib/issue41_demo_style.dart` (gradient highlight + scroll animation curves).
+
 ## [3.0.3]
 * fix: Skip exit animation on the first line switch to avoid unwanted transition
 * feat: `enableSwitchAnimation` now also animates text color transitions for both main and translation lyrics [#40](https://github.com/ozyl/flutter_lyric/pull/40) by [HBWuChang](https://github.com/HBWuChang)
