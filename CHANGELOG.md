@@ -1,3 +1,13 @@
+## [3.0.5]
+
+### Fixed
+
+* Fix animation lifecycle issues in scroll, highlight, and line-switch mixins: properly dispose `CurvedAnimation`, guard async callbacks with `mounted`, and correct `dispose` order to prevent exceptions when leaving and re-entering lyric pages ([#39](https://github.com/ozyl/flutter_lyric/issues/39)).
+
+### Changed
+
+* Enable strict inference and `type_annotate_public_apis` in `analysis_options.yaml`; add missing type annotations across public APIs for improved static analysis score.
+
 ## [3.0.4]
 
 ### Breaking changes
