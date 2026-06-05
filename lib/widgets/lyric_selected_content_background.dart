@@ -25,8 +25,8 @@ class LyricSelectionContentBackground extends StatefulWidget {
 
 class _LyricSelectionContentBackgroundState
     extends State<LyricSelectionContentBackground> {
-  var _show = false;
-  Function? cancelResumeSelectedLine;
+  bool _show = false;
+  VoidCallback? cancelResumeSelectedLine;
   @override
   void initState() {
     super.initState();
@@ -53,9 +53,9 @@ class _LyricSelectionContentBackgroundState
   }
 
   LyricController get controller => widget.controller;
-  get style => widget.style;
-  get paddingHorizontal => widget.paddingHorizontal;
-  get borderRadius => widget.borderRadius;
+  LyricStyle get style => widget.style;
+  double get paddingHorizontal => widget.paddingHorizontal;
+  BorderRadius? get borderRadius => widget.borderRadius;
   @override
   Widget build(BuildContext context) {
     return SelectListenableBuilder(

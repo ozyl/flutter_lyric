@@ -32,7 +32,7 @@ mixin LyricTouchMixin<T extends StatefulWidget>
     setDragTranslationY(value);
   }
 
-  void _stopSelection(_) {
+  void _stopSelection(dynamic _) {
     stopFlingController();
     _activeResumeDebouncer.dispose();
     _selecteResumeDebouncer.dispose();
@@ -98,7 +98,7 @@ mixin LyricTouchMixin<T extends StatefulWidget>
 
   var _isDragging = false;
 
-  scheduleResumeSelectedLine() {
+  void scheduleResumeSelectedLine() {
     // 如果播放和选择恢复时间相同，则不进行恢复
     if (style.selectionAutoResumeMode == SelectionAutoResumeMode.neverResume ||
         style.selectionAutoResumeDuration >= style.activeAutoResumeDuration) {

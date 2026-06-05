@@ -24,9 +24,9 @@ class LyricController {
   // 高亮索引
   late ValueNotifier<int> selectedIndexNotifier = ValueNotifier(0);
 
-  var anchorAlignOffsetY = 0.0;
-  var selectedMaxWidth = 0.0;
-  var _lyricOffset = 0;
+  double anchorAlignOffsetY = 0.0;
+  double selectedMaxWidth = 0.0;
+  int _lyricOffset = 0;
 
   set lyricOffset(int value) {
     _lyricOffset = value;
@@ -51,7 +51,7 @@ class LyricController {
     });
   }
 
-  Function(dynamic)? _onTapLineCallback;
+  void Function(dynamic)? _onTapLineCallback;
 
   void cancelOnTapLineCallback() {
     if (_onTapLineCallback != null) {
@@ -60,7 +60,7 @@ class LyricController {
     }
   }
 
-  void setOnTapLineCallback(Function(Duration) callback) {
+  void setOnTapLineCallback(void Function(Duration) callback) {
     cancelOnTapLineCallback();
     registerEvent(
         LyricEvent.tapLine,
@@ -71,9 +71,10 @@ class LyricController {
         });
   }
 
-  final Map<LyricEvent, List<Function(dynamic)>> _eventCallbacks = {};
+  final Map<LyricEvent, List<void Function(dynamic)>> _eventCallbacks = {};
 
-  VoidCallback registerEvent(LyricEvent event, Function(dynamic) callback) {
+  VoidCallback registerEvent(
+      LyricEvent event, void Function(dynamic) callback) {
     _eventCallbacks[event] ??= [];
     _eventCallbacks[event]!.add(callback);
     return () {
@@ -81,7 +82,7 @@ class LyricController {
     };
   }
 
-  void unregisterEvent(LyricEvent event, Function(dynamic) callback) {
+  void unregisterEvent(LyricEvent event, void Function(dynamic) callback) {
     _eventCallbacks[event]?.remove(callback);
   }
 
@@ -101,7 +102,7 @@ class LyricController {
     lyricOffset = lyricModel.offset;
   }
 
-  setProgress(Duration progress) {
+  void setProgress(Duration progress) {
     progressNotifier.value = progress;
     final playIndex = getIndexByProgress(
       progress,

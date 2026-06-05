@@ -23,12 +23,8 @@ class LyricPainter extends CustomPainter {
   final LyricLineSwitchState switchState;
   final bool isSelecting;
   final LyricStyle style;
-  final Function(
-    int,
-  ) onAnchorIndexChange;
-  final Function(
-    Map<int, Rect>,
-  ) onShowLineRectsChange;
+  final void Function(int) onAnchorIndexChange;
+  final void Function(Map<int, Rect>) onShowLineRectsChange;
 
   LyricPainter({
     required this.layout,
@@ -105,7 +101,7 @@ class LyricPainter extends CustomPainter {
     onShowLineRectsChange(showLineRects);
   }
 
-  drawHighlight(
+  void drawHighlight(
     Canvas canvas,
     Size size,
     TextPainter maskPainter,
@@ -300,7 +296,7 @@ class LyricPainter extends CustomPainter {
     return customColor ?? baseStyle.color!;
   }
 
-  drawLine(
+  void drawLine(
     Canvas canvas,
     LineMetrics metric,
     Size size,

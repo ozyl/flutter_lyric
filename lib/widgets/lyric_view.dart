@@ -51,7 +51,7 @@ class _LyricViewState extends State<LyricView>
   LyricLayout? layout;
 
   @override
-  var lyricSize = Size.zero;
+  Size lyricSize = Size.zero;
 
   // 动画相关状态
   @override

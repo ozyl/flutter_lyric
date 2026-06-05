@@ -8,7 +8,7 @@ import 'package:flutter_lyric/widgets/highlight_listenable_builder.dart';
 class LyricSelectionProgress extends StatelessWidget {
   final LyricController controller;
   final LyricStyle style;
-  final Function(SelectionState state) onPlay;
+  final void Function(SelectionState state) onPlay;
   const LyricSelectionProgress(
       {Key? key,
       required this.controller,
@@ -83,7 +83,7 @@ class LyricSelectionProgress extends StatelessWidget {
 class LyricSelectionProgress2 extends StatelessWidget {
   final LyricController controller;
   final LyricStyle style;
-  final Function(SelectionState state) onPlay;
+  final void Function(SelectionState state) onPlay;
   const LyricSelectionProgress2(
       {Key? key,
       required this.controller,

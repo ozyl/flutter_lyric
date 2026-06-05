@@ -24,27 +24,45 @@ mixin LyricScrollMixin<T extends StatefulWidget>
 
   late final AnimationController _scrollController;
   Animation<double>? _translationAnimation;
+  CurvedAnimation? _curvedAnimation;
 
   @override
   void initState() {
     super.initState();
     _scrollController =
         AnimationController(vsync: this, duration: style.scrollDuration)
-          ..addListener(() {
-            final value = _translationAnimation?.value;
-            if (!mounted || value == null || value == scrollY) {
-              return;
-            }
-            scrollY = value;
-          });
+          ..addListener(_onScrollAnimationTick)
+          ..addStatusListener(_onScrollAnimationStatus);
     controller.registerEvent(LyricEvent.reset, _reset);
     controller.activeIndexNotifiter.addListener(playIndexListener);
   }
 
-  void _reset(_) {
+  void _onScrollAnimationTick() {
+    final value = _translationAnimation?.value;
+    if (!mounted || value == null || value == scrollY) {
+      return;
+    }
+    scrollY = value;
+  }
+
+  void _onScrollAnimationStatus(AnimationStatus status) {
+    if (status == AnimationStatus.completed ||
+        status == AnimationStatus.dismissed) {
+      _disposeScrollAnimation();
+    }
+  }
+
+  void _disposeScrollAnimation() {
+    _translationAnimation = null;
+    _curvedAnimation?.dispose();
+    _curvedAnimation = null;
+  }
+
+  void _reset(dynamic _) {
     if (_scrollController.isAnimating) {
       _scrollController.stop();
     }
+    _disposeScrollAnimation();
   }
 
   double get scrollY => scrollYNotifier.value;
@@ -54,6 +72,9 @@ mixin LyricScrollMixin<T extends StatefulWidget>
 
   /// 播放索引变化监听
   void playIndexListener() {
+    if (!mounted) {
+      return;
+    }
     updateScrollY();
   }
 
@@ -108,6 +129,9 @@ mixin LyricScrollMixin<T extends StatefulWidget>
 
   /// 更新偏移Y值
   void updateScrollY({bool animate = true}) {
+    if (!mounted) {
+      return;
+    }
     final currentLayout = layout;
     if (currentLayout != null) {
       final target = dragScrollY ?? calcActiveLineOffsetY();
@@ -115,12 +139,14 @@ mixin LyricScrollMixin<T extends StatefulWidget>
         if (_scrollController.isAnimating) {
           _scrollController.stop();
         }
+        _disposeScrollAnimation();
         scrollY = target;
         return;
       }
       if (_scrollController.isAnimating) {
         _scrollController.stop();
       }
+      _disposeScrollAnimation();
       final offset = (scrollY - target).abs();
       if (offset < 0.1) {
         scrollY = target;
@@ -133,23 +159,27 @@ mixin LyricScrollMixin<T extends StatefulWidget>
         scrollY = target;
         return;
       }
-      final curvedAnimation = CurvedAnimation(
+      _curvedAnimation = CurvedAnimation(
         parent: _scrollController,
         curve: animationConfig.curve,
       );
       _translationAnimation = Tween<double>(
         begin: scrollY,
         end: target,
-      ).animate(curvedAnimation);
+      ).animate(_curvedAnimation!);
       _scrollController.forward(from: 0);
     }
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
     controller.unregisterEvent(LyricEvent.reset, _reset);
     controller.activeIndexNotifiter.removeListener(playIndexListener);
+    _scrollController
+      ..removeStatusListener(_onScrollAnimationStatus)
+      ..stop();
+    _disposeScrollAnimation();
+    _scrollController.dispose();
     super.dispose();
   }
 }

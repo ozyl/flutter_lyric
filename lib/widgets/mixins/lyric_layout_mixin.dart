@@ -15,7 +15,7 @@ mixin LyricLayoutMixin<T extends StatefulWidget> on State<T> {
   LyricLayout? get layout;
   set layout(LyricLayout? value);
 
-  var contentHeight = 0.0;
+  double contentHeight = 0.0;
 
   @override
   void dispose() {
@@ -25,7 +25,7 @@ mixin LyricLayoutMixin<T extends StatefulWidget> on State<T> {
     super.dispose();
   }
 
-  onStyleChange() {
+  void onStyleChange() {
     final l = layout;
     if (l == null) {
       computeLyricLayout();
@@ -82,12 +82,12 @@ mixin LyricLayoutMixin<T extends StatefulWidget> on State<T> {
         layout?.contentHeight(controller.activeIndexNotifiter.value) ?? 0;
   }
 
-  systemFontsDidChange() {
+  void systemFontsDidChange() {
     if (layout == null) return;
     onLayoutChange(LyricLayout.updatePainters(layout!));
   }
 
-  onLayoutChange(LyricLayout layout) {
+  void onLayoutChange(LyricLayout layout) {
     this.layout = layout;
     updateSelection();
     updateTotalHeight();
