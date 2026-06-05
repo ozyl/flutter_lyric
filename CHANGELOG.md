@@ -1,3 +1,9 @@
+## [3.0.6]
+
+### Fixed
+
+* Fix regression in 3.0.5 where highlight and auto-scroll stopped working: only dispose `CurvedAnimation` on animation `completed`, not on `dismissed` ([#39](https://github.com/ozyl/flutter_lyric/issues/39)).
+
 ## [3.0.5]
 
 ### Fixed
