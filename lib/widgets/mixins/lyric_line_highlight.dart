@@ -36,8 +36,7 @@ mixin LyricLineHightlightMixin<T extends StatefulWidget>
   }
 
   void _onWidthAnimationStatus(AnimationStatus status) {
-    if (status == AnimationStatus.completed ||
-        status == AnimationStatus.dismissed) {
+    if (status == AnimationStatus.completed) {
       _disposeWidthAnimation();
     }
   }
@@ -139,9 +138,7 @@ mixin LyricLineHightlightMixin<T extends StatefulWidget>
       end: newWidth,
     ).animate(_curvedAnimation!);
 
-    _animationController
-      ..reset()
-      ..forward();
+    _animationController.forward(from: 0);
   }
 
   Widget buildActiveHighlightWidth(Widget Function(double value) builder) {

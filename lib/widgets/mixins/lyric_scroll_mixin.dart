@@ -46,8 +46,7 @@ mixin LyricScrollMixin<T extends StatefulWidget>
   }
 
   void _onScrollAnimationStatus(AnimationStatus status) {
-    if (status == AnimationStatus.completed ||
-        status == AnimationStatus.dismissed) {
+    if (status == AnimationStatus.completed) {
       _disposeScrollAnimation();
     }
   }
