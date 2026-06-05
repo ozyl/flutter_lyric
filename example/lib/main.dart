@@ -103,13 +103,13 @@ class _MyAppState extends State<MyApp> {
                                   stylePresets: issue41DemoStylePresets,
                                   preserveStyleOnDarkMode: true,
                                   initController: (controller) {
-                                    controller.setOnTapLineCallback(
-                                      (duration) async => {
-                                        controller.stopSelection(),
-                                        await player.seek(duration),
-                                        player.play(),
-                                      },
-                                    );
+                                    controller.setOnTapLineCallback((
+                                      duration,
+                                    ) async {
+                                      controller.stopSelection();
+                                      await player.seek(duration);
+                                      player.play();
+                                    });
                                   },
                                   progress: value,
                                   afterLyricBuilder: (lyricController, style) =>

@@ -131,11 +131,12 @@ class EditStyle extends StatelessWidget {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Row(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Line Text Alignment-'),
-                        const SizedBox(width: 12),
+                        const Text('Line Text Alignment'),
                         DropdownButton<TextAlign>(
+                          isExpanded: true,
                           value: style.lineTextAlign,
                           items: const [
                             DropdownMenuItem(
@@ -160,11 +161,12 @@ class EditStyle extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Row(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Content Alignment-'),
-                        const SizedBox(width: 12),
+                        const Text('Content Alignment'),
                         DropdownButton<CrossAxisAlignment>(
+                          isExpanded: true,
                           value: style.contentAlignment,
                           items: const [
                             DropdownMenuItem(
@@ -189,11 +191,12 @@ class EditStyle extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Row(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Selection Anchor Alignment-'),
-                        const SizedBox(width: 12),
+                        const Text('Selection Anchor Alignment'),
                         DropdownButton<MainAxisAlignment>(
+                          isExpanded: true,
                           value: style.selectionAlignment,
                           items: const [
                             DropdownMenuItem(
@@ -218,11 +221,12 @@ class EditStyle extends StatelessWidget {
                       ],
                     ),
                     const SizedBox(height: 12),
-                    Row(
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Play Anchor Alignment-'),
-                        const SizedBox(width: 12),
+                        const Text('Play Anchor Alignment'),
                         DropdownButton<MainAxisAlignment>(
+                          isExpanded: true,
                           value: style.activeAlignment,
                           items: const [
                             DropdownMenuItem(
