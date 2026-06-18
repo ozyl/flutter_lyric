@@ -1,3 +1,13 @@
+## [3.0.7]
+
+### Fixed
+
+* `LrcParser` now accepts colon-separated fractional timestamps (e.g. `[00:00:58]`) in addition to dot format (`[00:00.58]`), fixing Netease Cloud Music lyrics that mix both styles ([#42](https://github.com/ozyl/flutter_lyric/pull/42) by [HBWuChang](https://github.com/HBWuChang)).
+
+### Added
+
+* Unit tests for colon and dot timestamp parsing in `test/lyric_parse_test.dart`.
+
 ## [3.0.6]
 
 ### Fixed
