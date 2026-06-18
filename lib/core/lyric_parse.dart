@@ -53,7 +53,7 @@ class LrcParser extends LyricParse {
   @override
   bool isMatch(String mainLyric) {
     return RegExp(
-      r'^\[(\d{1,}):(\d{2})(?:\.(\d{1,}))?\]',
+      r'^\[(\d{1,}):(\d{2})(?:[.:](\d{1,}))?\]',
       multiLine: true,
     ).hasMatch(mainLyric);
   }
@@ -126,7 +126,7 @@ class LrcParser extends LyricParse {
 
   static LrcLine? extractLine(String line) {
     final regexp = RegExp(
-      r'\[(\d{1,}):(\d{2})(?:\.(\d{1,}))?\]',
+      r'\[(\d{1,}):(\d{2})(?:[.:](\d{1,}))?\]',
       multiLine: true,
     );
     final matches = regexp.allMatches(line);
