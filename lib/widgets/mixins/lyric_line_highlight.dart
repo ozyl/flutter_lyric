@@ -115,30 +115,15 @@ mixin LyricLineHightlightMixin<T extends StatefulWidget>
     if (!mounted) {
       return;
     }
-    final currentWidth = activeHighlightWidthNotifier.value;
 
-    // 1. 如果新宽度与当前宽度相同，不做任何事。
-    if (currentWidth == newWidth) return;
-    if (newWidth < currentWidth) {
-      _animationController.stop();
-      _disposeWidthAnimation();
-      activeHighlightWidthNotifier.value = newWidth;
+    if (activeHighlightWidthNotifier.value == newWidth) {
       return;
     }
-    if (_animationController.isAnimating) {
-      _animationController.stop();
-    }
-    _disposeWidthAnimation();
-    _curvedAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.linear,
-    );
-    _widthAnimation = Tween<double>(
-      begin: currentWidth,
-      end: newWidth,
-    ).animate(_curvedAnimation!);
 
-    _animationController.forward(from: 0);
+    _animationController.stop();
+    _disposeWidthAnimation();
+
+    activeHighlightWidthNotifier.value = newWidth;
   }
 
   Widget buildActiveHighlightWidth(Widget Function(double value) builder) {
