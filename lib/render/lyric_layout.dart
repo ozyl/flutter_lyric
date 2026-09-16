@@ -176,7 +176,7 @@ class LyricLayout {
         return child is TextSpan ? buildHighlightMaskTextSpan(child) : child;
       }).toList(),
       style: style?.copyWith(
-        color: (style.color ?? const Color(0xFFFFFFFF)).withValues(alpha: 1.0),
+        color: const Color(0xFFFFFFFF),
       ),
     );
   }

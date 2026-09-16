@@ -7,6 +7,7 @@ import 'package:flutter_lyric/render/lyric_layout.dart';
 import 'package:flutter_lyric/widgets/mixins/lyric_line_switch_mixin.dart';
 
 const _debugLyric = false;
+const _highlightPad = 2.0;
 
 class _HighlightSegment {
   final Rect rect;
@@ -101,19 +102,26 @@ class LyricPainter extends CustomPainter {
     onShowLineRectsChange(showLineRects);
   }
 
-  void drawHighlight(
+  bool get hasHighlightPaint =>
+      layout.style.activeHighlightColor != null ||
+      layout.style.activeHighlightGradient != null;
+
+  /// 只画一层不透明字形当遮罩，再用 srcIn 分别填高亮色和未唱到的正文色。
+  /// 高亮色走遮罩自身的覆盖率，不吃 activeStyle 的透明度；全程一层字形，没有 srcOver 毛刺。
+  /// 返回 false 时调用方应改画普通正文。
+  bool drawHighlight(
     Canvas canvas,
-    Size size,
     TextPainter maskPainter,
     List<ui.LineMetrics> metrics, {
+    required Color baseColor,
     double highlightTotalWidth = 0,
     double animationOpacity = 1.0,
   }) {
-    if (highlightTotalWidth < 0 || animationOpacity <= 0) return;
+    if (highlightTotalWidth <= 0 || animationOpacity <= 0) return false;
     final activeHighlightColor = layout.style.activeHighlightColor;
     final activeHighlightGradient = layout.style.activeHighlightGradient;
     if (activeHighlightColor == null && activeHighlightGradient == null) {
-      return;
+      return false;
     }
 
     final highlightFullMode = highlightTotalWidth == double.infinity;
@@ -122,54 +130,72 @@ class LyricPainter extends CustomPainter {
     final grad = activeHighlightGradient ??
         LinearGradient(colors: [activeHighlightColor!, activeHighlightColor]);
 
+    // 切换动画期间把高亮色插值到正文色，避免单独降 alpha 把字形挖空
     final opColors = animationOpacity < 1.0
         ? grad.colors
-            .map((c) =>
-                c.withValues(alpha: (c.a * animationOpacity).clamp(0.0, 1.0)))
+            .map((c) => Color.lerp(baseColor, c, animationOpacity)!)
             .toList()
         : grad.colors;
 
     final extraFadeWidth = style.activeHighlightExtraFadeWidth;
-    final fadeEndColor = opColors.last.withValues(alpha: 0);
+    final fadeEndColor = baseColor;
 
-    const pad = 2;
+    const pad = _highlightPad;
+    final overflow = maskPainter.preferredLineHeight;
     final segments = <_HighlightSegment>[];
-    Rect? layerBounds;
+    final unsungRects = <Rect>[];
 
-    void addSegment(Rect rect, ui.Shader shader) {
-      segments.add(_HighlightSegment(rect, shader));
-      layerBounds =
-          layerBounds == null ? rect : layerBounds!.expandToInclude(rect);
+    ui.Shader highlightShader(Rect rect) => LinearGradient(
+          colors: opColors,
+          stops: grad.stops,
+          begin: grad.begin,
+          end: grad.end,
+          tileMode: grad.tileMode,
+          transform: grad.transform,
+        ).createShader(rect);
+
+    // y/p 等下伸会画出 LineMetrics 甚至 TextPainter.height 之外。
+    // 单行上下各扩一行高；折行则在相邻行中点切开，避免串色。
+    double topOf(int i) {
+      if (i == 0) return -overflow;
+      final prev = metrics[i - 1];
+      final cur = metrics[i];
+      return (prev.baseline + prev.descent + cur.baseline - cur.ascent) / 2;
     }
 
-    for (var line in metrics) {
+    double bottomOf(int i) {
+      if (i == metrics.length - 1) return maskPainter.height + overflow;
+      return topOf(i + 1);
+    }
+
+    Rect lineRect(int i) {
+      final line = metrics[i];
+      return Rect.fromLTRB(
+        line.left - pad,
+        topOf(i),
+        line.left + line.width + pad,
+        bottomOf(i),
+      );
+    }
+
+    for (var i = 0; i < metrics.length; i++) {
+      final line = metrics[i];
+      final rect = lineRect(i);
       if (highlightFullMode) {
-        final rect = Rect.fromLTWH(
-          line.left - pad,
-          line.baseline - line.ascent,
-          line.width + pad,
-          line.ascent + line.descent,
-        );
-        addSegment(
-          rect,
-          LinearGradient(
-            colors: opColors,
-            stops: grad.stops,
-            begin: grad.begin,
-            end: grad.end,
-            tileMode: grad.tileMode,
-            transform: grad.transform,
-          ).createShader(rect),
-        );
+        segments.add(_HighlightSegment(rect, highlightShader(rect)));
         accWidth += line.width;
         continue;
       }
 
       final fadeEnd = highlightTotalWidth - accWidth;
-      if (fadeEnd <= 0) break;
+      final top = rect.top;
+      final bottom = rect.bottom;
+      if (fadeEnd <= 0) {
+        unsungRects.add(rect);
+        accWidth += line.width;
+        continue;
+      }
 
-      final top = line.baseline - line.ascent;
-      final height = line.ascent + line.descent;
       final fadeWidth = extraFadeWidth > 0 ? extraFadeWidth : 0.0;
       final fadeStart = fadeEnd - fadeWidth;
       final solidEnd = fadeWidth > 0 ? fadeStart : fadeEnd;
@@ -179,68 +205,81 @@ class LyricPainter extends CustomPainter {
           line.left - pad,
           top,
           line.left + solidEnd.clamp(0.0, line.width),
-          top + height,
+          bottom,
         );
-        addSegment(
-          solidRect,
-          LinearGradient(
-            colors: opColors,
-            stops: grad.stops,
-            begin: grad.begin,
-            end: grad.end,
-            tileMode: grad.tileMode,
-            transform: grad.transform,
-          ).createShader(solidRect),
-        );
+        segments.add(_HighlightSegment(solidRect, highlightShader(solidRect)));
       }
 
       if (fadeWidth > 0 && fadeStart < line.width) {
         final fadeRect = Rect.fromLTRB(
           line.left + fadeStart,
           top,
-          line.left + fadeEnd,
-          top + height,
+          line.left + fadeEnd.clamp(0.0, line.width),
+          bottom,
         );
-        addSegment(
-          fadeRect,
-          LinearGradient(colors: [opColors.last, fadeEndColor])
-              .createShader(fadeRect),
+        segments.add(
+          _HighlightSegment(
+            fadeRect,
+            LinearGradient(colors: [opColors.last, fadeEndColor])
+                .createShader(fadeRect),
+          ),
         );
       }
 
+      if (fadeEnd < line.width) {
+        unsungRects.add(Rect.fromLTRB(
+          line.left + fadeEnd,
+          top,
+          line.left + line.width + pad,
+          bottom,
+        ));
+      }
+
       accWidth += line.width;
-
-      if (highlightTotalWidth <= accWidth) break;
     }
 
-    if (segments.isNotEmpty && layerBounds != null) {
-      _drawMaskedHighlightSegments(
-        canvas,
-        maskPainter,
-        layerBounds!,
-        segments,
-      );
-    }
+    if (segments.isEmpty) return false;
+
+    _drawMaskedHighlightSegments(
+      canvas,
+      maskPainter,
+      segments,
+      unsungRects,
+      baseColor,
+    );
+    return true;
   }
 
   void _drawMaskedHighlightSegments(
     Canvas canvas,
     TextPainter maskPainter,
-    Rect bounds,
     List<_HighlightSegment> segments,
+    List<Rect> unsungRects,
+    Color baseColor,
   ) {
-    canvas.save();
-    canvas.clipRect(bounds);
-    canvas.saveLayer(bounds, Paint());
-    final paint = Paint();
+    var bounds = Rect.fromLTWH(0, 0, maskPainter.width, maskPainter.height);
+    for (final segment in segments) {
+      bounds = bounds.expandToInclude(segment.rect);
+    }
+    for (final rect in unsungRects) {
+      bounds = bounds.expandToInclude(rect);
+    }
+    // Impeller 上 saveLayer 会裁掉字形下伸，按行高外扩
+    canvas.saveLayer(bounds.inflate(maskPainter.preferredLineHeight), Paint());
+    maskPainter.paint(canvas, Offset.zero);
+    final paint = Paint()..blendMode = BlendMode.srcIn;
     for (final segment in segments) {
       paint.shader = segment.shader;
       canvas.drawRect(segment.rect, paint);
     }
-    canvas.saveLayer(bounds, Paint()..blendMode = BlendMode.dstIn);
-    maskPainter.paint(canvas, Offset.zero);
-    canvas.restore();
-    canvas.restore();
+    if (unsungRects.isNotEmpty) {
+      paint
+        ..shader = null
+        ..color = baseColor;
+      for (final rect in unsungRects) {
+        canvas.drawRect(rect, paint);
+      }
+    }
     canvas.restore();
   }
 
@@ -330,7 +369,23 @@ class LyricPainter extends CustomPainter {
         isSelecting, isInAnchorArea, animatedMainColor);
     final needsRestyle = targetColor != oldSpan.style!.color;
 
-    if (needsRestyle) {
+    final isExiting = index == switchState.exitIndex &&
+        switchState.exitAnimationValue < 1 &&
+        style.enableSwitchAnimation;
+    final highlightMetrics = isActive
+        ? metric.activeMetrics
+        : (isExiting ? metric.metrics : null);
+    final maskPainter =
+        isActive ? metric.activeMaskPainter : metric.textMaskPainter;
+    final highlightWidth = isActive && metric.words?.isNotEmpty == true
+        ? activeHighlightWidth
+        : double.infinity;
+    final wantsHighlight = highlightMetrics != null &&
+        hasHighlightPaint &&
+        highlightOpacity > 0 &&
+        highlightWidth > 0;
+
+    if (!wantsHighlight && needsRestyle) {
       painter.text = TextSpan(
         text: oldSpan.text,
         style: oldSpan.style!.copyWith(color: targetColor),
@@ -348,23 +403,20 @@ class LyricPainter extends CustomPainter {
     }
     final switchOffset = handleSwitchAnimation(
         canvas, metric, index, switchState, painter, size);
-    painter.paint(canvas, Offset.zero);
-    if (needsRestyle) {
-      painter.text = oldSpan;
+    final paintedHighlight = wantsHighlight &&
+        drawHighlight(
+          canvas,
+          maskPainter,
+          highlightMetrics!,
+          baseColor: targetColor,
+          highlightTotalWidth: highlightWidth,
+          animationOpacity: highlightOpacity,
+        );
+    if (!paintedHighlight) {
+      painter.paint(canvas, Offset.zero);
     }
-    if (isActive) {
-      drawHighlight(
-          canvas, size, metric.activeMaskPainter, metric.activeMetrics,
-          highlightTotalWidth: metric.words?.isNotEmpty == true
-              ? activeHighlightWidth
-              : double.infinity,
-          animationOpacity: highlightOpacity);
-    } else if (index == switchState.exitIndex &&
-        switchState.exitAnimationValue < 1 &&
-        style.enableSwitchAnimation) {
-      drawHighlight(canvas, size, metric.textMaskPainter, metric.metrics,
-          highlightTotalWidth: double.infinity,
-          animationOpacity: highlightOpacity);
+    if (!wantsHighlight && needsRestyle) {
+      painter.text = oldSpan;
     }
     canvas.restore();
     final mainHeight = isActive ? metric.activeHeight : metric.height;
