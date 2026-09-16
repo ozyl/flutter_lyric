@@ -8,6 +8,28 @@ import 'package:flutter_lyric/widgets/mixins/lyric_line_switch_mixin.dart';
 
 const _debugLyric = false;
 const _highlightPad = 2.0;
+const _descenderFoot = 8.0;
+
+/// 每行着色带的整数 Y 边界，长度为行数+1。相邻行共用边界，不重叠；
+/// 每行下沿至少盖住 descent 再加字脚下伸，避免 y/g/p 漏脚。
+List<double> _highlightBandYs(
+  List<Rect> tights,
+  double painterHeight,
+  double overflow,
+  double pad,
+) {
+  if (tights.isEmpty) return const <double>[0, 0];
+  final n = tights.length;
+  final ys = List<double>.filled(n + 1, 0);
+  ys[0] = (tights.first.top - pad).floorToDouble();
+  for (var i = 1; i < n; i++) {
+    ys[i] = tights[i].top.roundToDouble();
+  }
+  var lastBottom = tights.last.bottom;
+  if (painterHeight > lastBottom) lastBottom = painterHeight;
+  ys[n] = (lastBottom + overflow + _descenderFoot).ceilToDouble();
+  return ys;
+}
 
 class _HighlightSegment {
   final Rect rect;
@@ -125,7 +147,6 @@ class LyricPainter extends CustomPainter {
     }
 
     final highlightFullMode = highlightTotalWidth == double.infinity;
-    var accWidth = 0.0;
 
     final grad = activeHighlightGradient ??
         LinearGradient(colors: [activeHighlightColor!, activeHighlightColor]);
@@ -142,6 +163,7 @@ class LyricPainter extends CustomPainter {
 
     const pad = _highlightPad;
     final overflow = maskPainter.preferredLineHeight;
+    final lineMetrics = metrics;
     final segments = <_HighlightSegment>[];
     final unsungRects = <Rect>[];
 
@@ -154,44 +176,52 @@ class LyricPainter extends CustomPainter {
           transform: grad.transform,
         ).createShader(rect);
 
-    // y/p 等下伸会画出 LineMetrics 甚至 TextPainter.height 之外。
-    // 单行上下各扩一行高；折行则在相邻行中点切开，避免串色。
-    double topOf(int i) {
-      if (i == 0) return -overflow;
-      final prev = metrics[i - 1];
-      final cur = metrics[i];
-      return (prev.baseline + prev.descent + cur.baseline - cur.ascent) / 2;
-    }
+    // 渐变只按这一行的字形盒子映射，每行都从 begin 色重新开始。
+    Rect tightLineRect(ui.LineMetrics line) => Rect.fromLTRB(
+          line.left - pad,
+          line.baseline - line.ascent,
+          line.left + line.width + pad,
+          line.baseline + line.descent,
+        );
 
-    double bottomOf(int i) {
-      if (i == metrics.length - 1) return maskPainter.height + overflow;
-      return topOf(i + 1);
-    }
+    final tights = [for (final line in lineMetrics) tightLineRect(line)];
+    final bandYs = _highlightBandYs(
+      tights,
+      maskPainter.height,
+      overflow,
+      pad,
+    );
 
-    Rect lineRect(int i) {
-      final line = metrics[i];
+    // 相邻行共用整数边界；每行再往下盖一点字脚（落在行距空档里，dest.a=0，不会把半透明乘两次）。
+    Rect coverBand(int i, double left, double right) {
+      final top = bandYs[i];
+      var bottom = bandYs[i + 1];
+      final footBottom = (tights[i].bottom + 4).ceilToDouble();
+      if (footBottom > bottom) bottom = footBottom;
       return Rect.fromLTRB(
-        line.left - pad,
-        topOf(i),
-        line.left + line.width + pad,
-        bottomOf(i),
+        left,
+        top,
+        right,
+        bottom > top ? bottom : top + 1,
       );
     }
 
-    for (var i = 0; i < metrics.length; i++) {
-      final line = metrics[i];
-      final rect = lineRect(i);
+    var accWidth = 0.0;
+    for (var i = 0; i < lineMetrics.length; i++) {
+      final line = lineMetrics[i];
+      final tight = tights[i];
+      final left = tight.left.floorToDouble();
+      final right = tight.right.ceilToDouble();
       if (highlightFullMode) {
-        segments.add(_HighlightSegment(rect, highlightShader(rect)));
+        segments.add(_HighlightSegment(
+            coverBand(i, left, right), highlightShader(tight)));
         accWidth += line.width;
         continue;
       }
 
       final fadeEnd = highlightTotalWidth - accWidth;
-      final top = rect.top;
-      final bottom = rect.bottom;
       if (fadeEnd <= 0) {
-        unsungRects.add(rect);
+        unsungRects.add(coverBand(i, left, right));
         accWidth += line.width;
         continue;
       }
@@ -200,39 +230,30 @@ class LyricPainter extends CustomPainter {
       final fadeStart = fadeEnd - fadeWidth;
       final solidEnd = fadeWidth > 0 ? fadeStart : fadeEnd;
 
-      if (solidEnd > 0) {
-        final solidRect = Rect.fromLTRB(
-          line.left - pad,
-          top,
-          line.left + solidEnd.clamp(0.0, line.width),
-          bottom,
-        );
-        segments.add(_HighlightSegment(solidRect, highlightShader(solidRect)));
+      var xSolid = (line.left + solidEnd.clamp(0.0, line.width)).roundToDouble();
+      var xFade = (line.left + fadeEnd.clamp(0.0, line.width)).roundToDouble();
+      if (xSolid < left) xSolid = left;
+      if (xFade < xSolid) xFade = xSolid;
+      if (xFade > right) xFade = right;
+
+      if (xSolid > left) {
+        segments.add(_HighlightSegment(
+            coverBand(i, left, xSolid), highlightShader(tight)));
       }
 
-      if (fadeWidth > 0 && fadeStart < line.width) {
-        final fadeRect = Rect.fromLTRB(
-          line.left + fadeStart,
-          top,
-          line.left + fadeEnd.clamp(0.0, line.width),
-          bottom,
-        );
+      if (fadeWidth > 0 && xFade > xSolid) {
+        final fadeTight = Rect.fromLTRB(xSolid, tight.top, xFade, tight.bottom);
         segments.add(
           _HighlightSegment(
-            fadeRect,
+            coverBand(i, xSolid, xFade),
             LinearGradient(colors: [opColors.last, fadeEndColor])
-                .createShader(fadeRect),
+                .createShader(fadeTight),
           ),
         );
       }
 
-      if (fadeEnd < line.width) {
-        unsungRects.add(Rect.fromLTRB(
-          line.left + fadeEnd,
-          top,
-          line.left + line.width + pad,
-          bottom,
-        ));
+      if (xFade < right) {
+        unsungRects.add(coverBand(i, xFade, right));
       }
 
       accWidth += line.width;
@@ -265,11 +286,17 @@ class LyricPainter extends CustomPainter {
       bounds = bounds.expandToInclude(rect);
     }
     // Impeller 上 saveLayer 会裁掉字形下伸，按行高外扩
-    canvas.saveLayer(bounds.inflate(maskPainter.preferredLineHeight), Paint());
+    canvas.saveLayer(
+        bounds.inflate(maskPainter.preferredLineHeight + _descenderFoot),
+        Paint());
     maskPainter.paint(canvas, Offset.zero);
-    final paint = Paint()..blendMode = BlendMode.srcIn;
+    final paint = Paint()
+      ..blendMode = BlendMode.srcIn
+      ..isAntiAlias = false;
     for (final segment in segments) {
-      paint.shader = segment.shader;
+      paint
+        ..shader = segment.shader
+        ..color = const Color(0xFFFFFFFF);
       canvas.drawRect(segment.rect, paint);
     }
     if (unsungRects.isNotEmpty) {
