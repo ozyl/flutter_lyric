@@ -4,9 +4,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
-import 'package:flutter_lyric_example/issue41_demo_style.dart';
+import 'package:flutter_lyric_example/issue41_demo_preset.dart';
 import 'package:flutter_lyric_example/just_audio_progress_source.dart';
 import 'package:flutter_lyric_example/show_lyric.dart';
+import 'mock.dart';
 import 'package:just_audio/just_audio.dart';
 
 void main() {
@@ -26,6 +27,8 @@ class _MyAppState extends State<MyApp> {
   final player = AudioPlayer();
 
   late final progressSource = JustAudioProgressSource(player);
+  late final lyricController = LyricController(progressSource: progressSource)
+    ..load(qrc, translation: tlrc);
 
   @override
   void initState() {
@@ -35,6 +38,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void dispose() {
+    lyricController.dispose();
     player.dispose();
     super.dispose();
   }
@@ -101,60 +105,25 @@ class _MyAppState extends State<MyApp> {
                           child: Builder(
                             builder: (context) {
                               final items = [
-                                ShowLyric(
-                                  initStyle: LyricStyles.default2,
-                                  stylePresets: issue41DemoStylePresets,
-                                  preserveStyleOnDarkMode: true,
-                                  initController: (controller) {
-                                    controller.setOnTapLineCallback((
-                                      duration,
-                                    ) async {
-                                      controller.stopSelection();
-                                      await player.seek(duration);
+                                for (final base in [
+                                  LyricPresets.leading,
+                                  LyricPresets.centered,
+                                  LyricPresets.singleLine,
+                                ])
+                                  ShowLyric(
+                                    controller: lyricController,
+                                    initialPreset: base.copyWith(
+                                      selectionBackgroundBuilder:
+                                          selectionBackground,
+                                      selectionForegroundBuilder:
+                                          selectionForeground,
+                                    ),
+                                    presets: issue41DemoPresets,
+                                    onLineTap: (details) async {
+                                      await player.seek(details.seekPosition);
                                       player.play();
-                                    });
-                                  },
-                                  progressSource: progressSource,
-                                  afterLyricBuilder: (lyricController, style) =>
-                                      [
-                                        LyricSelectionProgress2(
-                                          controller: lyricController,
-                                          onPlay: (SelectionState state) async {
-                                            lyricController.stopSelection();
-                                            await player.seek(state.duration);
-                                            player.play();
-                                          },
-                                          style: style,
-                                        ),
-                                      ],
-                                ),
-                                ShowLyric(
-                                  initStyle: LyricStyles.default1,
-                                  progressSource: progressSource,
-                                  beforeLyricBuilder:
-                                      (lyricController, style) => [
-                                        LyricSelectionContentBackground(
-                                          controller: lyricController,
-                                          style: style,
-                                        ),
-                                      ],
-                                  afterLyricBuilder: (lyricController, style) =>
-                                      [
-                                        LyricSelectionProgress(
-                                          controller: lyricController,
-                                          onPlay: (SelectionState state) async {
-                                            lyricController.stopSelection();
-                                            await player.seek(state.duration);
-                                            player.play();
-                                          },
-                                          style: style,
-                                        ),
-                                      ],
-                                ),
-                                ShowLyric(
-                                  initStyle: LyricStyles.single,
-                                  progressSource: progressSource,
-                                ),
+                                    },
+                                  ),
                               ];
                               return ConstrainedBox(
                                 constraints: BoxConstraints(maxWidth: 1200),

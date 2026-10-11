@@ -1,4 +1,16 @@
-## [Unreleased]
+## [4.0.0-dev.1]
+
+### Breaking
+
+* Replace `LyricStyle` with immutable `LyricPreset`, including display mode, visual effects, interaction policies and presentation builders. Add centered, leading and single-line presets, explicit anchor/fade units, and `LyricPresetScope`.
+* Keep one public `LyricController` with atomic read-only playback state, nullable active indices, immutable `LyricDocument`, explicit offsets and application-owned tap callbacks.
+* Support multiple views per controller with independent browsing, named view commands, and one shared player sampler. Replace public events, mutable notifiers and lifecycle mixins with private view sessions.
+* Use standard parent sizing and native Flutter scrolling around a Canvas viewport. Active translations support full typography; single-line mode lays out only the active entry.
+* Retain Dart 2.12 / Flutter 2.0 support, remove the unused platform interface dependency and incompatible lint dependency, and add a minimum/modern SDK CI matrix.
+
+See [migration instructions](doc/migration.md).
+
+## [Unreleased rendering work retained in 4.0]
 
 ### Changed
 

@@ -1,8 +1,13 @@
-export 'core/lyric_controller.dart';
-export 'core/lyric_progress_source.dart';
-export 'core/lyric_style.dart';
-export 'core/lyric_styles.dart';
-export 'widgets/highlight_listenable_builder.dart';
-export 'widgets/lyric_selected_content_background.dart';
-export 'widgets/lyric_selected_progress.dart';
-export 'widgets/lyric_view.dart';
+export 'src/controller/lyric_controller.dart'
+    show LyricController, LyricPlaybackState;
+export 'src/controller/lyric_progress_source.dart';
+export 'src/model/lyric_document.dart' show LyricDocument, LyricLine, LyricWord;
+export 'src/parser/lyric_parser.dart'
+    show LyricParser, LrcParser, QrcParser, YrcParser, FallbackParser;
+export 'src/parser/lrc_to_qrc.dart' show LrcToQrcUtil;
+export 'src/preset/lyric_effects.dart';
+export 'src/preset/lyric_preset.dart';
+export 'src/preset/lyric_presets.dart';
+export 'src/preset/lyric_preset_scope.dart';
+export 'src/view/lyric_details.dart';
+export 'src/view/lyric_view.dart';

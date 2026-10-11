@@ -1,101 +1,80 @@
-import 'package:flutter/material.dart';
-import 'package:flutter_lyric/core/lyric_model.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
-import 'package:flutter_lyric/render/lyric_layout.dart';
-import 'package:flutter_lyric/render/lyric_painter.dart';
+import 'package:flutter_lyric/src/rendering/lyric_layout.dart';
+import 'package:flutter_lyric/src/rendering/resolved_preset.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-Finder get _paintFinder => find.byWidgetPredicate(
-    (widget) => widget is CustomPaint && widget.painter is LyricPainter);
-
-LyricLayout _layout() => LyricLayout.compute(
-      LyricModel(
-          lines: List.generate(30, (i) {
-        const text = 'Repeated words repeated words wrapping onto another row';
-        return LyricLine(
-          start: Duration(seconds: i),
-          text: text,
-          translation: i.isEven ? 'A translated lyric' : null,
-          words: [
-            LyricWord(text: text, start: Duration(seconds: i)),
-          ],
-        );
-      })),
-      LyricStyles.default2,
-      const Size(160, 240),
-    );
+import 'test_support.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  test('geometry measures only the requested active line; disposal stays lazy',
+  test('offscreen lines defer active, translation, mask and word paragraphs',
       () {
-    final layout = _layout();
-    addTearDown(layout.dispose);
-    expect(layout.toString(), contains('LineMetrics'));
+    final layout = LyricLayout.compute(
+        lines(), ResolvedPreset(quietPreset), const Size(160, 240));
     expect(layout.metrics.every((m) => m.debugPainterCount == 2), isTrue);
-    final normalHeight = layout.contentHeight(-1);
-    final top = layout.lineTop(29, -1);
-    expect(layout.lineAtOffset(top + 1, -1), 29);
-    expect(layout.metrics.every((m) => m.debugPainterCount == 2), isTrue);
-
-    final active = layout.metrics[29];
-    expect(layout.contentHeight(29),
-        normalHeight + active.activeHeight - active.height);
-    expect(active.debugPainterCount, 3);
-    expect(active.debugWordMetricsComputed, isFalse);
+    final height = layout.contentHeight(-1);
+    final last = layout.metrics.last;
+    expect(
+        layout.contentHeight(29),
+        height +
+            last.activeHeight -
+            last.height +
+            last.activeTranslationHeight -
+            last.translationHeight);
+    expect(last.debugPainterCount, 4);
     expect(
         layout.metrics.take(29).every((m) => m.debugPainterCount == 2), isTrue);
-    final words = active.words;
-    expect(active.words, same(words));
-    final mask = active.activeMaskPainter;
-    expect(active.activeMaskPainter, same(mask));
-    expect(active.debugPainterCount, 4);
+    final words = last.words;
+    final mask = last.activeMaskPainter;
+    expect(last.words, same(words));
+    expect(last.activeMaskPainter, same(mask));
+    expect(last.debugPainterCount, 5);
     layout.dispose();
-    expect(mask.debugDisposed, isTrue);
-    expect(active.textPainter.debugDisposed, isTrue);
-    expect(active.debugPainterCount, 4);
     expect(layout.metrics.first.debugPainterCount, 2);
     expect(layout.metrics.first.debugWordMetricsComputed, isFalse);
   });
-
-  test('deferred metrics match independently laid out wrapped text and words',
-      () {
-    for (final activeSize in [10.0, 24.0]) {
-      final style = LyricStyles.default1.copyWith(
-        textStyle: const TextStyle(fontFamily: 'Ahem', fontSize: 16),
-        activeStyle: TextStyle(fontFamily: 'Ahem', fontSize: activeSize),
-        textAlign: TextAlign.right,
-      );
+  test('lazy paragraph and word widths match independent layout', () {
+    for (final fontSize in [10.0, 24.0]) {
       const text = 'word word\nA long wrapped word';
-      final line = LyricLine(start: Duration.zero, text: text, words: [
-        for (final token in ['word', 'word', 'missing', 'A long wrapped word'])
-          LyricWord(text: token, start: Duration.zero),
-      ]);
+      final preset = quietPreset.copyWith(
+          padding: EdgeInsets.zero,
+          activeTextStyle: TextStyle(fontFamily: 'Ahem', fontSize: fontSize),
+          textAlign: TextAlign.right);
+      final resolved = ResolvedPreset(preset);
       final layout = LyricLayout.compute(
-          LyricModel(lines: [line]), style, const Size(120, 240));
+          LyricDocument(lines: [
+            LyricLine(start: Duration.zero, text: text, words: [
+              for (final token in [
+                'word',
+                'word',
+                'missing',
+                'A long wrapped word'
+              ])
+                LyricWord(text: token, start: Duration.zero)
+            ])
+          ]),
+          resolved,
+          const Size(120, 240));
       addTearDown(layout.dispose);
       final normal = TextPainter(
-        text: TextSpan(text: text, style: style.textStyle),
-        textDirection: TextDirection.ltr,
-        textAlign: style.lineTextAlign,
-      )..layout(maxWidth: 120);
+          text: TextSpan(text: text, style: resolved.textStyle),
+          textDirection: TextDirection.ltr,
+          textAlign: preset.textAlign)
+        ..layout(maxWidth: 120);
       final active = TextPainter(
-        text: TextSpan(text: text, style: style.activeStyle),
-        textDirection: TextDirection.ltr,
-        textAlign: style.lineTextAlign,
-      )..layout(maxWidth: 120);
-      addTearDown(normal.dispose);
-      addTearDown(active.dispose);
+          text: TextSpan(text: text, style: resolved.activeTextStyle),
+          textDirection: TextDirection.ltr,
+          textAlign: preset.textAlign)
+        ..layout(maxWidth: 120);
+      addTearDown(() {
+        disposeNative(normal);
+        disposeNative(active);
+      });
       final metric = layout.metrics.single;
       expect(metric.height, normal.height);
       expect(metric.width, normal.width);
       expect(metric.activeHeight, active.height);
       expect(metric.activeWidth, active.width);
-      expect(metric.metrics.map((row) => row.width),
-          normal.computeLineMetrics().map((row) => row.width));
-      expect(metric.activeMetrics.map((row) => row.width),
-          active.computeLineMetrics().map((row) => row.width));
       var offset = 0;
       for (final word in metric.words!) {
         final start = text.indexOf(word.word.text, offset);
@@ -109,7 +88,7 @@ void main() {
             TextSelection(baseOffset: start, extentOffset: offset);
         double width(TextPainter painter) => painter
             .getBoxesForSelection(selection)
-            .fold(0.0, (width, box) => width + box.right - box.left);
+            .fold(0.0, (sum, box) => sum + box.right - box.left);
         expect(word.width, width(normal));
         expect(word.highlightWidth, width(active));
       }
@@ -117,81 +96,43 @@ void main() {
       expect(metric.activeMaskPainter.size, active.size);
     }
   });
-
-  test(
-      'paint and font changes preserve laziness and invalidate cached geometry',
-      () {
-    final layout = _layout();
-    addTearDown(layout.dispose);
-    final first = layout.metrics.first;
-    final oldWords = first.words;
-    final mask = first.activeMaskPainter;
-    final oldTop = layout.lineTop(1, -1);
-    for (final metric in layout.metrics) {
-      metric.updatePaintStyles(
-        textStyle: layout.style.textStyle.copyWith(color: Colors.red),
-        activeStyle: layout.style.activeStyle.copyWith(color: Colors.blue),
-        translationStyle:
-            layout.style.translationStyle.copyWith(color: Colors.green),
-      );
-    }
-    expect(first.words, same(oldWords));
-    expect(first.activeMaskPainter, same(mask));
-    expect(
-        layout.metrics.skip(1).every((m) => m.debugPainterCount == 2), isTrue);
-    expect(layout.metrics[1].translationTextPainter.text, isNull);
-    expect(
-        layout.metrics.last.activeTextPainter.text!.style!.color, Colors.blue);
-
-    // Simulate changed font metrics, then take the system-font update path.
-    first.textPainter.text = TextSpan(
-        text: first.line.text,
-        style: layout.style.textStyle.copyWith(fontSize: 40));
-    final updated = LyricLayout.updatePainters(layout);
-    expect(updated.lineTop(1, -1), greaterThan(oldTop));
-    expect(first.debugWordMetricsComputed, isFalse);
-    expect(first.words, isNot(same(oldWords)));
-    expect(first.activeMaskPainter, same(mask));
-    expect(layout.metrics[1].debugPainterCount, 2);
-    expect(layout.metrics[1].translationHeight, 0);
-    expect(layout.metrics[1].debugWordMetricsComputed, isFalse);
-  });
-
-  testWidgets('initial paint, restyle and distant seeks keep other lines lazy',
+  testWidgets(
+      'color-only updates reuse metrics; typography and alignment invalidate',
       (tester) async {
-    final controller = LyricController()
-      ..loadLyric(List.generate(
-              100, (i) => '[${i * 1000},1000]Line $i(${i * 1000},1000)')
-          .join('\n'));
+    final controller = LyricController(document: lines(count: 100));
     addTearDown(controller.dispose);
-    var style = LyricStyles.default2.copyWith(enableSwitchAnimation: false);
+    var preset = quietPreset.copyWith(
+        highlight: const LyricHighlight.solid(Color(0xFFFFFFFF)));
     Future<void> show() async {
-      await tester.pumpWidget(
-          MaterialApp(home: LyricView(controller: controller, style: style)));
+      await tester.pumpWidget(host(controller, preset: preset));
       await tester.pumpAndSettle();
     }
 
     await show();
-    LyricPainter painter() =>
-        tester.widget<CustomPaint>(_paintFinder).painter! as LyricPainter;
-    final initial = painter().layout;
-    expect(initial.metrics[50].debugPainterCount, 2);
-    expect(initial.metrics[50].debugWordMetricsComputed, isFalse);
-    style = style.copyWith(
-        activeStyle: style.activeStyle.copyWith(color: Colors.pink));
+    final initial = session(tester).layout!.metrics;
+    final words = initial.first.words;
+    final mask = initial.first.activeMaskPainter;
+    preset = preset.copyWith(
+        activeTextStyle:
+            preset.activeTextStyle.copyWith(color: const Color(0xFF00FF00)));
     await show();
-    expect(painter().layout.metrics, same(initial.metrics));
-    expect(initial.metrics[50].debugPainterCount, 2);
-    controller.setProgress(const Duration(milliseconds: 99500));
+    expect(session(tester).layout!.metrics, same(initial));
+    expect(initial.first.words, same(words));
+    expect(initial.first.activeMaskPainter, same(mask));
+    expect(initial[50].debugPainterCount, 2);
+    // A paint-only difference must not hide a layout difference in a later style.
+    preset = preset.copyWith(
+        textStyle: preset.textStyle.copyWith(color: const Color(0xFFFF0000)),
+        activeTranslationTextStyle: const TextStyle(fontSize: 40));
+    await show();
+    expect(session(tester).layout!.metrics, isNot(same(initial)));
+    final translated = session(tester).layout!.metrics;
+    preset = preset.copyWith(textAlign: TextAlign.end);
+    await show();
+    expect(session(tester).layout!.metrics, isNot(same(translated)));
+    controller.setPosition(const Duration(milliseconds: 99500));
     await tester.pumpAndSettle();
-    final last = painter().layout.metrics.last;
-    expect(last.activeTextPainter.text!.style!.color, Colors.pink);
-    expect(last.debugWordMetricsComputed, isTrue);
-    expect(initial.metrics[50].debugPainterCount, 2);
-    expect(initial.metrics[50].debugWordMetricsComputed, isFalse);
+    expect(session(tester).layout!.metrics[50].debugPainterCount, 2);
     await tester.pumpWidget(const SizedBox.shrink());
-    expect(last.textPainter.debugDisposed, isTrue);
-    expect(initial.metrics[50].debugPainterCount, 2);
-    expect(tester.takeException(), isNull);
   });
 }

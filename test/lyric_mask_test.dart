@@ -2,28 +2,10 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
-import 'package:flutter_lyric/core/lyric_style.dart';
-import 'package:flutter_lyric/core/lyric_styles.dart';
-import 'package:flutter_lyric/widgets/mixins/lyric_mask_mixin.dart';
+import 'package:flutter_lyric/flutter_lyric.dart';
+import 'package:flutter_lyric/src/rendering/edge_fade.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-class _Mask extends StatefulWidget {
-  final FadeRange range;
-  final Widget child;
-  const _Mask({required this.range, required this.child});
-  @override
-  State<_Mask> createState() => _MaskState();
-}
-
-class _MaskState extends State<_Mask> with LyricMaskMixin {
-  @override
-  LyricStyle get style =>
-      LyricStyles.default1.copyWith(fadeRange: widget.range);
-  @override
-  Size get lyricSize => const Size(60, 80);
-  @override
-  Widget build(BuildContext context) => wrapMaskIfNeed(widget.child);
-}
+import 'test_support.dart';
 
 class _Content extends CustomPainter {
   const _Content();
@@ -42,34 +24,23 @@ class _Content extends CustomPainter {
 }
 
 void main() {
-  testWidgets('fade shader is reused until its bounds or style change',
-      (tester) async {
-    Future<ShaderMask> mask(FadeRange range) async {
-      await tester.pumpWidget(Directionality(
-          textDirection: TextDirection.ltr,
-          child: _Mask(
-              range: range, child: const SizedBox(width: 60, height: 80))));
-      return tester.widget<ShaderMask>(find.byType(ShaderMask));
-    }
-
+  test('fade shader is reused until its bounds or style change', () {
+    final mask = EdgeFade();
+    const fade = LyricEdgeFade.pixels(top: 20, bottom: 20);
     const bounds = Rect.fromLTWH(0, 0, 60, 80);
-    final original = await mask(FadeRange(top: 20, bottom: 20));
-    final shader = original.shaderCallback(bounds);
-    expect(original.shaderCallback(bounds), same(shader));
-    final resized = original.shaderCallback(const Rect.fromLTWH(0, 0, 90, 80));
-    expect(resized, isNot(same(shader)));
-    expect(original.shaderCallback(const Rect.fromLTWH(0, 0, 90, 80)),
-        same(resized));
-    final changed = await mask(FadeRange(top: 0.4, bottom: 0.3));
-    expect(changed.shaderCallback(bounds), isNot(same(shader)));
+    final shader = mask.shader(bounds, fade);
+    expect(mask.shader(bounds, fade), same(shader));
+    expect(mask.shader(const Rect.fromLTWH(0, 0, 90, 80), fade),
+        isNot(same(shader)));
+    expect(mask.shader(bounds, const LyricEdgeFade.fraction(top: .4)),
+        isNot(same(shader)));
   });
   for (final range in [
-    FadeRange(top: 0, bottom: 0),
-    FadeRange(top: -1, bottom: -1),
-    FadeRange(top: 0, bottom: 0.25),
-    FadeRange(top: 20, bottom: 0),
-    FadeRange(top: 20, bottom: 0.25),
-    FadeRange(top: 0.8, bottom: 0.8),
+    const LyricEdgeFade.pixels(top: 0, bottom: 0),
+    const LyricEdgeFade.fraction(top: 0, bottom: 0.25),
+    const LyricEdgeFade.pixels(top: 20, bottom: 0),
+    const LyricEdgeFade.pixels(top: 20, bottom: 20),
+    const LyricEdgeFade.fraction(top: 0.8, bottom: 0.8),
   ]) {
     testWidgets('mask preserves pixels at ${range.top}/${range.bottom}',
         (tester) async {
@@ -78,10 +49,13 @@ void main() {
         const content = CustomPaint(size: Size(60, 80), painter: _Content());
         final Widget masked;
         if (reference) {
-          final top =
-              (range.top > 1 ? range.top / 80 : range.top).clamp(0.0, 1.0);
-          final bottom = (range.bottom > 1 ? range.bottom / 80 : range.bottom)
-              .clamp(0.0, 1.0);
+          var top = range.isFraction ? range.top : range.top / 80;
+          var bottom = range.isFraction ? range.bottom : range.bottom / 80;
+          if (top + bottom > 1) {
+            final total = top + bottom;
+            top /= total;
+            bottom /= total;
+          }
           masked = ShaderMask(
               blendMode: BlendMode.dstIn,
               shaderCallback: (bounds) => LinearGradient(
@@ -97,7 +71,8 @@ void main() {
                   ).createShader(bounds),
               child: content);
         } else {
-          masked = _Mask(range: range, child: content);
+          masked =
+              LyricEdgeMask(fade: range, cache: EdgeFade(), child: content);
         }
         await tester.pumpWidget(Directionality(
           textDirection: TextDirection.ltr,
@@ -114,7 +89,7 @@ void main() {
               key.currentContext!.findRenderObject()! as RenderRepaintBoundary;
           final image = await boundary.toImage(pixelRatio: 1.5);
           final data = await image.toByteData();
-          image.dispose();
+          disposeNative(image);
           return data!.buffer.asUint8List();
         }))!;
       }

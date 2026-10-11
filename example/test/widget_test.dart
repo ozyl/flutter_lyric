@@ -1,27 +1,36 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
 import 'package:flutter/material.dart';
+import 'package:flutter_lyric/flutter_lyric.dart';
+import 'package:flutter_lyric_example/show_lyric.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:flutter_lyric_example/main.dart';
-
 void main() {
-  testWidgets('Verify Platform version', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
-
-    // Verify that platform version is retrieved.
-    expect(
-      find.byWidgetPredicate(
-        (Widget widget) =>
-            widget is Text && widget.data!.startsWith('Running on:'),
+  testWidgets('example can switch and customize presets', (tester) async {
+    final controller = LyricController()
+      ..load('[00:00.00]First\n[00:01.00]Second');
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: ShowLyric(
+            controller: controller,
+            initialPreset: LyricPresets.centered,
+          ),
+        ),
       ),
-      findsOneWidget,
     );
+    await tester.pumpAndSettle();
+    expect(find.byType(LyricView), findsOneWidget);
+    await tester.tap(find.byTooltip('Customize preset'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Single line'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.widget<LyricView>(find.byType(LyricView)).preset!.displayMode,
+      LyricDisplayMode.activeLine,
+    );
+    await tester.tap(find.text('Done'));
+    await tester.pumpAndSettle();
+    expect(controller.position, Duration.zero);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 }

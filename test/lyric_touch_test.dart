@@ -1,93 +1,109 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
-import 'package:flutter_lyric/render/lyric_painter.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-LyricPainter _painter(WidgetTester tester) => tester
-    .widget<CustomPaint>(find.byWidgetPredicate(
-      (widget) => widget is CustomPaint && widget.painter is LyricPainter,
-    ))
-    .painter! as LyricPainter;
-
-Offset _lineCenter(WidgetTester tester, int index) {
-  final painter = _painter(tester);
-  var y = -painter.scrollY;
-  for (var i = 0; i < index; i++) {
-    y += painter.layout.getLineHeight(i == painter.playIndex, i) +
-        painter.style.lineGap;
-  }
-  y += painter.layout.getLineHeight(index == painter.playIndex, index) / 2;
-  final bounds = tester.getRect(find.byType(LyricView));
-  return Offset(bounds.center.dx, bounds.top + y);
-}
-
-Future<LyricController> _mountView(WidgetTester tester) async {
-  final controller = LyricController()
-    ..loadLyric(List.generate(
-        12, (i) => '[00:${i.toString().padLeft(2, '0')}.00]Line $i').join('\n'))
-    ..setProgress(const Duration(seconds: 2));
-  addTearDown(controller.dispose);
-  await tester.pumpWidget(MaterialApp(
-    home: LyricView(controller: controller, style: LyricStyles.default1),
-  ));
-  await tester.pumpAndSettle();
-  return controller;
-}
+import 'test_support.dart';
 
 void main() {
-  testWidgets('tapping a line dispatches its start time once', (tester) async {
-    final controller = await _mountView(tester);
-    final taps = <Duration>[];
-    controller.setOnTapLineCallback(taps.add);
-
-    await tester.tapAt(_lineCenter(tester, 3));
-    await tester.pump();
-    expect(taps, [const Duration(seconds: 3)]);
-    expect(controller.isSelectingNotifier.value, isFalse);
+  testWidgets('onDragPause snaps without cancelling the held gesture',
+      (tester) async {
+    final controller = LyricController(document: lines());
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(host(controller,
+        preset: quietPreset.copyWith(
+            selectionSnapMode: LyricSelectionSnapMode.onDragPause,
+            selectionSnapDelay: const Duration(milliseconds: 100))));
+    await tester.pumpAndSettle();
+    final gesture =
+        await tester.startGesture(tester.getCenter(find.byType(LyricView)));
+    await gesture.moveBy(const Offset(0, -73));
+    await tester.pump(const Duration(milliseconds: 150));
+    final state = session(tester);
+    expect(state.selectionDetails!.isSnapped, isTrue);
+    expect(state.dragging, isTrue);
+    final snapped = state.scrollY;
+    await gesture.moveBy(const Offset(0, -60));
+    await tester.pump(const Duration(milliseconds: 16));
+    expect(state.scrollY, greaterThan(snapped));
+    await gesture.up();
     await tester.pumpWidget(const SizedBox.shrink());
   });
-
-  testWidgets(
-      'a tap does not start selection timers or pin automatic scrolling',
+  testWidgets('tap uses player timeline and does not change playback',
       (tester) async {
-    final controller = await _mountView(tester);
-    var selectedResumes = 0;
-    controller.registerEvent(LyricEvent.resumeSelectedLine, (_) {
-      selectedResumes++;
-    });
-
-    await tester.tapAt(_lineCenter(tester, 3));
-    await tester.pump(const Duration(milliseconds: 400));
-    final before = _painter(tester).scrollY;
-    controller.setProgress(const Duration(seconds: 3));
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 100));
-    final during = _painter(tester).scrollY;
-    expect(during, greaterThan(before));
-    await tester.pump(const Duration(milliseconds: 200));
-    expect(_painter(tester).scrollY, greaterThan(during));
-    expect(selectedResumes, 0);
-    expect(controller.isSelectingNotifier.value, isFalse);
-    await tester.pumpWidget(const SizedBox.shrink());
-  });
-
-  testWidgets('drag selection still resumes automatic scrolling',
-      (tester) async {
-    final controller = await _mountView(tester);
-    await tester.drag(find.byType(LyricView), const Offset(0, -80));
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(controller.isSelectingNotifier.value, isTrue);
-    // Tapping while selection is active must restart its resume timer.
+    final controller = LyricController(
+        document: lines(offset: const Duration(milliseconds: 200)),
+        initialPosition: const Duration(seconds: 2),
+        timeOffset: const Duration(milliseconds: 100));
+    addTearDown(controller.dispose);
+    final taps = <LyricLineDetails>[];
     await tester
-        .tapAt(_lineCenter(tester, controller.selectedIndexNotifier.value));
-    await tester.pump(const Duration(milliseconds: 500));
+        .pumpWidget(host(controller, preset: quietPreset, onLineTap: taps.add));
+    await tester.pumpAndSettle();
+    final state = session(tester);
+    await tester.tapAt(
+        tester.getTopLeft(find.byType(LyricView)) + state.lineRect(3).center);
+    expect(taps.single.index, 3);
+    expect(taps.single.seekPosition, const Duration(milliseconds: 2700));
+    expect(controller.position, const Duration(seconds: 2));
+    expect(state.following, isTrue);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+  testWidgets('drag browses, emits semantic selections, then resumes',
+      (tester) async {
+    final controller = LyricController(
+        document: lines(), initialPosition: const Duration(seconds: 2));
+    addTearDown(controller.dispose);
+    final selections = <int?>[];
+    final follows = <bool>[];
+    await tester.pumpWidget(host(controller,
+        preset: quietPreset.copyWith(resumeDelay: const Duration(seconds: 1)),
+        onSelectionChanged: (line) => selections.add(line?.index),
+        onFollowChanged: follows.add));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(LyricView), const Offset(0, -80));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(session(tester).following, isFalse);
+    expect(selections.where((i) => i != null), isNotEmpty);
+    for (var i = 1; i < selections.length; i++) {
+      expect(selections[i], isNot(selections[i - 1]));
+    }
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+    expect(follows, [false, true]);
+    expect(selections.last, isNull);
+    expect(session(tester).following, isTrue);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+  testWidgets('resume earlier than snap cancels pending snap', (tester) async {
+    final controller = LyricController(document: lines());
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(host(controller,
+        preset: quietPreset.copyWith(
+            selectionSnapMode: LyricSelectionSnapMode.afterScroll,
+            selectionSnapDelay: const Duration(seconds: 2),
+            resumeDelay: const Duration(milliseconds: 100))));
+    await tester.pumpAndSettle();
+    await controller.scrollToLine(10, animate: false);
+    await tester.pump(const Duration(milliseconds: 110));
+    expect(session(tester).following, isTrue);
+    final offset = session(tester).scrollY;
     await tester.pump(const Duration(seconds: 3));
+    expect(session(tester).scrollY, offset);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+  testWidgets('snap and no-auto-resume are independent', (tester) async {
+    final controller = LyricController(document: lines());
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(host(controller,
+        preset: quietPreset.copyWith(
+            selectionSnapMode: LyricSelectionSnapMode.afterScroll,
+            selectionSnapDelay: const Duration(milliseconds: 100))));
     await tester.pumpAndSettle();
-    expect(controller.isSelectingNotifier.value, isFalse);
-    final before = _painter(tester).scrollY;
-    controller.setProgress(const Duration(seconds: 4));
+    await tester.drag(find.byType(LyricView), const Offset(0, -73));
     await tester.pumpAndSettle();
-    expect(_painter(tester).scrollY, greaterThan(before));
+    await tester.pump(const Duration(milliseconds: 150));
+    expect(session(tester).selectionDetails!.isSnapped, isTrue);
+    await tester.pump(const Duration(seconds: 10));
+    expect(session(tester).following, isFalse);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }

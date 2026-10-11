@@ -1,261 +1,144 @@
 # flutter_lyric
 
 [![pub package](https://img.shields.io/pub/v/flutter_lyric.svg)](https://pub.dev/packages/flutter_lyric)
-[![likes](https://img.shields.io/pub/likes/flutter_lyric)](https://pub.dev/packages/flutter_lyric/score)
 [![license](https://img.shields.io/github/license/ozyl/flutter_lyric)](LICENSE)
-[![demo](https://img.shields.io/badge/demo-online-brightgreen)](https://ozyl.github.io/flutter_lyric/)
 
+Flutter 歌词组件，支持 LRC / QRC / YRC、翻译、逐字高亮和滚动选择。一个 `LyricController` 可以连接多个视图；每个视图独立管理滚动和选择。
 
-**中文简介**  
-`flutter_lyric` 是一个专注于歌词体验的 Flutter 组件库，提供平滑滚动、高亮动画、翻译/逐字歌词渲染、触摸选择、遮罩等能力，帮助音乐类应用快速实现专业歌词视图。
-> 本 README 面向 3.0.0 全新版本，介绍重写后的渲染链路、可组合 mixin 以及统一 `LyricController` API。  
+A Canvas-based lyric widget with translations, word-timed highlighting and native Flutter scrolling. One controller shares playback across views; each view keeps its own browsing state.
 
-**English Overview**  
-`flutter_lyric` is a Flutter toolkit for immersive lyric presentation. It ships smooth scrolling, dynamic highlighting, translation/word-by-word rendering, touch selection, masking, and extensive styling hooks so you can build player-grade lyric experiences in minutes.
+This branch contains the **4.0 API preview**, with breaking changes from 3.x. Minimum library versions remain **Dart 2.12 / Flutter 2.0**. The audio-player example uses a newer SDK for its player dependencies.
 
+- [完整 API 与参数划分 / API reference](doc/api.md)
+- [3.x → 4.0 迁移 / Migration](doc/migration.md)
+- [示例 / Example](example/lib/main.dart)
 
-> This README targets the brand-new 3.0.0 release and explains the rewritten rendering pipeline, composable mixins, and the unified `LyricController` API.
-
-## ✨ 核心特性 · Highlights
-
-**中文**
-- 🔥 渐变/颜色高亮：根据播放进度实时推进高亮宽度，可叠加渐变与尾部淡出
-- 🌍 主/副歌词：同屏展示翻译或音译文本，行距与样式完全可调
-- 🌀 平滑滚动：多段滚动时长映射、惯性与自定义锚点，避免跳动
-- 🎯 触摸交互：拖拽选择、点击行、自动恢复、高亮锚点指示
-- 🎨 高度可定制：`LyricStyle` 暴露 30+ 参数，可快速打造品牌化主题
-- 📦 内置解析：默认支持 `.lrc`、`.qrc` 与 `.yrc`，可注入自定义解析器
-- 🧱 Mixins 设计：滚动、遮罩、行切换、高亮逻辑模块化，方便二次开发
-
-**English**
-- 🔥 Gradient or solid highlights tied to playback progress with optional trailing fade
-- 🌍 Primary + secondary lyrics for translations or romanization with independent spacing/styles
-- 🌀 Smooth scrolling with distance-based duration mapping, inertia, and configurable anchors
-- 🎯 Touch interactions for scrubbing, tapping, auto-resume, and anchor indicators
-- 🎨 Deep customization via 30+ `LyricStyle` parameters to match any visual identity
-- 📦 Built-in parsers for `.lrc`, `.qrc`, and `.yrc`, plus hooks for custom formats
-- 🧱 Mixin-based architecture so scroll, mask, switch, and highlight logic can be recomposed
-
-## 🚀 安装 · Installation
-
-**中文**
-1. 在项目的 `pubspec.yaml` 中加入 `flutter_lyric: ^3.0.0`
-2. 执行 `flutter pub get` 拉取依赖
-
-**English**
-1. Add `flutter_lyric: ^3.0.0` to your project's `pubspec.yaml`
-2. Run `flutter pub get` to install the package
-
-## 🎬 在线演示 · Live Demo
-
-**中文**  
-👉 [在线体验](https://ozyl.github.io/flutter_lyric/) - 查看完整功能演示
-
-**English**  
-👉 [Live Demo](https://ozyl.github.io/flutter_lyric/) - See it in action
-
-## 🏁 快速开始 · Quick Start
-
-**中文**  
-实例化 `LyricController`，调用 `loadLyric`（可选传入翻译文本），再将 `LyricView` 嵌入到 widget 树即可。
-
-**English**  
-Create a `LyricController`, call `loadLyric` (optionally with translated lyrics), and place `LyricView` in your widget tree.
+## Quick start
 
 ```dart
-final controller = LyricController()
-  ..loadLyric(
-    mainLyricString,
-    translationLyric: translationString,
-  );
+import 'package:flutter/material.dart';
+import 'package:flutter_lyric/flutter_lyric.dart';
 
-@override
-void dispose() {
-  controller.dispose();
-  super.dispose();
+class Lyrics extends StatefulWidget {
+  const Lyrics({Key? key}) : super(key: key);
+  @override
+  State<Lyrics> createState() => _LyricsState();
 }
 
-@override
-Widget build(BuildContext context) {
-  return LyricView(
-    controller: controller,
-    style: LyricStyles.default1, // 可选，默认使用 LyricStyles.default1
-    width: double.infinity,
+class _LyricsState extends State<Lyrics> {
+  final controller = LyricController()
+    ..load('[00:00.00]First line\n[00:04.00]Second line');
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
     height: 320,
+    child: LyricView(
+      controller: controller,
+      preset: LyricPresets.centered,
+      onLineTap: (line) {
+        // Connect to your player: player.seek(line.seekPosition).
+        // For this standalone manual-position example:
+        controller.setPosition(line.seekPosition);
+      },
+    ),
   );
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
 }
 ```
 
-**中文**  
-将播放器的进度流持续推送到 `controller.setProgress`，即可驱动高亮与滚动。
+手动接入时调用 `controller.setPosition(playerPosition)`。也可以传入 `LyricProgressSource`：Controller 在可见、启用且播放中时，每帧读取播放器当前位置；暂停时仍接收 seek 等事件，不另建播放时钟。绑定 source 后，手动 `setPosition` 会抛出 `StateError`。
 
-**English**  
-Feed your player position into `controller.setProgress` to drive highlighting and scrolling.
+For a player integration, provide `LyricProgressSource` with a current-position getter, an advancing flag, and a changes stream. The controller owns the subscription, not the player. See the [just_audio adapter](example/lib/just_audio_progress_source.dart).
 
-```dart
-audioPlayer.positionStream.listen(controller.setProgress);
-```
+## Presets and fine tuning
 
-**中文**
+`LyricPreset` 包含显示模式、文字、布局、动画、交互规则和展示 builder。它是不可变的完整预设；通过 `copyWith` 微调，无需更换 Widget 类型。
 
-逐字高亮直接使用传入的进度，不额外补间或推算时间。也可以为 Controller 配置 `LyricProgressSource`：`LyricView` 会在播放期间通过 Ticker 按屏幕帧读取位置，暂停、缓冲、结束时停止，并通过源事件同步暂停时的 seek。调用方无需管理 Ticker 或订阅。
-
-**English**
-
-Word highlights use the supplied position directly, without interpolation or an internal playback clock. Optionally configure a `LyricProgressSource` on the controller: `LyricView` samples its position on each display frame while advancing, stops while paused, buffering, or completed, and handles paused seeks through source events. Callers do not need to manage tickers or subscriptions.
+A preset switches appearance, behavior and presentation builders together. Use `copyWith` to adjust individual settings:
 
 ```dart
-// JustAudioProgressSource is the adapter in example/lib/just_audio_progress_source.dart.
-final controller = LyricController(
-  progressSource: JustAudioProgressSource(player),
+final preset = LyricPresets.leading.copyWith(
+  activeTextStyle: LyricPresets.leading.activeTextStyle.copyWith(fontSize: 26),
+  activeTranslationTextStyle: const TextStyle(fontSize: 16, color: Colors.white),
+  activeAnchor: const LyricAnchor.fraction(.35,
+      target: LyricAnchorTarget.mainText),
+  lineSpacing: 24,
+  resumeDelay: const Duration(seconds: 5),
+  highlight: const LyricHighlight.solid(Colors.white, tailFadeWidth: 24),
 );
-
-LyricView(controller: controller);
-
-// Replace the source at runtime; the old subscription is canceled automatically.
-controller.progressSource = JustAudioProgressSource(anotherPlayer);
-
-// Keep the last position and return to manual updates.
-controller.progressSource = null;
-controller.setProgress(position);
 ```
 
-**中文**
-
-核心库不依赖具体播放器。适配器实现 `position`、`isAdvancing` 和 `Stream<void> changes`；源状态变化、变速或 seek 时需发出事件。`position` 必须返回读取时的当前位置，时间推算由播放器负责。源可共享，但 `changes` 必须支持多订阅。Controller 替换源或销毁时只取消自己的订阅，不销毁源或播放器；播放器仍由调用方管理。View 卸载或 TickerMode 禁用时停止逐帧采样，源事件仍会更新 Controller。
-
-**English**
-
-The core library has no player dependency. Adapters implement `position`, `isAdvancing`, and `Stream<void> changes`, emitting on playback state changes, speed changes, and seeks. `position` must return the current position at read time; the player owns time extrapolation. Sources may be shared if `changes` supports multiple subscriptions. Replacing a source or disposing a controller cancels only that controller's subscription, without disposing the source or player. The caller still owns the player. Unmounting the view or disabling TickerMode stops frame sampling; source events continue to update the controller.
-
-## 🎚️ 控制与样式 · Controller & Style
-
-**中文**
-- `LyricController.loadLyric` / `loadLyricModel`：加载文本或自定义模型
-- `LyricView.style`：通过 `LyricView` 的 `style` 参数传入 `LyricStyle` 或 `LyricStyles` 预设，控制字体、行距、渐隐、滚动曲线等
-- `lyricOffset`：以毫秒为单位整体校准歌词时间
-- `activeIndexNotifier` 等 ValueNotifier 可与外部 UI 联动
-
-**English**
-- `LyricController.loadLyric` / `loadLyricModel`: load plain text or custom lyric models
-- `LyricView.style`: pass a `LyricStyle` or presets from `LyricStyles` via the `style` parameter to tweak typography, spacing, fade range, and scroll curves
-- `lyricOffset`: shift the entire script forward/backward in milliseconds for sync
-- Exposed `ValueNotifier`s (`activeIndexNotifier`, …) let you coordinate external UI
-
-## 🎨 LyricStyle 参数 · LyricStyle Options
-
-| 字段 / Field | 中文说明 | English Description |
-| --- | --- | --- |
-| `textStyle` / `activeStyle` / `translationStyle` | 控制普通行、播放行、翻译行的字体、字号与颜色 | Typography for idle, active, and translation lines |
-| `lineTextAlign` / `contentAlignment` | 行文本对齐方式与整体交叉轴对齐策略 | Horizontal alignment per line plus cross-axis alignment |
-| `lineGap` / `translationLineGap` | 主歌词与翻译歌词的行间距 | Spacing between lyric lines and between translation blocks |
-| `contentPadding` | 歌词区域的统一内边距 | Insets around the rendered lyric area |
-| `selectionAnchorPosition` / `activeAnchorPosition` | 选中/播放锚点在视图中的垂直相对位置 | Vertical anchors (0~1 or px) used for selection/playing lines |
-| `selectionAlignment` / `activeAlignment` | 高亮条在水平方向的排列方式 | Main-axis alignment for highlight bars and anchors |
-| `fadeRange` | 顶部/底部渐隐范围，可选绝对像素或百分比 | Top/bottom fade distances (absolute or relative) |
-| `scrollDuration` / `scrollDurations` / `scrollCurve` | 全局滚动时长、距离映射表与补间曲线 | Base scroll duration, distance-to-duration map, and easing curve |
-| `selectionAutoResumeDuration` / `activeAutoResumeDuration` / `selectionAutoResumeMode` | 控制拖拽后多久恢复自动滚动以及恢复策略 | Auto-resume delays and behavior after manual scrubbing |
-| `activeHighlightColor` / `activeHighlightGradient` / `activeHighlightExtraFadeWidth` | 播放行高亮的纯色、渐变与尾部淡出宽度 | Colors/gradients for progress highlights plus trailing fade |
-| `selectedColor` / `selectedTranslationColor` | 手动选中行的文字/翻译颜色 | Text colors applied when a user selects a line |
-| `enableSwitchAnimation` + `switchEnterDuration` / `switchExitDuration` / `switchEnterCurve` / `switchExitCurve` | 控制行切换动画开关、时长与曲线 | Toggle and tune line switch animations |
-| `activeLineOnly` / `disableTouchEvent` | 仅绘制当前播放行或禁止触摸事件 | Render-only-active-line mode and input disabling |
-
-> 更完整的字段列表与默认值可在 `lib/core/lyric_style.dart` 中查阅，并可通过 `LyricStyles` 预设作为起点进行 `copyWith`。
-
-## 🪄 常用交互 · Interactions
-
-**中文**  
-通过事件或回调响应用户手势，例如点击歌词定位或监听拖拽状态。
+Use `LyricPresets.centered`, `leading` or `singleLine` as starting points. `LyricPresetScope` supplies a whole preset to descendants. An explicit `LyricView.preset` wins; omitted fields do not merge across scopes. Text styles themselves merge with ambient `DefaultTextStyle` and the corresponding base style.
 
 ```dart
-controller.setOnTapLineCallback((Duration position) {
-  audioPlayer.seek(position);
-});
-
-controller.registerEvent(LyricEvent.stopSelection, (_) {
-  // 用户开始拖拽，可展示“回到当前行”按钮
-});
-
-controller.registerEvent(LyricEvent.resumeActiveLine, (_) {
-  // 恢复自动跟随时隐藏提示
-});
+LyricPresetScope(
+  preset: preset,
+  child: Builder(builder: (context) => LyricView(
+    controller: controller,
+    preset: LyricPresetScope.of(context).copyWith(lineSpacing: 28),
+  )),
+)
 ```
 
-**English**  
-Use the built-in callbacks/events to react to gestures, e.g. seeking on tap or showing UI during manual scrubbing.
+Nullable `copyWith` arguments retain their current value. Use `clearResumeDelay: true`, `clearEmptyBuilder: true`, etc. to remove a value. Clearing and setting the same property together throws `ArgumentError`.
 
-## 📄 翻译歌词解析 · Translation Parsing
+## Selection UI
 
-**中文**  
-`loadLyric` 会自动识别 `.lrc` / `.qrc` / `.yrc`（网易云逐字明文），并支持额外的翻译文本，库会按时间戳自动匹配；若你有自定义协议，可实现 `LyricParse` 并调用 `parseRaw` 或直接注入 `LyricModel`。
+选择区 builder 属于预设；业务回调属于 `LyricView`。builder 的尺寸是整个视口，坐标相对视口。背景忽略点击，前景可以通过 `details.onTap` 和 `details.resumeFollow` 放置按钮。
 
-**English**  
-`loadLyric` auto-detects `.lrc`, `.qrc`, and `.yrc` (Netease Cloud Music word-by-word plaintext) and accepts an optional translation string that is aligned by timestamp. For custom formats, implement `LyricParse` or build your own `LyricModel`.
+Builders cover the viewport and receive local geometry. The background ignores input. The foreground can provide actions; lyrics stay Canvas-rendered.
 
 ```dart
-final customModel = CustomParser().parseRaw(rawLyric);
-controller.loadLyricModel(customModel);
-```
-
-## 🔄 LRC 转 QRC 格式 · LRC to QRC Conversion
-
-**中文**  
-使用 `LrcToQrcUtil.convert` 可以将 LRC 格式转换为 QRC 格式，以实现逐字高亮的渐变效果。转换时需要指定最后一行歌词的时长（`lastDuration`）或歌曲总时长（`totalDuration`）。
-
-**English**  
-Use `LrcToQrcUtil.convert` to convert LRC format to QRC format for word-by-word gradient highlighting. You must provide either the last line duration (`lastDuration`) or the total song duration (`totalDuration`).
-
-```dart
-import 'package:flutter_lyric/utils/lyric_lrc_to_qrc.dart';
-
-// 方式一：指定最后一行时长
-final qrcLyric = LrcToQrcUtil.convert(
-  lrcString,
-  lastDuration: Duration(seconds: 3), // 最后一行歌词持续 3 秒
+final withSelection = preset.copyWith(
+  selectionForegroundBuilder: (context, details) => Stack(children: [
+    Positioned(
+      right: 8,
+      top: details.anchorY - 24,
+      child: IconButton(
+        icon: const Icon(Icons.play_arrow),
+        onPressed: details.onTap,
+      ),
+    ),
+  ]),
 );
-
-// 方式二：传入歌曲总时长
-final qrcLyric = LrcToQrcUtil.convert(
-  lrcString,
-  totalDuration: Duration(minutes: 3, seconds: 45), // 歌曲总时长
-);
-
-controller.loadLyric(qrcLyric);
 ```
 
-## 🔁 从 2.x 升级到 3.0.0 · Upgrade Guide
+`onLineTap` receives a player-time `seekPosition`, already adjusted for document and controller offsets. The library never seeks the player automatically. Selection callbacks fire only when the selected entry changes or clears, not on each animation frame.
 
-**中文**
-- `LyricWidget` 已统一为 `LyricView`，所有状态由 `LyricController` 提供
-- 旧的 `changeUI`/`LyricUI` 扩展点合并进 `LyricStyle`
-- 触摸/滚动回调改由 `LyricEvent` 与 `setOnTapLineCallback` 统一管理
-- 逐字高亮、翻译行与遮罩开箱即用，无需再自定义 painter
-- **样式控制方式变更**：从 `controller.setStyle()` 改为通过 `LyricView` 的 `style` 参数传入，更符合 Flutter widget 设计模式，并支持性能优化的样式变更检测
+## Shared controller
 
-**English**
+```dart
+Row(children: [
+  Expanded(child: LyricView(
+    controller: controller,
+    viewId: 'main',
+    preset: LyricPresets.leading,
+  )),
+  Expanded(child: LyricView(
+    controller: controller,
+    viewId: 'compact',
+    preset: LyricPresets.singleLine,
+  )),
+])
+```
 
-- `LyricWidget` is merged into `LyricView`, and `LyricController` becomes the single source of truth
-- Previous `changeUI`/`LyricUI` hooks are replaced by the more capable `LyricStyle`
-- Touch/scroll callbacks now flow through `LyricEvent` and `setOnTapLineCallback`
-- Word-level highlight, translation rows, and masks are built in—custom painters are rarely needed
-- **Style control change**: Use `LyricView.style` parameter instead of `controller.setStyle()`, aligning with Flutter widget patterns and enabling optimized style change detection
+`controller.resumeFollow(viewId: 'main')` targets one view; omitting `viewId` targets all attached views. Generated IDs are stable for the view's lifetime. Explicit IDs must be unique per controller.
 
-## 🧪 示例与调试 · Examples & Debugging
+## Rendering and checks
 
--  `example/lib/main.dart` 
+`lib/src/` contains private view sessions, a Scrollable-backed viewport, and cached text metrics. Painting does not publish selection state. Normal paragraphs establish exact scrolling geometry; active paragraphs, masks and word boxes are lazy. Active-only mode measures just the current entry. Only visible entries are painted.
 
-## 🤝 贡献 · Contributing
+```sh
+flutter pub get --no-example
+flutter analyze --no-pub
+flutter test --no-pub
+flutter test test/benchmarks/lyric_load_benchmark.dart --reporter expanded
+flutter test test/benchmarks/lyric_scroll_benchmark.dart --reporter expanded
+```
 
-**中文**  
-欢迎通过 Issue / PR 分享新功能、修复或示例。提交前请运行 `flutter test` 并附上动图/截图说明效果。
-
-**English**  
-Contributions via issues or pull requests are welcome. Please run `flutter test` before submitting and include screenshots or gifs when possible.
-
-## 📄 许可证 · License
-
-**中文**  
-项目基于 [MIT License](LICENSE) 发布，可自由商用，欢迎在产品中标注 “Powered by flutter_lyric”。
-
-**English**  
-Released under the [MIT License](LICENSE). Commercial use is allowed—giving credit such as “Powered by flutter_lyric” is appreciated.
+CI checks both Flutter 2.0.6 (Dart 2.12.3) and a modern Flutter release. Pixel tests retain independent reference calculations for alpha compositing, fractional positions, wrapped lyrics and highlight tails.

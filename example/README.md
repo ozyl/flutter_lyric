@@ -1,16 +1,16 @@
-# flutter_lyric_example
+# flutter_lyric example
 
-Demonstrates how to use the flutter_lyric plugin.
+The audio player demo connects one `LyricController` to three independent lyric
+views. Open the settings button in a view to switch an entire `LyricPreset` or
+adjust its typography, alignment, anchors, display mode and interaction rules.
 
-## Getting Started
+- `main.dart`: shared playback/controller and application-owned seeking.
+- `just_audio_progress_source.dart`: frame-readable player position adapter.
+- `show_lyric.dart`: view-local preset selection and selection overlay builders.
+- `edit_preset.dart`: immutable `copyWith` adjustments, including nullable clears.
+- `issue41_demo_preset.dart`: translucent active text, gradient highlighting and
+  custom scroll curves for visual regression checks.
 
-This project is a starting point for a Flutter application.
-
-A few resources to get you started if this is your first Flutter project:
-
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
-
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+Run `flutter pub get` and `flutter run` from this directory. The example uses a
+modern Flutter/Dart SDK because of the player dependencies; the library's own
+minimum remains Dart 2.12 / Flutter 2.0.

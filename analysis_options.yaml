@@ -1,13 +1,15 @@
-include: package:flutter_lints/flutter.yaml
-
+# Keep analysis usable on the minimum Dart 2.12 SDK as well as current Flutter.
+# Newer SDK-specific lints should not force a higher package SDK minimum.
 analyzer:
   language:
     strict-inference: true
     strict-raw-types: true
-
 linter:
   rules:
-    type_annotate_public_apis: true
-
-# Additional information about this file can be found at
-# https://dart.dev/guides/language/analysis-options
+    - avoid_empty_else
+    - avoid_print
+    - cancel_subscriptions
+    - close_sinks
+    - hash_and_equals
+    - prefer_final_fields
+    - unawaited_futures

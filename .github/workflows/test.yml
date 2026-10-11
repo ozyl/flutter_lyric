@@ -1,0 +1,40 @@
+name: Test
+on: [push, pull_request]
+jobs:
+  package:
+    runs-on: ubuntu-22.04
+    strategy:
+      matrix:
+        flutter: ['2.0.6', '3.44.8']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: ${{ matrix.flutter }}
+          channel: stable
+          cache: true
+      # The player example intentionally uses a newer Dart SDK. Test the
+      # package in isolation so old Flutter does not resolve example/pubspec.
+      - name: Prepare isolated package
+        run: |
+          mkdir -p "$RUNNER_TEMP/lyric-package"
+          cp -R lib test pubspec.yaml analysis_options.yaml "$RUNNER_TEMP/lyric-package/"
+      - name: Resolve, analyze and test
+        working-directory: ${{ runner.temp }}/lyric-package
+        run: |
+          flutter pub get
+          flutter analyze --no-pub
+          flutter test --no-pub
+  example:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.8'
+          channel: stable
+          cache: true
+      - run: flutter pub get
+        working-directory: example
+      - run: flutter analyze --no-pub && flutter test --no-pub
+        working-directory: example

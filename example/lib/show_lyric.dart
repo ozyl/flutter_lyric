@@ -1,135 +1,119 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_lyric/core/lyric_controller.dart';
-import 'package:flutter_lyric/core/lyric_progress_source.dart';
-import 'package:flutter_lyric/core/lyric_style.dart';
-import 'package:flutter_lyric/core/lyric_styles.dart';
-import 'package:flutter_lyric/widgets/lyric_view.dart';
-import 'package:flutter_lyric_example/edit_style.dart';
-import 'package:flutter_lyric_example/mock.dart';
+import 'package:flutter_lyric/flutter_lyric.dart';
+import 'edit_preset.dart';
 
+/// Several instances deliberately share the application's one controller.
 class ShowLyric extends StatefulWidget {
   const ShowLyric({
     super.key,
-    required this.progressSource,
-    this.beforeLyricBuilder,
-    this.afterLyricBuilder,
-    this.initStyle,
-    this.stylePresets = const {},
-    this.initController,
-    this.preserveStyleOnDarkMode = false,
+    required this.controller,
+    required this.initialPreset,
+    this.presets = const {},
+    this.onLineTap,
   });
-  final LyricProgressSource progressSource;
-  final LyricStyle? initStyle;
-  final Map<String, LyricStyle> stylePresets;
-  final Function(LyricController)? initController;
-  final bool preserveStyleOnDarkMode;
-  final List<Widget> Function(LyricController, LyricStyle)? beforeLyricBuilder;
-  final List<Widget> Function(LyricController, LyricStyle)? afterLyricBuilder;
-
+  final LyricController controller;
+  final LyricPreset initialPreset;
+  final Map<String, LyricPreset> presets;
+  final ValueChanged<LyricLineDetails>? onLineTap;
   @override
   State<ShowLyric> createState() => _ShowLyricState();
 }
 
 class _ShowLyricState extends State<ShowLyric> {
-  late final LyricController lyricController;
-  final ValueNotifier<LyricStyle> _currentStyleNotifier = ValueNotifier(
-    LyricStyles.default1,
+  late final ValueNotifier<LyricPreset> _preset = ValueNotifier(
+    widget.initialPreset,
   );
-
   @override
-  void dispose() {
-    _currentStyleNotifier.dispose();
-    lyricController.dispose();
-    super.dispose();
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    lyricController = LyricController(progressSource: widget.progressSource);
-    _currentStyleNotifier.value = widget.initStyle ?? LyricStyles.default1;
-    lyricController.loadLyric(qrc, translationLyric: tlrc);
-    widget.initController?.call(lyricController);
-  }
-
-  @override
-  void didUpdateWidget(covariant ShowLyric oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.progressSource != widget.progressSource) {
-      lyricController.progressSource = widget.progressSource;
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(border: Border.all(color: Colors.white10)),
-      child: ValueListenableBuilder(
-        valueListenable: _currentStyleNotifier,
-        builder: (context, style, child) {
-          final isDark =
-              MediaQuery.of(context).platformBrightness == Brightness.dark;
-          // For performance, you should avoid creating a new style on every build. This is just a demo and not recommended.
-          if (isDark && !widget.preserveStyleOnDarkMode) {
-            style = style.copyWith(
-              textStyle: style.textStyle.copyWith(
-                color: Colors.black.withValues(alpha: 0.4),
-              ),
-              activeStyle: style.activeStyle.copyWith(
-                color: Colors.black.withValues(alpha: .8),
-              ),
-              translationStyle: style.translationStyle.copyWith(
-                color: Colors.black.withValues(alpha: 0.4),
-              ),
-              selectedColor: Colors.black.withValues(alpha: 0.9),
-              selectedTranslationColor: Colors.black.withValues(alpha: 0.9),
-              activeHighlightColor: style.activeHighlightColor?.withValues(
-                alpha: 0.6,
-              ),
-              translationActiveColor: Colors.black.withValues(alpha: 0.6),
-            );
-          }
-          return Stack(
-            children: [
-              ...?widget.beforeLyricBuilder?.call(lyricController, style),
-              RepaintBoundary(
-                child: LyricView(controller: lyricController, style: style),
-              ),
-              ...?widget.afterLyricBuilder?.call(lyricController, style),
-              Positioned(
-                right: 20,
-                top: 20,
-                child: Row(
-                  children: [
-                    GestureDetector(
-                      child: Icon(Icons.settings, color: Colors.white),
-                      onTap: () {
-                        showDialog(
-                          context: context,
-                          builder: (context) => ValueListenableBuilder(
-                            valueListenable: _currentStyleNotifier,
-                            builder: (context, value, child) {
-                              return EditStyle(
-                                style: value,
-                                presets: widget.stylePresets,
-                                onStyleChanged: (style) {
-                                  setState(() {
-                                    _currentStyleNotifier.value = style;
-                                  });
-                                },
-                              );
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  ],
+  Widget build(BuildContext context) => Container(
+    decoration: BoxDecoration(border: Border.all(color: Colors.white10)),
+    child: ValueListenableBuilder<LyricPreset>(
+      valueListenable: _preset,
+      builder: (context, preset, _) => Stack(
+        fit: StackFit.expand,
+        children: [
+          LyricView(
+            controller: widget.controller,
+            preset: preset,
+            onLineTap: widget.onLineTap,
+          ),
+          Positioned(
+            right: 12,
+            top: 12,
+            child: IconButton(
+              tooltip: 'Customize preset',
+              icon: const Icon(Icons.settings, color: Colors.white),
+              onPressed: () => showDialog<void>(
+                context: context,
+                builder: (context) => ValueListenableBuilder<LyricPreset>(
+                  valueListenable: _preset,
+                  builder: (context, value, _) => EditPreset(
+                    preset: value,
+                    presets: {
+                      'Centered': LyricPresets.centered,
+                      'Leading': LyricPresets.leading,
+                      'Single line': LyricPresets.singleLine,
+                      ...widget.presets,
+                    },
+                    onChanged: (value) => _preset.value = value,
+                  ),
                 ),
               ),
-            ],
-          );
-        },
+            ),
+          ),
+        ],
       ),
-    );
+    ),
+  );
+  @override
+  void dispose() {
+    _preset.dispose();
+    super.dispose();
   }
 }
+
+Widget selectionBackground(
+  BuildContext context,
+  LyricSelectionDetails details,
+) => Stack(
+  children: [
+    Positioned.fromRect(
+      rect: details.lineRect,
+      child: DecoratedBox(
+        decoration: BoxDecoration(color: Colors.white.withValues(alpha: .08)),
+      ),
+    ),
+  ],
+);
+
+Widget selectionForeground(
+  BuildContext context,
+  LyricSelectionDetails details,
+) => Stack(
+  children: [
+    Positioned(
+      left: 6,
+      right: 6,
+      top: details.anchorY - 20,
+      height: 40,
+      child: Row(
+        children: [
+          Text(
+            '${details.line.seekPosition.inMinutes}:${(details.line.seekPosition.inSeconds % 60).toString().padLeft(2, '0')}',
+            style: const TextStyle(color: Colors.white70, fontSize: 10),
+          ),
+          const Spacer(),
+          IconButton(
+            tooltip: 'Play selected line',
+            onPressed: details.onTap,
+            icon: const Icon(Icons.play_arrow, color: Colors.white),
+          ),
+          IconButton(
+            tooltip: 'Follow playback',
+            onPressed: details.resumeFollow,
+            icon: const Icon(Icons.my_location, color: Colors.white70),
+          ),
+        ],
+      ),
+    ),
+  ],
+);

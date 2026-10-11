@@ -1,3 +1,9 @@
+import 'benchmark_support.dart';
+import 'package:flutter_lyric/src/rendering/edge_fade.dart';
+import 'package:flutter_lyric/flutter_lyric.dart';
+import 'package:flutter_lyric/src/rendering/resolved_preset.dart';
+import 'package:flutter_lyric/src/rendering/lyric_layout.dart';
+import 'package:flutter_lyric/src/rendering/line_transition.dart';
 // From example/: flutter run -d macos --profile \
 //   -t ../test/benchmarks/lyric_frame_benchmark.dart
 // Reports engine frame timings without screenshots/readback. Keep the window
@@ -6,13 +12,11 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter_lyric/core/lyric_model.dart';
-import 'package:flutter_lyric/core/lyric_style.dart';
-import 'package:flutter_lyric/core/lyric_styles.dart';
-import 'package:flutter_lyric/render/lyric_layout.dart';
-import 'package:flutter_lyric/render/lyric_painter.dart';
-import 'package:flutter_lyric/widgets/mixins/lyric_line_switch_mixin.dart';
-import 'package:flutter_lyric/widgets/mixins/lyric_mask_mixin.dart';
+
+SchedulerBinding get _binding {
+  final SchedulerBinding? binding = SchedulerBinding.instance;
+  return binding!;
+}
 
 void main() => runApp(const MaterialApp(home: _Benchmark()));
 
@@ -23,7 +27,7 @@ class _Benchmark extends StatefulWidget {
 }
 
 class _BenchmarkState extends State<_Benchmark>
-    with SingleTickerProviderStateMixin, LyricMaskMixin {
+    with SingleTickerProviderStateMixin {
   static const _size = Size(400, 600);
   late final Ticker _ticker;
   late LyricLayout _layout;
@@ -37,7 +41,7 @@ class _BenchmarkState extends State<_Benchmark>
     enterAnimationValue: 1,
     exitAnimationValue: 1,
   ));
-  late final _state = LyricPaintState(
+  late final _state = BenchmarkPaintState(
       playIndex: _play,
       scrollY: _scroll,
       activeHighlightWidth: _width,
@@ -48,29 +52,28 @@ class _BenchmarkState extends State<_Benchmark>
   int? _start;
   int? _end;
   final _timings = <ui.FrameTiming>[];
-  @override
-  late LyricStyle style;
-  @override
-  Size get lyricSize => _size;
+  late LyricPreset style;
+  final EdgeFade _fadeCache = EdgeFade();
 
   @override
   void initState() {
     super.initState();
     _configure();
-    SchedulerBinding.instance.addTimingsCallback(_onTimings);
+    _binding.addTimingsCallback(_onTimings);
     _ticker = createTicker(_tick)..start();
   }
 
   void _configure() {
-    style = LyricStyles.default2.copyWith(
-      enableSwitchAnimation: false,
-      activeHighlightGradient:
-          _case ~/ 2 == 1 ? LyricStyles.default2.activeHighlightGradient : null,
-      fadeRange:
-          FadeRange(top: _case.isOdd ? 80 : 0, bottom: _case.isOdd ? 80 : 0),
+    style = LyricPresets.leading.copyWith(
+      lineTransition: const LyricLineTransition.none(),
+      highlight: _case ~/ 2 == 1
+          ? LyricPresets.leading.highlight
+          : const LyricHighlight.none(),
+      edgeFade: LyricEdgeFade.pixels(
+          top: _case.isOdd ? 80 : 0, bottom: _case.isOdd ? 80 : 0),
     );
     _layout = LyricLayout.compute(
-        LyricModel(
+        LyricDocument(
             lines: List.generate(1000, (i) {
           final text = 'A scrolling lyric with wrapped words $i';
           return LyricLine(
@@ -84,7 +87,7 @@ class _BenchmarkState extends State<_Benchmark>
                     end: const Duration(seconds: 1)),
               ]);
         })),
-        style,
+        ResolvedPreset(style),
         _size);
     _frame = 0;
     _start = null;
@@ -94,8 +97,7 @@ class _BenchmarkState extends State<_Benchmark>
 
   void _tick(Duration elapsed) {
     if (_end != null) return;
-    final timestamp =
-        SchedulerBinding.instance.currentSystemFrameTimeStamp.inMicroseconds;
+    final timestamp = _binding.currentSystemFrameTimeStamp.inMicroseconds;
     if (_frame == 90) _start = timestamp;
     if (_frame == 330) {
       _end = timestamp;
@@ -136,7 +138,7 @@ class _BenchmarkState extends State<_Benchmark>
     _case++;
     if (_case == 4) {
       _ticker.stop();
-      SchedulerBinding.instance.removeTimingsCallback(_onTimings);
+      _binding.removeTimingsCallback(_onTimings);
       // ignore: avoid_print
       print('COMPOSITING done');
       return;
@@ -154,21 +156,22 @@ class _BenchmarkState extends State<_Benchmark>
             child: SizedBox.fromSize(
           size: _size,
           child: RepaintBoundary(
-              child: wrapMaskIfNeed(CustomPaint(
-            size: _size,
-            painter: LyricPainter.listenable(
-                layout: _layout,
-                state: _state,
-                onAnchorIndexChange: (_) {},
-                onShowLineRectsChange: (_) {},
-                style: style),
-          ))),
+              child: LyricEdgeMask(
+                  fade: style.edgeFade,
+                  cache: _fadeCache,
+                  child: CustomPaint(
+                    size: _size,
+                    painter: BenchmarkPainter(
+                      layout: _layout,
+                      state: _state,
+                    ),
+                  ))),
         )),
       );
 
   @override
   void dispose() {
-    SchedulerBinding.instance.removeTimingsCallback(_onTimings);
+    _binding.removeTimingsCallback(_onTimings);
     _ticker.dispose();
     _layout.dispose();
     _play.dispose();

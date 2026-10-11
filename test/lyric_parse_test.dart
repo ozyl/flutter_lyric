@@ -1,4 +1,4 @@
-import 'package:flutter_lyric/core/lyric_parse.dart';
+import 'package:flutter_lyric/src/parser/lyric_parser.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
@@ -7,8 +7,8 @@ void main() {
       const dotFormat = '[00:00.00] 作词\n[00:00.29] 作曲';
       const colonFormat = '[00:00:58]「おはよ」\n[00:01:20]朝だって';
 
-      expect(LrcParser().isMatch(dotFormat), isTrue);
-      expect(LrcParser().isMatch(colonFormat), isTrue);
+      expect(LrcParser().canParse(dotFormat), isTrue);
+      expect(LrcParser().canParse(colonFormat), isTrue);
     });
 
     test('extractLine parses dot format timestamps', () {
@@ -38,7 +38,7 @@ void main() {
 [00:01:20]朝だって
 [00:07:79]間に合いそうにない
 ''';
-      final model = LrcParser().parseRaw(lyric);
+      final model = LrcParser().parse(lyric);
       expect(model.lines.length, 4);
       expect(model.lines[0].start.inMilliseconds, 0);
       expect(model.lines[1].start.inMilliseconds, 580);
@@ -50,7 +50,7 @@ void main() {
       const mainLyric = '[00:00:58]「おはよ」';
       const translationLyric = '[00:00:58]「早上好」';
 
-      final model = LrcParser().parseRaw(
+      final model = LrcParser().parse(
         mainLyric,
         translationLyric: translationLyric,
       );
@@ -74,15 +74,15 @@ void main() {
 ''';
 
     test('isMatch distinguishes YRC from QRC and LRC', () {
-      expect(YrcParser().isMatch(yrcLine), isTrue);
-      expect(YrcParser().isMatch(qrcLine), isFalse);
-      expect(YrcParser().isMatch('[00:54.260]Stop and stare'), isFalse);
-      expect(QrcParser().isMatch(yrcLine), isFalse);
-      expect(QrcParser().isMatch(qrcLine), isTrue);
+      expect(YrcParser().canParse(yrcLine), isTrue);
+      expect(YrcParser().canParse(qrcLine), isFalse);
+      expect(YrcParser().canParse('[00:54.260]Stop and stare'), isFalse);
+      expect(QrcParser().canParse(yrcLine), isFalse);
+      expect(QrcParser().canParse(qrcLine), isTrue);
     });
 
     test('parseRaw extracts syllable times and keeps spaces', () {
-      final model = YrcParser().parseRaw(yrcLine);
+      final model = YrcParser().parse(yrcLine);
       expect(model.lines, hasLength(1));
       final line = model.lines.single;
       expect(line.start.inMilliseconds, 54260);
@@ -103,7 +103,7 @@ void main() {
     test('parseRaw joins Netease JSON credit header', () {
       const lyric =
           '{"t":0,"c":[{"tx":"作词: "},{"tx":"Brent Kutzle"}]}\n$yrcLine';
-      final model = YrcParser().parseRaw(lyric);
+      final model = YrcParser().parse(lyric);
       expect(model.lines, hasLength(2));
       expect(model.lines[0].start.inMilliseconds, 0);
       expect(model.lines[0].text, '作词: Brent Kutzle');
@@ -113,23 +113,23 @@ void main() {
 
     test('parseRaw matches LRC translation by line start', () {
       const translation = '[00:54.260]停下注视';
-      final model = YrcParser().parseRaw(
+      final model = YrcParser().parse(
         yrcLine,
         translationLyric: translation,
       );
       expect(model.lines.single.translation, '停下注视');
     });
 
-    test('LyricParse.parse auto-selects YrcParser', () {
+    test('LyricParser.autoDetect auto-selects YrcParser', () {
       const lyric =
           '{"t":0,"c":[{"tx":"作词: "},{"tx":"Brent Kutzle"}]}\n$yrcLine';
-      final model = LyricParse.parse(lyric);
+      final model = LyricParser.autoDetect(lyric);
       expect(model.lines, hasLength(2));
       expect(model.lines[1].words, hasLength(3));
     });
 
-    test('LyricParse.parse still handles QRC XML', () {
-      final model = LyricParse.parse(qrcXml);
+    test('LyricParser.autoDetect still handles QRC XML', () {
+      final model = LyricParser.autoDetect(qrcXml);
       expect(model.lines, isNotEmpty);
       expect(model.lines.last.text, 'Doctor actor lawyer or a singer');
       expect(model.lines.last.words, isNotEmpty);

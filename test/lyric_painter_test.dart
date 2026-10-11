@@ -1,20 +1,20 @@
 import 'dart:typed_data';
+import 'package:flutter_lyric/src/rendering/resolved_preset.dart';
+import 'test_support.dart';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter_lyric/core/lyric_model.dart';
-import 'package:flutter_lyric/core/lyric_style.dart';
-import 'package:flutter_lyric/core/lyric_styles.dart';
-import 'package:flutter_lyric/render/lyric_layout.dart';
-import 'package:flutter_lyric/render/lyric_painter.dart';
-import 'package:flutter_lyric/widgets/mixins/lyric_line_switch_mixin.dart';
+import 'package:flutter_lyric/flutter_lyric.dart';
+import 'package:flutter_lyric/src/rendering/lyric_layout.dart';
+import 'package:flutter_lyric/src/rendering/lyric_painter.dart';
+import 'package:flutter_lyric/src/rendering/line_transition.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 const _size = Size(180, 100);
 const _offset = Offset(8.35, 8.65);
 const _text = 'AAAA';
 
-LyricStyle _style({
+LyricPreset _style({
   Color baseColor = const Color(0x40FF0000),
   Color? highlightColor = const Color(0xFF00FF00),
   LinearGradient? gradient,
@@ -26,22 +26,27 @@ LyricStyle _style({
     fontSize: 24,
     color: baseColor,
   );
-  return LyricStyles.default1.copyWith(
+  return LyricPresets.centered.copyWith(
     textStyle: textStyle,
-    activeStyle: textStyle,
-    activeHighlightColor: highlightColor,
-    activeHighlightGradient: gradient,
-    activeHighlightTailGradientWidth: fadeWidth,
-    enableSwitchAnimation: animate,
-    contentAlignment: CrossAxisAlignment.start,
+    activeTextStyle: textStyle,
+    padding: EdgeInsets.zero,
+    highlight: gradient != null
+        ? LyricHighlight.gradient(gradient, tailFadeWidth: fadeWidth)
+        : highlightColor == null
+            ? const LyricHighlight.none()
+            : LyricHighlight.solid(highlightColor, tailFadeWidth: fadeWidth),
+    lineTransition: animate
+        ? const LyricLineTransition()
+        : const LyricLineTransition.none(),
+    contentAlignment: LyricContentAlignment.start,
     textAlign: TextAlign.left,
   );
 }
 
-LyricLayout _layout(LyricStyle style,
+LyricLayout _layout(LyricPreset style,
     {String text = _text, bool words = false}) {
   final layout = LyricLayout.compute(
-    LyricModel(lines: [
+    LyricDocument(lines: [
       LyricLine(
         text: text,
         start: Duration.zero,
@@ -56,7 +61,7 @@ LyricLayout _layout(LyricStyle style,
             : null,
       ),
     ]),
-    style,
+    ResolvedPreset(style),
     _size,
   );
   addTearDown(layout.dispose);
@@ -77,13 +82,13 @@ Future<Uint8List> _render(
   canvas.translate(_offset.dx, _offset.dy);
   paint(canvas);
   final picture = recorder.endRecording();
-  final image = picture.toImageSync(
+  final image = await picture.toImage(
     (_size.width * scale).ceil(),
     (_size.height * scale).ceil(),
   );
   final bytes = await image.toByteData();
-  image.dispose();
-  picture.dispose();
+  disposeNative(image);
+  disposeNative(picture);
   return bytes!.buffer.asUint8List();
 }
 
@@ -99,7 +104,6 @@ void _paintLyric(
     layout: layout,
     playIndex: active ? 0 : -1,
     scrollY: 0,
-    onAnchorIndexChange: (_) {},
     activeHighlightWidth: progress,
     switchState: switchState ??
         LyricLineSwitchState(
@@ -109,8 +113,6 @@ void _paintLyric(
           enterIndex: -1,
         ),
     isSelecting: selecting,
-    onShowLineRectsChange: (_) {},
-    style: layout.style,
   ).drawLine(canvas, layout.metrics.single, _size, 0, selecting);
 }
 
@@ -148,13 +150,20 @@ Future<Uint8List> _coloredCoverage(
     final x = (pixel % imageWidth + 0.5) / scale - _offset.dx;
     final y = (pixel ~/ imageWidth + 0.5) / scale - _offset.dy;
     final color = colorAt(x, y);
-    final alpha = color.a * coverage[i + 3] / 255;
-    final remaining = background.a * (1 - alpha);
-    result[i] = ((color.r * alpha + background.r * remaining) * 255).round();
+    final alpha = channel(color, 'a') * coverage[i + 3] / 255;
+    final remaining = channel(background, 'a') * (1 - alpha);
+    result[i] =
+        ((channel(color, 'r') * alpha + channel(background, 'r') * remaining) *
+                255)
+            .round();
     result[i + 1] =
-        ((color.g * alpha + background.g * remaining) * 255).round();
+        ((channel(color, 'g') * alpha + channel(background, 'g') * remaining) *
+                255)
+            .round();
     result[i + 2] =
-        ((color.b * alpha + background.b * remaining) * 255).round();
+        ((channel(color, 'b') * alpha + channel(background, 'b') * remaining) *
+                255)
+            .round();
     result[i + 3] = ((alpha + remaining) * 255).round();
   }
   return result;
@@ -229,7 +238,7 @@ void main() {
     for (final progress in [8.0, 60.35, 120.0]) {
       final expected = await _coloredCoverage(_text, (x, _) {
         final opacity = ((progress - x) / fadeWidth).clamp(0.0, 1.0);
-        return Color.alphaBlend(highlight.withValues(alpha: opacity), base);
+        return Color.alphaBlend(withAlphaValue(highlight, opacity), base);
       });
       final actual = await _render(
         (canvas) => _paintLyric(canvas, layout, progress: progress),
@@ -263,7 +272,8 @@ void main() {
             final opacity =
                 ((progress - rowOffset - x) / fadeWidth).clamp(0.0, 1.0);
             return Color.alphaBlend(
-                highlight.withValues(alpha: highlight.a * opacity), base);
+                withAlphaValue(highlight, channel(highlight, 'a') * opacity),
+                base);
           }, background: background, scale: scale);
           final actual = await _render(
               (canvas) => _paintLyric(canvas, layout, progress: progress),
@@ -350,7 +360,7 @@ void main() {
         final rowOffset = y < rowBoundary ? 0 : firstWidth;
         final opacity =
             ((progress - rowOffset - x) / fadeWidth).clamp(0.0, 1.0);
-        return Color.alphaBlend(highlight.withValues(alpha: opacity), base);
+        return Color.alphaBlend(withAlphaValue(highlight, opacity), base);
       });
       final actual = await _render(
         (canvas) => _paintLyric(canvas, layout, progress: progress),
@@ -376,8 +386,7 @@ void main() {
         final opacity = active ? value : 1 - value;
         final expected = await _coloredCoverage(
           _text,
-          (_, __) =>
-              Color.alphaBlend(highlight.withValues(alpha: opacity), base),
+          (_, __) => Color.alphaBlend(withAlphaValue(highlight, opacity), base),
         );
         final actual = await _render((canvas) => _paintLyric(
               canvas,
@@ -399,7 +408,7 @@ void main() {
         _text,
         (x, _) => x < progress
             ? const Color(0xFF00FF00)
-            : layout.style.selectedColor);
+            : layout.style.selectedTextColor);
     final actual = await _render((canvas) => _paintLyric(
           canvas,
           layout,
@@ -428,28 +437,28 @@ void main() {
   test('translation color stays cached and resets after leaving active line',
       () async {
     final style = _style(highlightColor: null).copyWith(
-      translationStyle:
+      translationTextStyle:
           const TextStyle(fontFamily: 'Ahem', fontSize: 16, color: Colors.blue),
-      translationActiveColor: Colors.green,
-      selectedTranslationColor: Colors.orange,
+      activeTranslationTextStyle: const TextStyle(color: Colors.green),
+      selectedTranslationTextColor: Colors.orange,
     );
     final layout = LyricLayout.compute(
-        LyricModel(lines: [
+        LyricDocument(lines: [
           LyricLine(start: Duration.zero, text: _text, translation: 'BB'),
         ]),
-        style,
+        ResolvedPreset(style),
         _size);
     addTearDown(layout.dispose);
     final metric = layout.metrics.single;
     final expected =
         await _render((canvas) => _paintLyric(canvas, layout, active: false));
     await _render((canvas) => _paintLyric(canvas, layout));
-    final activeSpan = metric.translationTextPainter.text;
+    final activeSpan = metric.activeTranslationTextPainter.text;
     await _render((canvas) => _paintLyric(canvas, layout));
-    expect(metric.translationTextPainter.text, same(activeSpan));
+    expect(metric.activeTranslationTextPainter.text, same(activeSpan));
     expect((activeSpan! as TextSpan).style!.color, Colors.green);
     await _render((canvas) => _paintLyric(canvas, layout, selecting: true));
-    expect((metric.translationTextPainter.text! as TextSpan).style!.color,
+    expect((metric.activeTranslationTextPainter.text! as TextSpan).style!.color,
         Colors.orange);
     final actual =
         await _render((canvas) => _paintLyric(canvas, layout, active: false));
