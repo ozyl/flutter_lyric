@@ -1,4 +1,4 @@
-import 'package:flutter_lyric/src/parser/lyric_parser.dart' show LrcParser;
+import 'lrc_parser.dart' show LrcParser;
 
 abstract class LrcToQrcUtil {
   /// [totalDuration]歌词总时长 可选传
