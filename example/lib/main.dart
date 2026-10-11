@@ -1,14 +1,13 @@
-import 'dart:ui';
-
-import 'package:flutter/cupertino.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
-import 'package:flutter_lyric_example/issue41_demo_preset.dart';
-import 'package:flutter_lyric_example/just_audio_progress_source.dart';
-import 'package:flutter_lyric_example/show_lyric.dart';
-import 'mock.dart';
 import 'package:just_audio/just_audio.dart';
+import 'just_audio_progress_source.dart';
+import 'mock.dart';
+import 'playback_controls.dart';
+import 'studio.dart';
+import 'studio_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -18,305 +17,122 @@ void main() {
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
-
   @override
   State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-  final player = AudioPlayer();
-
-  late final progressSource = JustAudioProgressSource(player);
-  late final lyricController = LyricController(progressSource: progressSource)
-    ..load(qrc, translation: tlrc);
+  final _player = AudioPlayer();
+  late final _controller = LyricController(
+    progressSource: JustAudioProgressSource(_player),
+  )..load(qrc, translation: tlrc);
+  bool _loading = true;
+  String? _error;
+  Duration _duration = Duration.zero;
 
   @override
   void initState() {
     super.initState();
-    setPlayer();
+    unawaited(_load());
   }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final duration = await _player.setAsset('assets/music.mp3');
+      if (!mounted) return;
+      setState(() {
+        _duration = duration ?? Duration.zero;
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = '音频加载失败，请重试';
+        });
+      }
+    }
+  }
+
+  Future<void> _play() async {
+    try {
+      await _player.play();
+    } catch (_) {
+      if (mounted) setState(() => _error = '播放未能开始，请重试');
+    }
+  }
+
+  Future<void> _seek(Duration position, {bool play = false}) async {
+    if (_loading || _error != null) return;
+    try {
+      await _player.seek(position);
+      if (play && mounted) unawaited(_play());
+    } catch (_) {
+      if (mounted) setState(() => _error = '跳转失败，请重试');
+    }
+  }
+
+  Future<void> _toggle() async {
+    if (_loading || _error != null) return;
+    if (_player.playing &&
+        _player.processingState != ProcessingState.completed) {
+      await _player.pause();
+    } else {
+      if (_player.processingState == ProcessingState.completed) {
+        await _seek(Duration.zero);
+      }
+      unawaited(_play());
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => MaterialApp(
+    debugShowCheckedModeBanner: false,
+    title: 'Lyric Studio · 歌词实验室',
+    theme: studioTheme(),
+    home: AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.dark,
+      ),
+      child: LyricStudio(
+        controller: _controller,
+        onLineTap: (details) =>
+            unawaited(_seek(details.seekPosition, play: true)),
+        onTogglePlayback: () => unawaited(_toggle()),
+        playback: StreamBuilder<PlayerState>(
+          stream: _player.playerStateStream,
+          builder: (context, state) => StreamBuilder<Duration>(
+            stream: _player.positionStream,
+            builder: (context, position) => PlaybackControls(
+              position: position.data ?? Duration.zero,
+              duration: _duration,
+              playing:
+                  (state.data?.playing ?? false) &&
+                  state.data?.processingState != ProcessingState.completed,
+              loading: _loading,
+              error: _error,
+              onRetry: _load,
+              onPlay: () => unawaited(_toggle()),
+              onSeek: (value) => unawaited(_seek(value)),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 
   @override
   void dispose() {
-    lyricController.dispose();
-    player.dispose();
+    _controller.dispose();
+    unawaited(_player.dispose());
     super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      home: Builder(
-        builder: (context) {
-          return AnnotatedRegion(
-            value: SystemUiOverlayStyle(
-              systemNavigationBarColor: Colors.transparent,
-              systemNavigationBarDividerColor: Colors.transparent,
-              systemNavigationBarIconBrightness: Brightness.light,
-              statusBarColor: Colors.transparent,
-            ),
-            child: Scaffold(
-              extendBody: true,
-              body: Stack(
-                clipBehavior: Clip.hardEdge,
-                children: [
-                  Positioned.fill(
-                    child: ClipPath(
-                      clipBehavior: Clip.hardEdge,
-                      child: ImageFiltered(
-                        imageFilter: ImageFilter.blur(sigmaX: 120, sigmaY: 120),
-                        child: Transform.scale(
-                          scale: 1.8,
-                          child: Image.asset(
-                            'assets/cover.webp',
-                            width: double.infinity,
-                            height: double.infinity,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned.fill(
-                    child: Column(
-                      children: [
-                        SizedBox(height: MediaQuery.paddingOf(context).top),
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 16.0),
-                          child: DefaultTextStyle(
-                            style: TextStyle(
-                              fontSize: 16,
-                              color: Colors.white.withValues(alpha: 0.8),
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  "Be What You Wanna Be",
-                                  style: TextStyle(fontWeight: FontWeight.w600),
-                                ),
-                                SizedBox(height: 4),
-                                Text("Darin", style: TextStyle(fontSize: 12)),
-                              ],
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: Builder(
-                            builder: (context) {
-                              final items = [
-                                for (final base in [
-                                  LyricPresets.leading,
-                                  LyricPresets.centered,
-                                  LyricPresets.singleLine,
-                                ])
-                                  ShowLyric(
-                                    controller: lyricController,
-                                    initialPreset: base.copyWith(
-                                      selectionBackgroundBuilder:
-                                          selectionBackground,
-                                      selectionForegroundBuilder:
-                                          selectionForeground,
-                                    ),
-                                    presets: issue41DemoPresets,
-                                    onLineTap: (details) async {
-                                      await player.seek(details.seekPosition);
-                                      player.play();
-                                    },
-                                  ),
-                              ];
-                              return ConstrainedBox(
-                                constraints: BoxConstraints(maxWidth: 1200),
-                                child: Flex(
-                                  direction:
-                                      MediaQuery.sizeOf(context).width > 500
-                                      ? Axis.horizontal
-                                      : Axis.vertical,
-                                  children: items
-                                      .map((e) => Expanded(child: e))
-                                      .toList(),
-                                ),
-                              );
-                            },
-                          ),
-                        ),
-                        buildControl(),
-                        SizedBox(height: MediaQuery.paddingOf(context).bottom),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  double? _dragValue;
-
-  Widget buildControl() {
-    return Builder(
-      builder: (context) {
-        final theme = Theme.of(context);
-        return Theme(
-          data: theme.copyWith(
-            iconTheme: theme.iconTheme.copyWith(
-              color: theme.colorScheme.primary,
-            ),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SliderTheme(
-                      data: SliderThemeData(
-                        trackHeight: 1,
-                        trackShape: RectangularSliderTrackShape(),
-                        thumbShape: RoundSliderThumbShape(
-                          enabledThumbRadius: 8,
-                        ),
-                        overlayShape: RoundSliderOverlayShape(
-                          overlayRadius: 10,
-                        ),
-                        activeTrackColor: Colors.white,
-                        inactiveTrackColor: Colors.white.withValues(alpha: 0.2),
-                      ),
-                      child: StreamBuilder(
-                        stream: player.durationStream,
-                        builder: (context, snapshot) {
-                          return StreamBuilder(
-                            stream: player.positionStream,
-                            builder: (context, asyncSnapshot) {
-                              return Slider(
-                                value:
-                                    _dragValue ??
-                                    asyncSnapshot.data?.inSeconds.toDouble() ??
-                                    0,
-                                max: musicDuration.inSeconds.toDouble(),
-                                onChangeEnd: (v) => {
-                                  player.seek(Duration(seconds: v.toInt())),
-                                  setState(() {
-                                    _dragValue = null;
-                                  }),
-                                },
-                                onChangeStart: (value) => setState(() {
-                                  _dragValue = value;
-                                }),
-                                onChanged: (value) => setState(() {
-                                  _dragValue = value;
-                                }),
-                              );
-                            },
-                          );
-                        },
-                      ),
-                    ),
-                    DefaultTextStyle(
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: Colors.white.withValues(alpha: 0.7),
-                        height: 1,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8.0,
-                          vertical: 0,
-                        ),
-                        child: Builder(
-                          builder: (context) {
-                            Widget buildText(inSeconds) {
-                              return Text(
-                                inSeconds == null
-                                    ? '00:00'
-                                    : '${(inSeconds ~/ 60).toString().padLeft(2, '0')}:${(inSeconds % 60).toInt().toString().padLeft(2, '0')}',
-                              );
-                            }
-
-                            return Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                StreamBuilder(
-                                  stream: player.positionStream,
-                                  builder: (context, asyncSnapshot) {
-                                    final inSeconds =
-                                        _dragValue ??
-                                        asyncSnapshot.data?.inSeconds;
-                                    return buildText(inSeconds);
-                                  },
-                                ),
-                                StreamBuilder(
-                                  stream: player.durationStream,
-                                  builder:
-                                      (
-                                        context,
-                                        AsyncSnapshot<Duration?> asyncSnapshot,
-                                      ) {
-                                        final inSeconds =
-                                            asyncSnapshot.data?.inSeconds;
-
-                                        return buildText(inSeconds);
-                                      },
-                                ),
-                              ],
-                            );
-                          },
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: 12),
-              StreamBuilder(
-                stream: player.playerStateStream,
-                builder: (context, AsyncSnapshot<PlayerState> asyncSnapshot) {
-                  return StreamBuilder(
-                    stream: player.playingStream,
-                    builder:
-                        (BuildContext context, AsyncSnapshot<bool> snapshot) {
-                          final isCompleted =
-                              asyncSnapshot.data?.processingState ==
-                              ProcessingState.completed;
-                          final isPlaying = isCompleted
-                              ? false
-                              : snapshot.data ?? false;
-                          return GestureDetector(
-                            onTap: () {
-                              if (isPlaying) {
-                                player.pause();
-                              } else {
-                                if (isCompleted) {
-                                  player.seek(Duration.zero);
-                                }
-                                player.play();
-                              }
-                            },
-                            child: Icon(
-                              isPlaying
-                                  ? CupertinoIcons.pause_circle_fill
-                                  : CupertinoIcons.play_circle_fill,
-                              size: 32,
-                            ),
-                          );
-                        },
-                  );
-                },
-              ),
-              SizedBox(width: 12),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Duration musicDuration = Duration.zero;
-
-  void setPlayer() async {
-    musicDuration = await player.setAsset('assets/music.mp3') ?? Duration.zero;
   }
 }
