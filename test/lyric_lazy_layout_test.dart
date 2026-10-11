@@ -135,4 +135,52 @@ void main() {
     expect(session(tester).layout!.metrics[50].debugPainterCount, 2);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+  for (final active in [false, true]) {
+    testWidgets(
+        '${active ? 'active' : 'normal'} opacity updates keep highlighted lines paintable',
+        (tester) async {
+      final controller = LyricController(
+          document: lines(count: 100),
+          initialPosition: const Duration(milliseconds: 2500));
+      addTearDown(controller.dispose);
+      var preset = quietPreset.copyWith(
+          highlight: const LyricHighlight.solid(Color(0xFF00FF00)));
+      await tester.pumpWidget(host(controller, preset: preset));
+      await tester.pumpAndSettle();
+      final state = session(tester);
+      final metrics = state.layout!.metrics;
+      final mask = metrics[2].activeMaskPainter;
+      final maskSize = mask.size;
+      final words = metrics[2].words;
+      final scrollY = state.scrollY;
+
+      for (final alpha in [0.35, 0.0, 1.0, 0.65]) {
+        final style = active ? preset.activeTextStyle : preset.textStyle;
+        final changed =
+            style.copyWith(color: withAlphaValue(style.color!, alpha));
+        preset = active
+            ? preset.copyWith(activeTextStyle: changed)
+            : preset.copyWith(textStyle: changed);
+        await tester.pumpWidget(host(controller, preset: preset));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(state.layout!.metrics, same(metrics));
+        expect(metrics[2].activeMaskPainter, same(mask));
+        expect(mask.size, maskSize);
+        expect(metrics[2].words, same(words));
+        expect(state.scrollY, scrollY);
+        expect(metrics[50].debugPainterCount, 2);
+      }
+
+      // Paint both the following line and a line whose highlight was deferred.
+      for (final milliseconds in [3500, 50500]) {
+        controller.setPosition(Duration(milliseconds: milliseconds));
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull);
+        expect(state.activeIndex, milliseconds ~/ 1000);
+        expect(state.layout!.metrics, same(metrics));
+      }
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
 }

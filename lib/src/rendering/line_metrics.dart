@@ -135,10 +135,11 @@ class LineMetrics {
       translationTextPainter.text =
           TextSpan(text: line.translation, style: translationStyle);
     }
-    if (paintChangesNeedLayout) {
-      for (final painter in _initializedPainters) {
-        if (painter.text != null) painter.layout(maxWidth: _maxWidth!);
-      }
+    // Replacing a mask's foreground Paint invalidates layout even on Flutter
+    // versions that retain it for color-only changes. Validate every initialized
+    // painter; layout() reuses valid geometry and leaves deferred painters alone.
+    for (final painter in _initializedPainters) {
+      if (painter.text != null) painter.layout(maxWidth: _maxWidth!);
     }
   }
 

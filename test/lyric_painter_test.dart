@@ -229,6 +229,39 @@ void main() {
     }
   });
 
+  for (final active in [true, false]) {
+    test('opacity restyles preserve ${active ? 'active' : 'exit'} mask pixels',
+        () async {
+      const highlight = Color(0x8000FF00);
+      var layout = _layout(_style(highlightColor: highlight, animate: true));
+      final state = LyricLineSwitchState(
+        enterIndex: -1,
+        exitIndex: active ? -1 : 0,
+        enterAnimationValue: 1,
+        exitAnimationValue: active ? 1 : 0.5,
+      );
+      // Initialize the mask by painting before any opacity changes.
+      await _render((canvas) =>
+          _paintLyric(canvas, layout, active: active, switchState: state));
+      for (final alpha in [0.0, 0.35, 1.0, 0.65]) {
+        final base = withAlphaValue(Colors.red, alpha);
+        layout = layout.restyle(
+            ResolvedPreset(_style(
+                baseColor: base, highlightColor: highlight, animate: true)),
+            _size);
+        final expected = await _coloredCoverage(
+            _text,
+            (_, __) => Color.alphaBlend(
+                withAlphaValue(
+                    highlight, channel(highlight, 'a') * (active ? 1 : 0.5)),
+                base));
+        final actual = await _render((canvas) =>
+            _paintLyric(canvas, layout, active: active, switchState: state));
+        _expectPixelsClose(actual, expected);
+      }
+    });
+  }
+
   test('word progress and fractional fade boundary have no seam', () async {
     const base = Color(0x40FF0000);
     const highlight = Color(0xFF00FF00);
