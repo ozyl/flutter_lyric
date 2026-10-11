@@ -8,13 +8,6 @@ import 'package:flutter_lyric/widgets/mixins/lyric_line_switch_mixin.dart';
 
 const _debugLyric = false;
 
-class _HighlightSegment {
-  final Rect rect;
-  final ui.Shader shader;
-
-  _HighlightSegment(this.rect, this.shader);
-}
-
 class LyricPainter extends CustomPainter {
   final LyricLayout layout;
   final int playIndex;
@@ -101,11 +94,10 @@ class LyricPainter extends CustomPainter {
     onShowLineRectsChange(showLineRects);
   }
 
-  void drawHighlight(
+  void _drawHighlightColors(
     Canvas canvas,
-    Size size,
-    TextPainter maskPainter,
-    List<ui.LineMetrics> metrics, {
+    List<ui.LineMetrics> metrics,
+    Rect bounds, {
     double highlightTotalWidth = 0,
     double animationOpacity = 1.0,
   }) {
@@ -133,16 +125,21 @@ class LyricPainter extends CustomPainter {
     final fadeEndColor = opColors.last.withValues(alpha: 0);
 
     const pad = 2;
-    final segments = <_HighlightSegment>[];
-    Rect? layerBounds;
-
-    void addSegment(Rect rect, ui.Shader shader) {
-      segments.add(_HighlightSegment(rect, shader));
-      layerBounds =
-          layerBounds == null ? rect : layerBounds!.expandToInclude(rect);
+    // These rectangles only supply colors; the text mask supplies all glyph
+    // antialiasing. AA on adjoining solid/fade rectangles would leave a seam.
+    final paint = Paint()..isAntiAlias = false;
+    void drawSegment(Rect rect, ui.Shader shader) {
+      paint.shader = shader;
+      canvas.drawRect(rect, paint);
     }
 
     for (var line in metrics) {
+      final top = line.baseline - line.ascent;
+      final height = line.ascent + line.descent;
+      // Extend the outside edges beyond the glyph coverage. Keep wrapped rows
+      // adjacent so their color fields cannot overlap each other.
+      final paintTop = line == metrics.first ? bounds.top : top;
+      final paintBottom = line == metrics.last ? bounds.bottom : top + height;
       if (highlightFullMode) {
         final rect = Rect.fromLTWH(
           line.left - pad,
@@ -150,8 +147,8 @@ class LyricPainter extends CustomPainter {
           line.width + pad,
           line.ascent + line.descent,
         );
-        addSegment(
-          rect,
+        drawSegment(
+          Rect.fromLTRB(bounds.left, paintTop, bounds.right, paintBottom),
           LinearGradient(
             colors: opColors,
             stops: grad.stops,
@@ -168,8 +165,6 @@ class LyricPainter extends CustomPainter {
       final fadeEnd = highlightTotalWidth - accWidth;
       if (fadeEnd <= 0) break;
 
-      final top = line.baseline - line.ascent;
-      final height = line.ascent + line.descent;
       final fadeWidth = extraFadeWidth > 0 ? extraFadeWidth : 0.0;
       final fadeStart = fadeEnd - fadeWidth;
       final solidEnd = fadeWidth > 0 ? fadeStart : fadeEnd;
@@ -181,8 +176,13 @@ class LyricPainter extends CustomPainter {
           line.left + solidEnd.clamp(0.0, line.width),
           top + height,
         );
-        addSegment(
-          solidRect,
+        drawSegment(
+          Rect.fromLTRB(
+            bounds.left,
+            paintTop,
+            solidEnd >= line.width ? bounds.right : solidRect.right,
+            paintBottom,
+          ),
           LinearGradient(
             colors: opColors,
             stops: grad.stops,
@@ -201,8 +201,13 @@ class LyricPainter extends CustomPainter {
           line.left + fadeEnd,
           top + height,
         );
-        addSegment(
-          fadeRect,
+        drawSegment(
+          Rect.fromLTRB(
+            fadeStart <= 0 ? bounds.left : fadeRect.left,
+            paintTop,
+            fadeEnd >= line.width ? bounds.right : fadeRect.right,
+            paintBottom,
+          ),
           LinearGradient(colors: [opColors.last, fadeEndColor])
               .createShader(fadeRect),
         );
@@ -212,34 +217,31 @@ class LyricPainter extends CustomPainter {
 
       if (highlightTotalWidth <= accWidth) break;
     }
-
-    if (segments.isNotEmpty && layerBounds != null) {
-      _drawMaskedHighlightSegments(
-        canvas,
-        maskPainter,
-        layerBounds!,
-        segments,
-      );
-    }
   }
 
-  void _drawMaskedHighlightSegments(
+  void _drawHighlightedText(
     Canvas canvas,
     TextPainter maskPainter,
-    Rect bounds,
-    List<_HighlightSegment> segments,
-  ) {
-    canvas.save();
-    canvas.clipRect(bounds);
+    List<ui.LineMetrics> metrics,
+    Color baseColor, {
+    required double highlightTotalWidth,
+    required double animationOpacity,
+  }) {
+    // Rasterize the glyph coverage once. Compose base/highlight colors before
+    // applying that coverage, otherwise srcOver blends the AA edge twice and
+    // leaves a base-colored fringe. An opaque mask also keeps highlight alpha
+    // independent of the active text alpha (issue #41).
+    // Bound the offscreen surfaces to this paragraph, allowing for glyph
+    // overhang and antialiasing beyond the typographic line metrics.
+    final bounds = (Offset.zero & maskPainter.size)
+        .inflate(maskPainter.preferredLineHeight);
     canvas.saveLayer(bounds, Paint());
-    final paint = Paint();
-    for (final segment in segments) {
-      paint.shader = segment.shader;
-      canvas.drawRect(segment.rect, paint);
-    }
-    canvas.saveLayer(bounds, Paint()..blendMode = BlendMode.dstIn);
     maskPainter.paint(canvas, Offset.zero);
-    canvas.restore();
+    canvas.saveLayer(bounds, Paint()..blendMode = BlendMode.srcIn);
+    canvas.drawRect(bounds, Paint()..color = baseColor);
+    _drawHighlightColors(canvas, metrics, bounds,
+        highlightTotalWidth: highlightTotalWidth,
+        animationOpacity: animationOpacity);
     canvas.restore();
     canvas.restore();
   }
@@ -328,7 +330,20 @@ class LyricPainter extends CustomPainter {
 
     final targetColor = _resolveColor(oldSpan.style!, layoutStyle.selectedColor,
         isSelecting, isInAnchorArea, animatedMainColor);
-    final needsRestyle = targetColor != oldSpan.style!.color;
+    final hasHighlight = layoutStyle.activeHighlightColor != null ||
+        layoutStyle.activeHighlightGradient != null;
+    final isExiting = index == switchState.exitIndex &&
+        switchState.exitAnimationValue < 1 &&
+        style.enableSwitchAnimation;
+    final highlightWidth = isActive && metric.words?.isNotEmpty == true
+        ? activeHighlightWidth
+        : double.infinity;
+    final drawHighlighted = hasHighlight &&
+        (isActive || isExiting) &&
+        highlightOpacity > 0 &&
+        highlightWidth > 0;
+    final needsRestyle =
+        !drawHighlighted && targetColor != oldSpan.style!.color;
 
     if (needsRestyle) {
       painter.text = TextSpan(
@@ -348,23 +363,20 @@ class LyricPainter extends CustomPainter {
     }
     final switchOffset = handleSwitchAnimation(
         canvas, metric, index, switchState, painter, size);
-    painter.paint(canvas, Offset.zero);
+    if (drawHighlighted) {
+      _drawHighlightedText(
+        canvas,
+        isActive ? metric.activeMaskPainter : metric.textMaskPainter,
+        isActive ? metric.activeMetrics : metric.metrics,
+        targetColor,
+        highlightTotalWidth: highlightWidth,
+        animationOpacity: highlightOpacity,
+      );
+    } else {
+      painter.paint(canvas, Offset.zero);
+    }
     if (needsRestyle) {
       painter.text = oldSpan;
-    }
-    if (isActive) {
-      drawHighlight(
-          canvas, size, metric.activeMaskPainter, metric.activeMetrics,
-          highlightTotalWidth: metric.words?.isNotEmpty == true
-              ? activeHighlightWidth
-              : double.infinity,
-          animationOpacity: highlightOpacity);
-    } else if (index == switchState.exitIndex &&
-        switchState.exitAnimationValue < 1 &&
-        style.enableSwitchAnimation) {
-      drawHighlight(canvas, size, metric.textMaskPainter, metric.metrics,
-          highlightTotalWidth: double.infinity,
-          animationOpacity: highlightOpacity);
     }
     canvas.restore();
     final mainHeight = isActive ? metric.activeHeight : metric.height;

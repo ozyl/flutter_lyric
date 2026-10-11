@@ -176,7 +176,9 @@ class LyricLayout {
         return child is TextSpan ? buildHighlightMaskTextSpan(child) : child;
       }).toList(),
       style: style?.copyWith(
-        color: (style.color ?? const Color(0xFFFFFFFF)).withValues(alpha: 1.0),
+        // A neutral mask also avoids color-dependent glyph AA on renderers
+        // that adjust text coverage for the foreground luminance.
+        color: const Color(0xFFFFFFFF),
       ),
     );
   }
