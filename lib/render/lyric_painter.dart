@@ -1,5 +1,6 @@
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart' show ValueListenable;
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/core/lyric_model.dart';
 import 'package:flutter_lyric/core/lyric_style.dart';
@@ -8,28 +9,79 @@ import 'package:flutter_lyric/widgets/mixins/lyric_line_switch_mixin.dart';
 
 const _debugLyric = false;
 
+/// Frame values consumed directly by the painter, without rebuilding widgets.
+class LyricPaintState {
+  final ValueListenable<int> playIndex;
+  final ValueListenable<double> scrollY;
+  final ValueListenable<double> activeHighlightWidth;
+  final ValueListenable<LyricLineSwitchState> switchState;
+  final ValueListenable<bool> isSelecting;
+  late final Listenable repaint = Listenable.merge([
+    playIndex,
+    scrollY,
+    activeHighlightWidth,
+    switchState,
+    isSelecting,
+  ]);
+
+  LyricPaintState({
+    required this.playIndex,
+    required this.scrollY,
+    required this.activeHighlightWidth,
+    required this.switchState,
+    required this.isSelecting,
+  });
+}
+
 class LyricPainter extends CustomPainter {
   final LyricLayout layout;
-  final int playIndex;
-  final double scrollY;
-  final double activeHighlightWidth;
-  final LyricLineSwitchState switchState;
-  final bool isSelecting;
+  final int _playIndex;
+  final double _scrollY;
+  final double _activeHighlightWidth;
+  final LyricLineSwitchState? _switchState;
+  final bool _isSelecting;
+  final LyricPaintState? _state;
+  int get playIndex => _state?.playIndex.value ?? _playIndex;
+  double get scrollY => _state?.scrollY.value ?? _scrollY;
+  double get activeHighlightWidth =>
+      _state?.activeHighlightWidth.value ?? _activeHighlightWidth;
+  LyricLineSwitchState get switchState =>
+      _state?.switchState.value ?? _switchState!;
+  bool get isSelecting => _state?.isSelecting.value ?? _isSelecting;
   final LyricStyle style;
   final void Function(int) onAnchorIndexChange;
   final void Function(Map<int, Rect>) onShowLineRectsChange;
 
   LyricPainter({
     required this.layout,
-    required this.playIndex,
-    required this.scrollY,
+    required int playIndex,
+    required double scrollY,
     required this.onAnchorIndexChange,
-    required this.activeHighlightWidth,
-    required this.switchState,
-    required this.isSelecting,
+    required double activeHighlightWidth,
+    required LyricLineSwitchState switchState,
+    required bool isSelecting,
     required this.onShowLineRectsChange,
     required this.style,
-  });
+  })  : _playIndex = playIndex,
+        _scrollY = scrollY,
+        _activeHighlightWidth = activeHighlightWidth,
+        _switchState = switchState,
+        _isSelecting = isSelecting,
+        _state = null;
+
+  LyricPainter.listenable({
+    required this.layout,
+    required LyricPaintState state,
+    required this.onAnchorIndexChange,
+    required this.onShowLineRectsChange,
+    required this.style,
+  })  : _state = state,
+        _playIndex = 0,
+        _scrollY = 0,
+        _activeHighlightWidth = 0,
+        _switchState = null,
+        _isSelecting = false,
+        super(repaint: state.repaint);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -57,23 +109,23 @@ class LyricPainter extends CustomPainter {
         debugPaint,
       );
     }
-    var totalTranslateY = -scrollY;
-    canvas.translate(0, -scrollY);
-    var selectedIndex = -1;
+    final firstLine = layout.lineAtOffset(scrollY, playIndex);
+    final selectedIndex = layout.lineAtOffset(
+        scrollY + selectionPosition, playIndex,
+        bottomExtension: lineGap / 2);
+    if (selectedIndex < metrics.length) {
+      onAnchorIndexChange(selectedIndex);
+    }
+    var totalTranslateY = layout.lineTop(firstLine, playIndex) - scrollY;
+    canvas.translate(0, totalTranslateY);
     final showLineRects = <int, Rect>{};
-    final halfLineGap = lineGap / 2;
     final contentHorizontal = layoutStyle.contentPadding.horizontal;
     final activeLineOnly = style.activeLineOnly;
 
-    for (var i = 0; i < metrics.length; i++) {
+    for (var i = firstLine; i < metrics.length; i++) {
       final isActive = i == playIndex;
       final lineHeight = layout.getLineHeight(isActive, i);
       totalTranslateY += lineHeight;
-      if ((totalTranslateY + halfLineGap) >= selectionPosition &&
-          selectedIndex == -1) {
-        selectedIndex = i;
-        onAnchorIndexChange(i);
-      }
       if (totalTranslateY - lineHeight >= size.height) {
         break;
       }
@@ -328,7 +380,9 @@ class LyricPainter extends CustomPainter {
       }
     }
 
-    final targetColor = _resolveColor(oldSpan.style!, layoutStyle.selectedColor,
+    final baseStyle =
+        isActive ? layoutStyle.activeStyle : layoutStyle.textStyle;
+    final targetColor = _resolveColor(baseStyle, layoutStyle.selectedColor,
         isSelecting, isInAnchorArea, animatedMainColor);
     final hasHighlight = layoutStyle.activeHighlightColor != null ||
         layoutStyle.activeHighlightGradient != null;
@@ -375,9 +429,8 @@ class LyricPainter extends CustomPainter {
     } else {
       painter.paint(canvas, Offset.zero);
     }
-    if (needsRestyle) {
-      painter.text = oldSpan;
-    }
+    // Keep the last painted color. Restoring the span here invalidates Flutter's
+    // paragraph cache, even when the next frame uses exactly the same color.
     canvas.restore();
     final mainHeight = isActive ? metric.activeHeight : metric.height;
     if (metric.line.translation?.isNotEmpty == true) {
@@ -386,8 +439,7 @@ class LyricPainter extends CustomPainter {
 
       Color? animatedTranslationColor;
       if (style.enableSwitchAnimation) {
-        final normalTransColor =
-            tOldSpan.style!.color ?? layoutStyle.translationStyle.color;
+        final normalTransColor = layoutStyle.translationStyle.color;
         final activeTransColor =
             layoutStyle.translationActiveColor ?? normalTransColor;
 
@@ -401,8 +453,9 @@ class LyricPainter extends CustomPainter {
       }
 
       final tBaseColor = isActive
-          ? (layoutStyle.translationActiveColor ?? tOldSpan.style!.color)
-          : tOldSpan.style!.color;
+          ? (layoutStyle.translationActiveColor ??
+              layoutStyle.translationStyle.color)
+          : layoutStyle.translationStyle.color;
       final tTargetColor = _resolveColor(
           tOldSpan.style!.copyWith(color: tBaseColor),
           layoutStyle.selectedTranslationColor,
@@ -428,9 +481,6 @@ class LyricPainter extends CustomPainter {
       } catch (_) {
         // 避免系统字体变更触发 assert(debugSize == size);
       }
-      if (tNeedsRestyle) {
-        tPainter.text = tOldSpan;
-      }
       canvas.translate(0, -switchOffset);
       canvas.restore();
     }
@@ -455,7 +505,10 @@ class LyricPainter extends CustomPainter {
         playIndex != oldDelegate.playIndex ||
         scrollY != oldDelegate.scrollY ||
         activeHighlightWidth != oldDelegate.activeHighlightWidth ||
-        switchState != oldDelegate.switchState;
+        switchState != oldDelegate.switchState ||
+        isSelecting != oldDelegate.isSelecting ||
+        style != oldDelegate.style ||
+        _state != oldDelegate._state;
     return shouldRepaint;
   }
 }

@@ -42,10 +42,18 @@ class _LyricViewState extends State<LyricView>
         LyricLineHightlightMixin,
         LyricLineSwitchMixin {
   late final Ticker _progressTicker;
+  late final LyricPaintState _paintState;
 
   @override
   void initState() {
     super.initState();
+    _paintState = LyricPaintState(
+      playIndex: controller.activeIndexNotifiter,
+      scrollY: scrollYNotifier,
+      activeHighlightWidth: activeHighlightWidthNotifier,
+      switchState: switchStateNotifier,
+      isSelecting: controller.isSelectingNotifier,
+    );
     _progressTicker = createTicker((_) => controller.syncProgress());
     controller.progressAdvancingListenable.addListener(_updateProgressTicker);
     _updateProgressTicker();
@@ -64,6 +72,7 @@ class _LyricViewState extends State<LyricView>
     controller.progressAdvancingListenable
         .removeListener(_updateProgressTicker);
     _progressTicker.dispose();
+    scrollYNotifier.dispose();
     super.dispose();
   }
 
@@ -115,40 +124,28 @@ class _LyricViewState extends State<LyricView>
                   size.height != lyricSize.height) {
                 lyricSize = size;
                 WidgetsBinding.instance.addPostFrameCallback((_) {
-                  computeLyricLayout();
+                  if (mounted) computeLyricLayout();
                 });
               }
               if (layout == null) return const SizedBox.shrink();
-              Widget result = buildLineSwitch((context, switchState) {
-                return buildActiveHighlightWidth((double value) {
-                  return ValueListenableBuilder(
-                      valueListenable: scrollYNotifier,
-                      builder: (context, double scrollY, child) {
-                        return CustomPaint(
-                          painter: LyricPainter(
-                            layout: layout!,
-                            onShowLineRectsChange: (rects) {
-                              showLineRects = rects;
-                            },
-                            style: style,
-                            playIndex: controller.activeIndexNotifiter.value,
-                            activeHighlightWidth: value,
-                            isSelecting: controller.isSelectingNotifier.value,
-                            scrollY: scrollY,
-                            onAnchorIndexChange: (index) {
-                              scheduleMicrotask(() {
-                                controller.selectedIndexNotifier.value = index;
-                              });
-                            },
-                            switchState: switchState,
-                          ),
-                          size: lyricSize,
-                        );
-                      });
-                });
-              });
-              result = wrapMaskIfNeed(result);
-              return result;
+              final result = CustomPaint(
+                painter: LyricPainter.listenable(
+                  layout: layout!,
+                  state: _paintState,
+                  onShowLineRectsChange: (rects) => showLineRects = rects,
+                  style: style,
+                  onAnchorIndexChange: (index) {
+                    if (controller.selectedIndexNotifier.value == index) return;
+                    scheduleMicrotask(() {
+                      if (mounted) {
+                        controller.selectedIndexNotifier.value = index;
+                      }
+                    });
+                  },
+                ),
+                size: lyricSize,
+              );
+              return RepaintBoundary(child: wrapMaskIfNeed(result));
             },
           ),
         ),

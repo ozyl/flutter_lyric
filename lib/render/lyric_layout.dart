@@ -9,14 +9,70 @@ class LyricLayout {
   final double selectionAnchorPosition;
   final double activeAnchorPosition;
 
+  // Normal line starts including gaps. Only the active line changes height,
+  // so its delta can be applied without rebuilding this index on every seek.
+  late final List<double> _lineStarts = _computeLineStarts();
+
+  List<double> _computeLineStarts() {
+    final starts = <double>[0];
+    for (var i = 0; i < metrics.length; i++) {
+      starts.add(starts.last + getLineHeight(false, i) + style.lineGap);
+    }
+    return starts;
+  }
+
+  double _activeHeightDelta(int activeIndex) {
+    if (activeIndex < 0 || activeIndex >= metrics.length) return 0;
+    return metrics[activeIndex].activeHeight - metrics[activeIndex].height;
+  }
+
+  double lineTop(int index, int activeIndex) {
+    return _lineStarts[index] +
+        (activeIndex >= 0 && activeIndex < index
+            ? _activeHeightDelta(activeIndex)
+            : 0);
+  }
+
+  /// First line whose bottom (plus [bottomExtension]) reaches [offset].
+  /// Returns metrics.length when the offset is beyond the last line.
+  int lineAtOffset(double offset, int activeIndex,
+      {double bottomExtension = 0}) {
+    var low = 0;
+    var high = metrics.length;
+    while (low < high) {
+      final mid = low + ((high - low) >> 1);
+      final bottom = lineTop(mid, activeIndex) +
+          getLineHeight(mid == activeIndex, mid) +
+          bottomExtension;
+      if (bottom < offset) {
+        low = mid + 1;
+      } else {
+        high = mid;
+      }
+    }
+    return low;
+  }
+
   LyricLayout copyWith(LyricStyle style) {
     return LyricLayout._internal(
       metrics,
       style,
       viewSize,
-      selectionAnchorPosition,
-      activeAnchorPosition,
+      style.calcSelectionAnchorPosition(viewSize.height),
+      style.calcActiveAnchorPosition(viewSize.height),
     );
+  }
+
+  /// Releases the native paragraphs owned by this layout. Copies share painters;
+  /// dispose them only when replacing the text layout or unmounting the view.
+  void dispose() {
+    for (final line in metrics) {
+      line.textPainter.dispose();
+      line.activeTextPainter.dispose();
+      line.textMaskPainter.dispose();
+      line.activeMaskPainter.dispose();
+      line.translationTextPainter.dispose();
+    }
   }
 
   @override
@@ -26,17 +82,9 @@ class LyricLayout {
 
   double lineOffsetY(int index, int activeIndex, double anchorPosition,
       MainAxisAlignment alignment) {
-    double indexStartY = 0;
-    for (var i = 0; i < metrics.length; i++) {
-      final lineHeight = getLineHeight(i == activeIndex, i);
-      if (i >= index) {
-        final anchorOffset =
-            anchorOffsetY(i, activeIndex == i, lineHeight, alignment);
-        indexStartY += anchorOffset;
-        break;
-      }
-      indexStartY += lineHeight + style.lineGap;
-    }
+    final target = index.clamp(0, metrics.length);
+    final indexStartY = lineTop(target, activeIndex) +
+        anchorOffsetY(target, activeIndex == target, null, alignment);
 
     if (anchorPosition < indexStartY + style.contentPadding.top) {
       return indexStartY - anchorPosition;
@@ -93,13 +141,9 @@ class LyricLayout {
   }
 
   double contentHeight(int highlightIndex) {
-    double totalHeight = 0;
-    for (var i = 0; i < metrics.length; i++) {
-      totalHeight += getLineHeight(i == highlightIndex, i);
-      if (i < metrics.length - 1) {
-        totalHeight += style.lineGap;
-      }
-    }
+    final totalHeight = _lineStarts.last +
+        _activeHeightDelta(highlightIndex) -
+        (metrics.isEmpty ? 0 : style.lineGap);
     return totalHeight + style.contentPadding.vertical;
   }
 

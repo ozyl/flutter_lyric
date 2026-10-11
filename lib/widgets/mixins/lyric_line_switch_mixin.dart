@@ -29,6 +29,21 @@ mixin LyricLineSwitchMixin<T extends StatefulWidget>
   CurvedAnimation? _enterCurvedAnimation;
   Curve? _cachedExitCurve;
   Curve? _cachedEnterCurve;
+  final switchStateNotifier = ValueNotifier(LyricLineSwitchState(
+    exitAnimationValue: 1,
+    enterAnimationValue: 1,
+    exitIndex: -1,
+    enterIndex: -1,
+  ));
+
+  void _updateSwitchState() {
+    switchStateNotifier.value = LyricLineSwitchState(
+      exitAnimationValue: _exitCurvedAnimation?.value ?? 1,
+      enterAnimationValue: _enterCurvedAnimation?.value ?? 1,
+      exitIndex: _exitIndex,
+      enterIndex: _enterIndex,
+    );
+  }
 
   @override
   void initState() {
@@ -41,6 +56,20 @@ mixin LyricLineSwitchMixin<T extends StatefulWidget>
     _enterIndex = _exitIndex;
     controller.activeIndexNotifiter.addListener(onActiveIndexChange);
     _ensureSwitchCurvedAnimations();
+    _exitAnimationController.addListener(_updateSwitchState);
+    _enterAnimationController.addListener(_updateSwitchState);
+    _updateSwitchState();
+  }
+
+  @override
+  void onStyleChange() {
+    super.onStyleChange();
+    _ensureSwitchCurvedAnimations();
+    if (!style.enableSwitchAnimation) {
+      _exitAnimationController.value = 1;
+      _enterAnimationController.value = 1;
+    }
+    _updateSwitchState();
   }
 
   void _ensureSwitchCurvedAnimations() {
@@ -80,10 +109,11 @@ mixin LyricLineSwitchMixin<T extends StatefulWidget>
     _enterIndex = -1;
     _exitAnimationController.value = 1.0;
     _enterAnimationController.value = 1.0;
+    _updateSwitchState();
   }
 
   void onPlaySwitchAnimation(dynamic _) {
-    if (!mounted) {
+    if (!mounted || !style.enableSwitchAnimation) {
       return;
     }
     _exitAnimationController.forward(from: 0);
@@ -123,6 +153,13 @@ mixin LyricLineSwitchMixin<T extends StatefulWidget>
     _exitIndex = _enterIndex;
     final old = _enterIndex;
     _enterIndex = controller.activeIndexNotifiter.value;
+    if (!style.enableSwitchAnimation) {
+      _exitAnimationController.value = 1;
+      _enterAnimationController.value = 1;
+      _updateSwitchState();
+      return;
+    }
+    _updateSwitchState();
     if (_enterIndex != _exitIndex) {
       _exitAnimationController.reset();
       _enterAnimationController.reset();
@@ -155,6 +192,7 @@ mixin LyricLineSwitchMixin<T extends StatefulWidget>
     _disposeSwitchCurvedAnimations();
     _exitAnimationController.dispose();
     _enterAnimationController.dispose();
+    switchStateNotifier.dispose();
     super.dispose();
   }
 }

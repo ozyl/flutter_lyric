@@ -322,6 +322,53 @@ void main() {
     _expectPixelsClose(actual, expected);
   });
 
+  test('stable selection colors reuse spans and reset when selection ends',
+      () async {
+    final layout = _layout(_style(highlightColor: null));
+    final metric = layout.metrics.single;
+    final expected = await _render((canvas) => _paintLyric(canvas, layout));
+    await _render((canvas) => _paintLyric(canvas, layout, selecting: true));
+    final selectedSpan = metric.activeTextPainter.text;
+    await _render((canvas) => _paintLyric(canvas, layout, selecting: true));
+    expect(metric.activeTextPainter.text, same(selectedSpan));
+    final actual = await _render((canvas) => _paintLyric(canvas, layout));
+    _expectPixelsClose(actual, expected);
+    final restoredSpan = metric.activeTextPainter.text;
+    await _render((canvas) => _paintLyric(canvas, layout));
+    expect(metric.activeTextPainter.text, same(restoredSpan));
+  });
+
+  test('translation color stays cached and resets after leaving active line',
+      () async {
+    final style = _style(highlightColor: null).copyWith(
+      translationStyle:
+          const TextStyle(fontFamily: 'Ahem', fontSize: 16, color: Colors.blue),
+      translationActiveColor: Colors.green,
+      selectedTranslationColor: Colors.orange,
+    );
+    final layout = LyricLayout.compute(
+        LyricModel(lines: [
+          LyricLine(start: Duration.zero, text: _text, translation: 'BB'),
+        ]),
+        style,
+        _size);
+    addTearDown(layout.dispose);
+    final metric = layout.metrics.single;
+    final expected =
+        await _render((canvas) => _paintLyric(canvas, layout, active: false));
+    await _render((canvas) => _paintLyric(canvas, layout));
+    final activeSpan = metric.translationTextPainter.text;
+    await _render((canvas) => _paintLyric(canvas, layout));
+    expect(metric.translationTextPainter.text, same(activeSpan));
+    expect((activeSpan! as TextSpan).style!.color, Colors.green);
+    await _render((canvas) => _paintLyric(canvas, layout, selecting: true));
+    expect((metric.translationTextPainter.text! as TextSpan).style!.color,
+        Colors.orange);
+    final actual =
+        await _render((canvas) => _paintLyric(canvas, layout, active: false));
+    _expectPixelsClose(actual, expected);
+  });
+
   test('zero progress and absent highlight retain ordinary text rendering',
       () async {
     final baseLayout = _layout(_style(highlightColor: null));

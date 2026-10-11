@@ -21,7 +21,9 @@ mixin LyricLayoutMixin<T extends StatefulWidget> on State<T> {
   void dispose() {
     controller.activeIndexNotifiter.removeListener(updateTotalHeight);
     controller.lyricNotifier.removeListener(computeLyricLayout);
+    controller.selectedIndexNotifier.removeListener(updateSelection);
     PaintingBinding.instance.systemFonts.removeListener(systemFontsDidChange);
+    layout?.dispose();
     super.dispose();
   }
 
@@ -34,15 +36,12 @@ mixin LyricLayoutMixin<T extends StatefulWidget> on State<T> {
     final oldStyle = l.style;
     final newStyle = style;
     if (oldStyle == newStyle) return;
-    layout = l.copyWith(newStyle);
     final comparison = oldStyle.compareTo(newStyle);
-    if (comparison == RenderComparison.identical) {
-      return;
-    }
     if (comparison == RenderComparison.layout) {
       computeLyricLayout();
       return;
     }
+    layout = l.copyWith(newStyle);
     if (comparison == RenderComparison.paint) {
       layout?.metrics.forEach((element) {
         element.textPainter.text =
@@ -56,24 +55,16 @@ mixin LyricLayoutMixin<T extends StatefulWidget> on State<T> {
         element.translationTextPainter.text = TextSpan(
             text: element.line.translation, style: newStyle.translationStyle);
       });
-      setState(() {});
     }
+    onLayoutChange(layout!);
   }
 
   @override
   void initState() {
     PaintingBinding.instance.systemFonts.addListener(systemFontsDidChange);
-    controller.activeIndexNotifiter.addListener(() {
-      scheduleMicrotask(() {
-        updateTotalHeight();
-      });
-    });
-    controller.selectedIndexNotifier.addListener(() {
-      updateSelection();
-    });
-    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      controller.lyricNotifier.addListener(computeLyricLayout);
-    });
+    controller.activeIndexNotifiter.addListener(updateTotalHeight);
+    controller.selectedIndexNotifier.addListener(updateSelection);
+    controller.lyricNotifier.addListener(computeLyricLayout);
     super.initState();
   }
 
@@ -89,6 +80,7 @@ mixin LyricLayoutMixin<T extends StatefulWidget> on State<T> {
 
   void onLayoutChange(LyricLayout layout) {
     this.layout = layout;
+    controller.anchorPositionNotifier.value = layout.selectionAnchorPosition;
     updateSelection();
     updateTotalHeight();
     if (mounted) {
@@ -98,6 +90,7 @@ mixin LyricLayoutMixin<T extends StatefulWidget> on State<T> {
 
   /// 计算歌词布局
   void computeLyricLayout() {
+    if (!mounted) return;
     final lyricModel = controller.lyricNotifier.value;
     if (lyricModel == null) {
       return;
@@ -107,15 +100,16 @@ mixin LyricLayoutMixin<T extends StatefulWidget> on State<T> {
       style,
       lyricSize,
     );
-    controller.anchorPositionNotifier.value =
-        computedLayout.selectionAnchorPosition;
+    final previousLayout = layout;
     onLayoutChange(computedLayout);
+    previousLayout?.dispose();
   }
 
   void updateSelection() {
     final isHighlight = controller.activeIndexNotifiter.value ==
         controller.selectedIndexNotifier.value;
     scheduleMicrotask(() {
+      if (!mounted) return;
       controller.selectedLineHeightNotifier.value = layout?.getLineHeight(
             isHighlight,
             controller.selectedIndexNotifier.value,
