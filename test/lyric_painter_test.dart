@@ -59,15 +59,7 @@ LyricLayout _layout(LyricStyle style,
     style,
     _size,
   );
-  addTearDown(() {
-    for (final metric in layout.metrics) {
-      metric.textPainter.dispose();
-      metric.activeTextPainter.dispose();
-      metric.textMaskPainter.dispose();
-      metric.activeMaskPainter.dispose();
-      metric.translationTextPainter.dispose();
-    }
-  });
+  addTearDown(layout.dispose);
   return layout;
 }
 

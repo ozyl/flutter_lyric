@@ -1,5 +1,9 @@
 ## [Unreleased]
 
+### Changed
+
+* Defer active-text layout, highlight masks, row metrics, and word bounds until first use to reduce initial lyric loading work, while retaining exact normal and translation heights for scrolling.
+
 ### Fixed
 
 * Compose active text and highlight colors through a single neutral glyph mask to prevent colored fringes and thickened antialiased edges, while preserving independent highlight opacity, trailing fades, and line-switch animations ([#41](https://github.com/ozyl/flutter_lyric/issues/41)).

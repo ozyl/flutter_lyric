@@ -67,11 +67,7 @@ class LyricLayout {
   /// dispose them only when replacing the text layout or unmounting the view.
   void dispose() {
     for (final line in metrics) {
-      line.textPainter.dispose();
-      line.activeTextPainter.dispose();
-      line.textMaskPainter.dispose();
-      line.activeMaskPainter.dispose();
-      line.translationTextPainter.dispose();
+      line.dispose();
     }
   }
 
@@ -158,137 +154,21 @@ class LyricLayout {
   factory LyricLayout.updatePainters(
     LyricLayout layout,
   ) {
-    final lineMetrics = <LineMetrics>[];
-    for (var line in layout.metrics) {
-      line.textPainter.markNeedsLayout();
-      line.activeTextPainter.markNeedsLayout();
-      line.textMaskPainter.markNeedsLayout();
-      line.activeMaskPainter.markNeedsLayout();
-      line.translationTextPainter.markNeedsLayout();
-      line.textPainter.layout(maxWidth: layout.viewSize.width);
-      line.activeTextPainter.layout(maxWidth: layout.viewSize.width);
-      line.textMaskPainter.layout(maxWidth: layout.viewSize.width);
-      line.activeMaskPainter.layout(maxWidth: layout.viewSize.width);
-      final hasTranslation = line.translationTextPainter.text != null;
-      if (hasTranslation) {
-        line.translationTextPainter.layout(maxWidth: layout.viewSize.width);
-      }
-      line.words;
-      final words = _calcWordMetrics(line.line, line.textPainter,
-          line.activeTextPainter, line.translationTextPainter);
-      lineMetrics.add(line.copyWith(
-        height: line.textPainter.height,
-        width: line.textPainter.width,
-        activeWidth: line.activeTextPainter.width,
-        activeHeight: line.activeTextPainter.height,
-        translationWidth:
-            hasTranslation ? line.translationTextPainter.width : 0,
-        translationHeight:
-            hasTranslation ? line.translationTextPainter.height : 0,
-        activeMetrics: line.activeTextPainter.computeLineMetrics(),
-        metrics: line.textPainter.computeLineMetrics(),
-        words: words,
-      ));
+    for (final line in layout.metrics) {
+      line.relayout(layout.viewSize.width);
     }
-    return LyricLayout._internal(
-      lineMetrics,
-      layout.style,
-      layout.viewSize,
-      layout.selectionAnchorPosition,
-      layout.activeAnchorPosition,
-    );
+    // Font changes invalidate the prefix index as well as per-line geometry.
+    return layout.copyWith(layout.style);
   }
 
   static TextPainter createHighlightMaskPainter(
     TextPainter sourcePainter,
     double maxWidth,
-  ) {
-    final maskPainter = TextPainter(
-      text: buildHighlightMaskTextSpan(sourcePainter.text! as TextSpan),
-      textAlign: sourcePainter.textAlign,
-      textDirection: sourcePainter.textDirection,
-    );
-    maskPainter.layout(maxWidth: maxWidth);
-    return maskPainter;
-  }
+  ) =>
+      LineMetrics.createHighlightMaskPainter(sourcePainter, maxWidth);
 
-  static TextSpan buildHighlightMaskTextSpan(TextSpan source) {
-    final style = source.style;
-    return TextSpan(
-      text: source.text,
-      children: source.children?.map((child) {
-        return child is TextSpan ? buildHighlightMaskTextSpan(child) : child;
-      }).toList(),
-      style: style?.copyWith(
-        // A neutral mask also avoids color-dependent glyph AA on renderers
-        // that adjust text coverage for the foreground luminance.
-        color: const Color(0xFFFFFFFF),
-      ),
-    );
-  }
-
-  static List<WordMetrics>? _calcWordMetrics(
-      LyricLine line,
-      TextPainter textPainter,
-      TextPainter activeTextPainter,
-      TextPainter translationTextPainter) {
-    var currentOffset = 0;
-    final words = line.words?.map((word) {
-      // 从当前位置开始查找单词，确保按顺序匹配
-      final wordStart = line.text.indexOf(word.text, currentOffset);
-      if (wordStart == -1) {
-        // 如果找不到单词，使用默认值
-        return WordMetrics(
-          word: word,
-          width: 0,
-          height: textPainter.height,
-          highlightWidth: 0,
-          highlightHeight: activeTextPainter.height,
-        );
-      }
-      final wordEnd = wordStart + word.text.length;
-      // 更新当前位置，为下一个单词查找做准备
-      currentOffset = wordEnd;
-
-      // 使用 textPainter 获取普通样式的文本框
-      final textSelection =
-          TextSelection(baseOffset: wordStart, extentOffset: wordEnd);
-      final textBoxes = textPainter.getBoxesForSelection(textSelection);
-      var tWidth = 0.0;
-      var tHeight = 0.0;
-      calcWordSize(List<TextBox> boxs) {
-        tWidth = 0.0;
-        tHeight = 0.0;
-        var h = 0;
-        for (var box in boxs) {
-          final rect = box.toRect();
-          tWidth += rect.width;
-          if (rect.height > h) {
-            tHeight = rect.height;
-          }
-        }
-      }
-
-      calcWordSize(textBoxes);
-      final width = tWidth;
-      final wordHeight = tHeight;
-
-      // 使用 activeTextPainter 获取高亮样式的文本框
-      final activeBoxes = activeTextPainter.getBoxesForSelection(textSelection);
-      calcWordSize(activeBoxes);
-      final highlightWidth = tWidth;
-      final wordHighlightHeight = tHeight;
-
-      return WordMetrics(
-        word: word,
-        width: width,
-        height: wordHeight,
-        highlightWidth: highlightWidth,
-        highlightHeight: wordHighlightHeight,
-      );
-    }).toList();
-    return words;
-  }
+  static TextSpan buildHighlightMaskTextSpan(TextSpan source) =>
+      LineMetrics.buildHighlightMaskTextSpan(source);
 
   factory LyricLayout.compute(
     LyricModel model,
@@ -297,69 +177,30 @@ class LyricLayout {
   ) {
     final maxWidth = viewSize.width;
     final lineMetrics = <LineMetrics>[];
-    for (var line in model.lines) {
+    for (final line in model.lines) {
       final textPainter = TextPainter(
+        text: TextSpan(text: line.text, style: style.textStyle),
         textAlign: style.lineTextAlign,
         textDirection: TextDirection.ltr,
-      );
-      final activeTextPainter = TextPainter(
-        textAlign: style.lineTextAlign,
-        textDirection: TextDirection.ltr,
-      );
+      )..layout(maxWidth: maxWidth);
       final translationTextPainter = TextPainter(
         textAlign: style.lineTextAlign,
         textDirection: TextDirection.ltr,
       );
-      textPainter.text = TextSpan(text: line.text, style: style.textStyle);
-      textPainter.layout(maxWidth: maxWidth);
-
-      final metrics = textPainter.computeLineMetrics();
-      final height = textPainter.height;
-      final width = textPainter.width;
-
-      activeTextPainter.text =
-          TextSpan(text: line.text, style: style.activeStyle);
-      activeTextPainter.layout(maxWidth: maxWidth);
-      final activceLineMetrics = activeTextPainter.computeLineMetrics();
-      final highlightWidth = activeTextPainter.width;
-      final highlightHeight = activeTextPainter.height;
-      final textMaskPainter = createHighlightMaskPainter(textPainter, maxWidth);
-      final activeMaskPainter =
-          createHighlightMaskPainter(activeTextPainter, maxWidth);
-
-      double translationWidth = 0;
-      double translationHeight = 0;
-
       if (line.translation != null) {
         translationTextPainter.text = TextSpan(
           text: line.translation,
           style: style.translationStyle,
         );
         translationTextPainter.layout(maxWidth: maxWidth);
-        translationWidth = translationTextPainter.width;
-        translationHeight = translationTextPainter.height;
       }
-      final words = _calcWordMetrics(
-          line, textPainter, activeTextPainter, translationTextPainter);
-      lineMetrics.add(
-        LineMetrics(
-          line: line,
-          height: height,
-          width: width,
-          activeWidth: highlightWidth,
-          activeHeight: highlightHeight,
-          translationWidth: translationWidth,
-          translationHeight: translationHeight,
-          activeMetrics: activceLineMetrics,
-          metrics: metrics,
-          words: words,
-          textPainter: textPainter,
-          activeTextPainter: activeTextPainter,
-          textMaskPainter: textMaskPainter,
-          activeMaskPainter: activeMaskPainter,
-          translationTextPainter: translationTextPainter,
-        ),
-      );
+      lineMetrics.add(LineMetrics.lazy(
+        line: line,
+        textPainter: textPainter,
+        translationTextPainter: translationTextPainter,
+        activeStyle: style.activeStyle,
+        maxWidth: maxWidth,
+      ));
     }
     return LyricLayout._internal(
       lineMetrics,

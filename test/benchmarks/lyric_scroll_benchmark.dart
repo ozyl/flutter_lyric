@@ -76,13 +76,7 @@ void main() {
       // ignore: avoid_print
       print(
           '$count lines: ${samples[2].toStringAsFixed(1)} us/frame (median of 5 x 300)');
-      for (final metric in layout.metrics) {
-        metric.textPainter.dispose();
-        metric.activeTextPainter.dispose();
-        metric.textMaskPainter.dispose();
-        metric.activeMaskPainter.dispose();
-        metric.translationTextPainter.dispose();
-      }
+      layout.dispose();
     }
   });
 }
