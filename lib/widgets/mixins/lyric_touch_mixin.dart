@@ -85,6 +85,9 @@ mixin LyricTouchMixin<T extends StatefulWidget>
 
   /// 延迟恢复播放行位置（防抖）
   void _scheduleResumeActiveLine() {
+    // A tap also cancels the drag recognizer. Only resume an actual selection;
+    // otherwise the selected-line timer pins dragScrollY during playback.
+    if (!controller.isSelectingNotifier.value) return;
     scheduleResumeSelectedLine();
     if (_isDragging) return;
     _activeResumeDebouncer(style.activeAutoResumeDuration, () {
