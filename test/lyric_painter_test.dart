@@ -142,15 +142,19 @@ Future<Uint8List> _coloredCoverage(
   String text,
   Color Function(double x, double y) colorAt, {
   Color background = Colors.transparent,
+  double scale = 1,
 }) async {
   final reference = _layout(_style(baseColor: Colors.white), text: text);
-  final coverage = await _render((canvas) =>
-      reference.metrics.single.activeTextPainter.paint(canvas, Offset.zero));
+  final coverage = await _render(
+      (canvas) =>
+          reference.metrics.single.activeTextPainter.paint(canvas, Offset.zero),
+      scale: scale);
   final result = Uint8List(coverage.length);
+  final imageWidth = (_size.width * scale).ceil();
   for (var i = 0; i < coverage.length; i += 4) {
     final pixel = i ~/ 4;
-    final x = pixel % _size.width.toInt() + 0.5 - _offset.dx;
-    final y = pixel ~/ _size.width.toInt() + 0.5 - _offset.dy;
+    final x = (pixel % imageWidth + 0.5) / scale - _offset.dx;
+    final y = (pixel ~/ imageWidth + 0.5) / scale - _offset.dy;
     final color = colorAt(x, y);
     final alpha = color.a * coverage[i + 3] / 255;
     final remaining = background.a * (1 - alpha);
@@ -239,6 +243,97 @@ void main() {
         (canvas) => _paintLyric(canvas, layout, progress: progress),
       );
       _expectPixelsClose(actual, expected);
+    }
+  });
+
+  test('opaque base retains one glyph edge under translucent moving highlight',
+      () async {
+    const base = Color(0xFF8542D0);
+    const highlight = Color(0x8000FF00);
+    const fadeWidth = 24.0;
+    const text = 'AAAA\nAAAA';
+    final layout = _layout(
+        _style(
+            baseColor: base, highlightColor: highlight, fadeWidth: fadeWidth),
+        text: text,
+        words: true);
+    final rows = layout.metrics.single.activeMetrics;
+    final rowBoundary = rows[1].baseline - rows[1].ascent;
+    for (final scale in [1.0, 1.5, 2.75]) {
+      for (final progress in [8.0, 60.35, 104.0, 156.35, 216.0]) {
+        for (final background in [
+          Colors.transparent,
+          Colors.black,
+          Colors.white
+        ]) {
+          final expected = await _coloredCoverage(text, (x, y) {
+            final rowOffset = y < rowBoundary ? 0 : rows.first.width;
+            final opacity =
+                ((progress - rowOffset - x) / fadeWidth).clamp(0.0, 1.0);
+            return Color.alphaBlend(
+                highlight.withValues(alpha: highlight.a * opacity), base);
+          }, background: background, scale: scale);
+          final actual = await _render(
+              (canvas) => _paintLyric(canvas, layout, progress: progress),
+              background: background,
+              scale: scale);
+          _expectPixelsClose(actual, expected);
+        }
+      }
+    }
+  });
+
+  test('gradient with varying alpha agrees with grouped colors at scaled edges',
+      () async {
+    const gradient = LinearGradient(
+      colors: [Color(0x3068BC21), Color(0xC03B21E0), Color(0x8087A52C)],
+      stops: [0, 0.35, 1],
+      begin: Alignment.topLeft,
+      end: Alignment.bottomRight,
+      transform: GradientRotation(0.3),
+      tileMode: TileMode.mirror,
+    );
+    for (final base in [
+      Colors.transparent,
+      const Color(0x40BA3812),
+      const Color(0xFFBA3812)
+    ]) {
+      final layout = _layout(_style(baseColor: base, gradient: gradient),
+          text: 'AAAA\nAAAA');
+      final metric = layout.metrics.single;
+      final mask = metric.activeMaskPainter;
+      final bounds =
+          (Offset.zero & mask.size).inflate(mask.preferredLineHeight);
+      for (final scale in [1.0, 1.5, 2.75]) {
+        final expected = await _render((canvas) {
+          // Reference the original two-layer color-group composition. In
+          // particular, interpolation of varying alpha must precede blending.
+          canvas.saveLayer(bounds, Paint());
+          mask.paint(canvas, Offset.zero);
+          canvas.saveLayer(bounds, Paint()..blendMode = BlendMode.srcIn);
+          canvas.drawRect(bounds, Paint()..color = base);
+          for (final row in metric.activeMetrics) {
+            final top = row.baseline - row.ascent;
+            final bottom = top + row.ascent + row.descent;
+            final shaderRect =
+                Rect.fromLTRB(row.left - 2, top, row.left + row.width, bottom);
+            canvas.drawRect(
+                Rect.fromLTRB(
+                    bounds.left,
+                    row == metric.activeMetrics.first ? bounds.top : top,
+                    bounds.right,
+                    row == metric.activeMetrics.last ? bounds.bottom : bottom),
+                Paint()
+                  ..isAntiAlias = false
+                  ..shader = gradient.createShader(shaderRect));
+          }
+          canvas.restore();
+          canvas.restore();
+        }, scale: scale);
+        final actual = await _render((canvas) => _paintLyric(canvas, layout),
+            scale: scale);
+        _expectPixelsClose(actual, expected);
+      }
     }
   });
 

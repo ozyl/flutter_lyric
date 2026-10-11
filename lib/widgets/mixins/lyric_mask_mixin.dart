@@ -1,3 +1,5 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/core/lyric_style.dart';
 
@@ -21,9 +23,17 @@ mixin LyricMaskMixin<T extends StatefulWidget> on State<T> {
     }
     top = top.clamp(0, 1);
     bottom = bottom.clamp(0, 1);
+    // The callback is invoked on every repaint, including progress and drag.
+    // Reuse its native shader until the bounds (or this style closure) change.
+    // Keep even a zero-range mask: its fractional outer edge can affect glyph
+    // coverage on CanvasKit, so removing it is not always pixel-equivalent.
+    Rect? shaderBounds;
+    ui.Shader? shader;
     return ShaderMask(
       shaderCallback: (Rect bounds) {
-        return LinearGradient(
+        if (shaderBounds == bounds) return shader!;
+        shaderBounds = bounds;
+        return shader = LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: const [

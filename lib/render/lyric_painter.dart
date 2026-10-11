@@ -152,6 +152,7 @@ class LyricPainter extends CustomPainter {
     Rect bounds, {
     double highlightTotalWidth = 0,
     double animationOpacity = 1.0,
+    Color? baseColor,
   }) {
     if (highlightTotalWidth < 0 || animationOpacity <= 0) return;
     final activeHighlightColor = layout.style.activeHighlightColor;
@@ -179,10 +180,30 @@ class LyricPainter extends CustomPainter {
     const pad = 2;
     // These rectangles only supply colors; the text mask supplies all glyph
     // antialiasing. AA on adjoining solid/fade rectangles would leave a seam.
-    final paint = Paint()..isAntiAlias = false;
+    final paint = Paint()
+      ..isAntiAlias = false
+      ..blendMode = baseColor == null ? BlendMode.srcOver : BlendMode.srcIn
+      ..colorFilter = baseColor == null
+          ? null
+          : ColorFilter.mode(baseColor, BlendMode.dstOver);
+    // dstOver places the constant base behind each shader sample *before*
+    // srcIn applies neutral glyph coverage. This preserves arbitrary alpha
+    // without another offscreen color group. Each pixel must be colored once;
+    // fill only the gaps and the unhighlighted suffixes with the base below.
+    final basePaint = Paint()
+      ..isAntiAlias = false
+      ..color = baseColor ?? Colors.transparent
+      ..blendMode = BlendMode.srcIn;
+    var remainingTop = bounds.top;
+    var remainingLeft = bounds.left;
+    void drawBase(Rect rect) {
+      if (baseColor != null && !rect.isEmpty) canvas.drawRect(rect, basePaint);
+    }
+
     void drawSegment(Rect rect, ui.Shader shader) {
       paint.shader = shader;
       canvas.drawRect(rect, paint);
+      remainingLeft = rect.right;
     }
 
     for (var line in metrics) {
@@ -192,6 +213,12 @@ class LyricPainter extends CustomPainter {
       // adjacent so their color fields cannot overlap each other.
       final paintTop = line == metrics.first ? bounds.top : top;
       final paintBottom = line == metrics.last ? bounds.bottom : top + height;
+      final fadeEnd = highlightTotalWidth - accWidth;
+      if (!highlightFullMode && fadeEnd <= 0) break;
+      drawBase(
+          Rect.fromLTRB(bounds.left, remainingTop, bounds.right, paintTop));
+      remainingTop = paintBottom;
+      remainingLeft = bounds.left;
       if (highlightFullMode) {
         final rect = Rect.fromLTWH(
           line.left - pad,
@@ -213,9 +240,6 @@ class LyricPainter extends CustomPainter {
         accWidth += line.width;
         continue;
       }
-
-      final fadeEnd = highlightTotalWidth - accWidth;
-      if (fadeEnd <= 0) break;
 
       final fadeWidth = extraFadeWidth > 0 ? extraFadeWidth : 0.0;
       final fadeStart = fadeEnd - fadeWidth;
@@ -265,10 +289,15 @@ class LyricPainter extends CustomPainter {
         );
       }
 
+      drawBase(
+          Rect.fromLTRB(remainingLeft, paintTop, bounds.right, paintBottom));
+
       accWidth += line.width;
 
       if (highlightTotalWidth <= accWidth) break;
     }
+    drawBase(
+        Rect.fromLTRB(bounds.left, remainingTop, bounds.right, bounds.bottom));
   }
 
   void _drawHighlightedText(
@@ -289,6 +318,28 @@ class LyricPainter extends CustomPainter {
         .inflate(maskPainter.preferredLineHeight);
     canvas.saveLayer(bounds, Paint());
     maskPainter.paint(canvas, Offset.zero);
+    // Unusual line metrics can overlap vertically. Keep group composition in
+    // that case because independently replacing overlapping color fields would
+    // apply coverage twice. Compare the same edges used by drawSegment.
+    var nonOverlapping = true;
+    for (var i = 1; i < metrics.length; i++) {
+      final previous = metrics[i - 1];
+      if (metrics[i].baseline - metrics[i].ascent <
+          previous.baseline -
+              previous.ascent +
+              (previous.ascent + previous.descent)) {
+        nonOverlapping = false;
+        break;
+      }
+    }
+    if (nonOverlapping) {
+      _drawHighlightColors(canvas, metrics, bounds,
+          highlightTotalWidth: highlightTotalWidth,
+          animationOpacity: animationOpacity,
+          baseColor: baseColor);
+      canvas.restore();
+      return;
+    }
     canvas.saveLayer(bounds, Paint()..blendMode = BlendMode.srcIn);
     canvas.drawRect(bounds, Paint()..color = baseColor);
     _drawHighlightColors(canvas, metrics, bounds,

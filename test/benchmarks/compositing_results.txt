@@ -1,0 +1,95 @@
+Lyric compositing measurements -- 2026-10-11 (Asia/Shanghai)
+
+Baseline: 4b3bf6c
+Candidate: single-layer color-filter composition + fade shader reuse
+Environment: Flutter 3.44.8 / Dart 3.12.2, macOS 26.6.2 arm64,
+             Microsoft Edge 155.0.4283.45 (CanvasKit)
+
+Reproduction
+------------
+Use the same SDK and dependencies for both revisions. Copy the two benchmark
+entry points into a separate checkout of 4b3bf6c to measure the baseline.
+Do not run the two benchmarks or other test/build jobs concurrently.
+
+From repository root:
+  CHROME_EXECUTABLE='/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge' \
+    flutter test --no-pub test/benchmarks/lyric_compositing_benchmark.dart \
+    --platform chrome --reporter expanded
+
+From example/ (after resolving its dependencies):
+  flutter run --no-pub -d macos --profile \
+    -t ../test/benchmarks/lyric_frame_benchmark.dart
+
+Keep the native window visible and unchanged. Quit with q after COMPOSITING done.
+Both fixtures use 1,000 lines, translations, a 400 x 600 viewport, changing word
+highlight width, fractional scrolling, selection, and repeated index jumps.
+They drive paint state directly to isolate rendering; gesture/controller latency
+and initial paragraph construction are outside the measured interval.
+
+Web scene rasterization + RGBA readback
+------------------------------------
+Milliseconds, median of five batches of 60 frames, after 20 warmup frames, DPR 2.
+This includes pump, scene construction, rasterization, and readback. It is NOT
+a GPU timer, browser frame-time measurement, or an FPS measurement.
+
+highlight  fade(px)  baseline   candidate
+false      0        9.418      9.258
+false      80       9.098      9.140
+true       0        9.283      9.208
+true       80       9.220      9.288
+
+The changes are within run-to-run variation; no stable Web timing improvement
+is established by this experiment.
+
+The same benchmark records Canvas calls for one wrapped highlighted paragraph:
+                 baseline   candidate
+saveLayer calls  2          1
+pixel-area @2x   312576     156288
+These are API-level surface requests, NOT actual GPU allocations. The renderer
+can merge, round, clip, or cache surfaces. The reduction is reproducible without
+relying on timing noise.
+
+macOS engine FrameTiming (profile)
+---------------------------------
+One adjacent pair of runs, 90 warmup + 240 measured frames per case.
+Values below are milliseconds, p50 / p90 / p99.
+FrameTiming.rasterDuration measures the engine raster work/submission interval,
+not hardware GPU counters or input-to-presentation latency.
+
+highlight fade  revision   build                   raster                  totalSpan
+false     0     baseline   .231 / .433 / .901      .675 / 1.040 / 1.629     1.049 / 1.779 / 2.446
+false     0     candidate  .233 / .529 / 1.210     .705 / 1.267 / 1.684     1.105 / 2.035 / 2.985
+false     80    baseline   .249 / .531 / 1.013     .710 / 1.053 / 1.628     1.120 / 1.931 / 2.821
+false     80    candidate  .223 / .484 / .833      .619 / .921 / 1.904      .982 / 1.647 / 2.642
+true      0     baseline   .267 / .546 / 1.099     .795 / 1.415 / 1.998     1.220 / 2.091 / 3.372
+true      0     candidate  .254 / .501 / 1.041     .713 / 1.006 / 1.737     1.153 / 1.841 / 3.065
+true      80    baseline   .275 / .525 / 1.298     .855 / 1.219 / 2.045     1.299 / 2.118 / 3.637
+true      80    candidate  .208 / .427 / .836      .551 / .890 / 1.977      .905 / 1.585 / 2.610
+
+The highlighted cases improved in this pair, but the control cases also vary.
+Do not interpret this single-device sample as a portable percentage/FPS gain or
+proof that the user's occasional stalls are fixed. No mobile or skwasm timing
+claim is made. Repeated runs on affected hardware remain necessary to identify
+the actual stall source.
+
+Decisions backed by pixel checks
+-------------------------------
+The base color is composed behind each highlight shader sample before applying
+neutral glyph coverage once. Non-overlapping color fields use one surface;
+overlapping line metrics retain the original two-surface fallback.
+
+The full-viewport ShaderMask is retained. Simply bypassing a zero-range mask
+changed 364 channels (maximum delta 46) in the fractional-position CanvasKit
+edge fixture, so that experiment was rejected. The final change reuses the
+mask shader at stable bounds; new bounds or style build a new shader. Group
+fading, including overlapping translucent content, remains intact.
+
+Regression commands
+-------------------
+  flutter test --no-pub --reporter expanded
+  CHROME_EXECUTABLE='/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge' \
+    flutter test --no-pub --platform chrome --reporter expanded
+  flutter analyze --no-pub
+
+Performance entry points intentionally do not end in _test.dart, so the normal
+regression suite does not run timing experiments.
