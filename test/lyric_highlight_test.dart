@@ -36,7 +36,7 @@ void main() {
         await tester.pumpWidget(MaterialApp(
           home: LyricView(
             controller: controller,
-            preset: LyricPresets.centered.copyWith(
+            preset: LyricPresets.aurora.copyWith(
               activeTextStyle: const TextStyle(
                   fontFamily: 'Ahem', fontSize: 16, color: Colors.white),
               highlight:
@@ -94,7 +94,7 @@ void main() {
       home: Scaffold(
         body: LyricView(
           controller: controller,
-          preset: LyricPresets.centered.copyWith(
+          preset: LyricPresets.aurora.copyWith(
             highlight: const LyricHighlight.solid(Colors.white),
             scrollAnimation: const LyricScrollAnimation.none(),
           ),

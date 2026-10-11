@@ -3,6 +3,8 @@
 A responsive, configuration-driven playground for `flutter_lyric`.
 
 - **8 styles:** Moss, Aurora, Editorial, Cinema, Neon, Letter, Terminal and Float.
+- Moss, Aurora and Cinema use `LyricPresets.moss`, `aurora` and `cinema`
+  directly; their styles are shared with the library.
 - **7 experiments:** the original Issue #41 translucent text / gradient preset
   and all six custom scroll curves, with their distance-based durations intact.
 - Each preset has an independent session draft, undo/redo history and reset.
@@ -31,7 +33,7 @@ A responsive, configuration-driven playground for `flutter_lyric`.
 - `edit_preset.dart`: grouped configuration controls.
 - `scroll_tuning.dart`: reversible retiming of fixed and custom animations.
 - `playback_controls.dart`: seekable transport with loading/error states.
-- `issue41_demo_preset.dart`: original regression presets, unchanged.
+- `issue41_demo_preset.dart`: regression presets with a fixed baseline, independent of built-in styles.
 - `just_audio_progress_source.dart`: frame-readable player position adapter.
 
 Run `flutter pub get`, then `flutter run -d macos` or `flutter run -d chrome`.

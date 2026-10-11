@@ -30,11 +30,12 @@ class _LyricsState extends State<Lyrics> {
     ..load('[00:00.00]First line\n[00:04.00]Second line');
 
   @override
-  Widget build(BuildContext context) => SizedBox(
+  Widget build(BuildContext context) => Container(
     height: 320,
+    color: const Color(0xFF17172E),
     child: LyricView(
       controller: controller,
-      preset: LyricPresets.centered,
+      preset: LyricPresets.aurora,
       onLineTap: (line) {
         // Connect to your player: player.seek(line.seekPosition).
         // For this standalone manual-position example:
@@ -62,8 +63,8 @@ For a player integration, provide `LyricProgressSource` with a current-position 
 A preset switches appearance, behavior and presentation builders together. Use `copyWith` to adjust individual settings:
 
 ```dart
-final preset = LyricPresets.leading.copyWith(
-  activeTextStyle: LyricPresets.leading.activeTextStyle.copyWith(fontSize: 26),
+final preset = LyricPresets.moss.copyWith(
+  activeTextStyle: LyricPresets.moss.activeTextStyle.copyWith(fontSize: 26),
   activeTranslationTextStyle: const TextStyle(fontSize: 16, color: Colors.white),
   activeAnchor: const LyricAnchor.fraction(.35,
       target: LyricAnchorTarget.mainText),
@@ -73,7 +74,17 @@ final preset = LyricPresets.leading.copyWith(
 );
 ```
 
-Use `LyricPresets.centered`, `leading` or `singleLine` as starting points. `LyricPresetScope` supplies a whole preset to descendants. An explicit `LyricView.preset` wins; omitted fields do not merge across scopes. Text styles themselves merge with ambient `DefaultTextStyle` and the corresponding base style.
+The built-in styles come directly from Lyric Studio:
+
+| Preset | Style | Suggested background |
+| --- | --- | --- |
+| `LyricPresets.moss` / 苔原 | Leading text, soft green word highlight, 40% main-text anchor | `Color(0xFF101F1C)` |
+| `LyricPresets.aurora` / 极光 | Centered text, mint-to-lilac gradient, 50% main-text anchor | `Color(0xFF17172E)` |
+| `LyricPresets.cinema` / 银幕 | Single active entry, warm highlight, spacious subtitle | `Color(0xFF171B1C)` |
+
+All three are `const LyricPreset` values and remain adjustable with `copyWith`. They use light text for dark surfaces; backgrounds and audio controls belong to your app. Aurora is the default. The old `leading`, `centered` and `singleLine` names have been removed; see the [migration guide](doc/migration.md).
+
+`LyricPresetScope` supplies a whole preset to descendants. An explicit `LyricView.preset` wins; omitted fields do not merge across scopes. Text styles themselves merge with ambient `DefaultTextStyle` and the corresponding base style.
 
 ```dart
 LyricPresetScope(
@@ -117,12 +128,12 @@ Row(children: [
   Expanded(child: LyricView(
     controller: controller,
     viewId: 'main',
-    preset: LyricPresets.leading,
+    preset: LyricPresets.moss,
   )),
   Expanded(child: LyricView(
     controller: controller,
     viewId: 'compact',
-    preset: LyricPresets.singleLine,
+    preset: LyricPresets.cinema,
   )),
 ])
 ```

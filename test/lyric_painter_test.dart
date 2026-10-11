@@ -26,7 +26,7 @@ LyricPreset _style({
     fontSize: 24,
     color: baseColor,
   );
-  return LyricPresets.centered.copyWith(
+  return LyricPresets.aurora.copyWith(
     textStyle: textStyle,
     activeTextStyle: textStyle,
     padding: EdgeInsets.zero,

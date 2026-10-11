@@ -16,7 +16,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   test('record a scrolling viewport near the end of long lyrics', () {
     const size = Size(400, 600);
-    final style = LyricPresets.centered.copyWith(
+    final style = LyricPresets.aurora.copyWith(
       textStyle: const TextStyle(fontSize: 14, color: Colors.white70),
       activeTextStyle: const TextStyle(fontSize: 16, color: Colors.white),
       translationTextStyle:

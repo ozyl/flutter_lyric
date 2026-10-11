@@ -2,11 +2,16 @@
 
 ### Breaking
 
-* Replace `LyricStyle` with immutable `LyricPreset`, including display mode, visual effects, interaction policies and presentation builders. Add centered, leading and single-line presets, explicit anchor/fade units, and `LyricPresetScope`.
+* Replace `LyricStyle` with immutable `LyricPreset`, including display mode, visual effects, interaction policies and presentation builders. Add Moss, Aurora and Cinema studio presets, explicit anchor/fade units, and `LyricPresetScope`.
 * Keep one public `LyricController` with atomic read-only playback state, nullable active indices, immutable `LyricDocument`, explicit offsets and application-owned tap callbacks.
 * Support multiple views per controller with independent browsing, named view commands, and one shared player sampler. Replace public events, mutable notifiers and lifecycle mixins with private view sessions.
 * Use standard parent sizing and native Flutter scrolling around a Canvas viewport. Active translations support full typography; single-line mode lays out only the active entry.
 * Retain Dart 2.12 / Flutter 2.0 support, remove the unused platform interface dependency and incompatible lint dependency, and add a minimum/modern SDK CI matrix.
+
+### Changed
+
+* Promote Lyric Studio's Moss, Aurora and Cinema designs to `LyricPresets.moss`, `aurora` and `cinema`, replacing the preview names `leading`, `centered` and `singleLine` without aliases. Unconfigured views now use Aurora. All three remain const, customizable values with no new dependencies or SDK requirements.
+* Reuse the library presets in the demo gallery and keep the Issue #41 regression fixture independent from built-in style changes.
 
 See [migration instructions](doc/migration.md).
 

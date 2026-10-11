@@ -11,6 +11,34 @@ import 'package:flutter_lyric_example/studio_theme.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('gallery reuses the three promoted plugin presets', () {
+    expect(
+      demoPresets.singleWhere((e) => e.id == 'moss').preset,
+      same(LyricPresets.moss),
+    );
+    expect(
+      demoPresets.singleWhere((e) => e.id == 'aurora').preset,
+      same(LyricPresets.aurora),
+    );
+    expect(
+      demoPresets.singleWhere((e) => e.id == 'cinema').preset,
+      same(LyricPresets.cinema),
+    );
+  });
+
+  test('Issue #41 keeps its original geometry when built-in styles evolve', () {
+    expect(issue41HighlightOpacityDemo.textStyle.fontSize, 14);
+    expect(
+      issue41HighlightOpacityDemo.activeAnchor,
+      const LyricAnchor.fraction(.3, target: LyricAnchorTarget.mainText),
+    );
+    expect(issue41HighlightOpacityDemo.lineSpacing, 20);
+    expect(
+      issue41HighlightOpacityDemo.scrollAnimation.resolve(100).duration,
+      const Duration(milliseconds: 240),
+    );
+  });
+
   test(
     'drafts, grouped slider undo, redo and reset stay local to each preset',
     () {

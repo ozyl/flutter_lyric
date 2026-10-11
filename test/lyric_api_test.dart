@@ -108,7 +108,7 @@ void main() {
       'preset copies clear nullable values explicitly and compare structurally',
       () {
     Widget builder(BuildContext context) => const SizedBox.shrink();
-    final preset = LyricPresets.leading.copyWith(emptyBuilder: builder);
+    final preset = LyricPresets.moss.copyWith(emptyBuilder: builder);
     expect(preset.copyWith(), preset);
     expect(preset.copyWith().hashCode, preset.hashCode);
     expect(preset.copyWith(emptyBuilder: null).emptyBuilder, same(builder));
@@ -173,13 +173,13 @@ void main() {
     addTearDown(controller.dispose);
     Future<void> show(LyricPreset? explicit) async {
       await tester.pumpWidget(LyricPresetScope(
-          preset: LyricPresets.singleLine,
+          preset: LyricPresets.cinema,
           child: host(controller, preset: explicit)));
       await tester.pumpAndSettle();
     }
 
     await show(null);
-    expect(session(tester).preset, LyricPresets.singleLine);
+    expect(session(tester).preset, LyricPresets.cinema);
     expect(session(tester).layout!.metrics, hasLength(1));
     await show(quietPreset);
     expect(session(tester).preset, quietPreset);
@@ -202,7 +202,7 @@ void main() {
 
     await show(quietPreset);
     await controller.scrollToLine(800, animate: false);
-    await show(LyricPresets.singleLine);
+    await show(LyricPresets.cinema);
     expect(changes.last, isNull);
     expect(controller.position, const Duration(seconds: 500));
     expect(session(tester).layout!.metrics, hasLength(1));
@@ -271,7 +271,7 @@ void main() {
       (tester) async {
     final controller = LyricController();
     addTearDown(controller.dispose);
-    final preset = LyricPresets.singleLine
+    final preset = LyricPresets.cinema
         .copyWith(emptyBuilder: (_) => const Text('Empty'));
     await tester.pumpWidget(host(controller, preset: preset));
     await tester.pumpAndSettle();

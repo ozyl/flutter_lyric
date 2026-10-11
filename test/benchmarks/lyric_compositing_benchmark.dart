@@ -17,10 +17,10 @@ void main() {
     const size = Size(400, 600);
     for (final highlight in [false, true]) {
       for (final fade in [0.0, 80.0]) {
-        final style = LyricPresets.leading.copyWith(
+        final style = LyricPresets.moss.copyWith(
           lineTransition: const LyricLineTransition.none(),
           highlight: highlight
-              ? LyricPresets.leading.highlight
+              ? LyricPresets.aurora.highlight
               : const LyricHighlight.none(),
           edgeFade: LyricEdgeFade.pixels(top: fade, bottom: fade),
         );

@@ -11,7 +11,7 @@ import 'package:flutter_lyric/flutter_lyric.dart';
 | 3.x | 4.0 |
 | --- | --- |
 | LyricStyle / LyricStyles | LyricPreset / LyricPresets |
-| default1 / default2 / single | centered / leading / singleLine |
+| default1 / default2 / single | aurora / moss / cinema |
 | LyricView(style: ...) | LyricView(preset: ...) |
 | View width / height | SizedBox, Expanded or parent constraints |
 | loadLyric / loadLyricModel | load / loadDocument |
@@ -29,6 +29,15 @@ import 'package:flutter_lyric/flutter_lyric.dart';
 | event registration, rendering/layout mixins | internal implementation; no public event bus |
 
 A controller can now drive several views. It no longer owns one global selection or callback. Move callbacks to the corresponding `LyricView`; use `viewId` when targeting one view.
+
+## Built-in style names
+
+The earlier 4.0 preview names `centered`, `leading` and `singleLine` have been
+removed, without aliases. Replace them with `aurora`, `moss` and `cinema`,
+respectively. The new presets use the corresponding Lyric Studio designs,
+including larger typography, updated colors, spacing and animation. Views with
+no explicit preset or scope now use Aurora. Each preset remains a `const` value
+and supports `copyWith`; the neutral `LyricPreset()` defaults are unchanged.
 
 ## Preset fields
 

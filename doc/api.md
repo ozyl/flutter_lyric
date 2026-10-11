@@ -26,7 +26,7 @@ const LyricView({
 ```
 
 - 使用 `SizedBox` / `Expanded` 提供有界宽高；View 本身不接收 width / height。
-- 预设优先级：显式 preset → 最近的 Scope → `LyricPresets.centered`。
+- 预设优先级：显式 preset → 最近的 Scope → `LyricPresets.aurora`。
 - 自动 viewId 在 State 生命周期内稳定；显式 ID 在同一个 Controller 内必须唯一，重复抛出 `StateError`。
 - `onSelectionChanged(null)` 表示清空选择；同一行的滚动、动画、几何更新不会重复触发此回调。
 - `onFollowChanged` 仅在跟随状态改变时通知，不发送初始状态。
@@ -84,7 +84,15 @@ preset.copyWith(
 
 吸附和恢复计时独立：afterScroll 等滚动停止后开始吸附倒计时；onDragPause 也允许拖动停顿时吸附；手指仍在拖动中时直接校正位置，以保留当前手势，松手后的吸附使用 scrollAnimation。resumeDelay 从本次浏览停止后计时。若恢复先发生，会取消尚未执行的吸附。新的手动交互重新开始计时。
 
-内置预设是完整值：`centered` 居中、`leading` 起始侧对齐并带渐变、`singleLine` 仅当前条目且默认不可交互。它们包含自己的颜色；想跟随应用文字主题可以从 `const LyricPreset()` 开始。
+内置预设直接复用 Lyric Studio 中的三种风格，都是可通过 `copyWith` 调节的 `const LyricPreset`：
+
+| 预设 | 文字与布局 | 高亮与动效 |
+| --- | --- | --- |
+| `LyricPresets.moss`（苔原） | 起始侧对齐，正文 23 / 当前句 30，主句锚点 40% | 浅绿逐字高亮，550ms 滚动，比例边缘淡出 |
+| `LyricPresets.aurora`（极光，默认） | 居中，正文 23 / 当前句 28，主句锚点 50% | 薄荷绿至淡紫渐变，550ms 滚动，比例边缘淡出 |
+| `LyricPresets.cinema`（银幕） | 仅当前条目，当前句 32 / 译文 14，译文间距 18 | 暖色逐字高亮，保留行过渡；无滚动、无边缘淡出，默认不可交互 |
+
+三种预设面向深色背景，背景由应用提供，不包含 demo 的舞台装饰或播放器。旧的 `leading` / `centered` / `singleLine` 名称已移除。想跟随应用文字主题可以从 `const LyricPreset()` 开始，其构造器默认值保持不变。
 
 ## 小型值对象
 

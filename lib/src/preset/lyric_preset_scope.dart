@@ -12,7 +12,7 @@ class LyricPresetScope extends InheritedWidget {
 
   static LyricPreset of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<LyricPresetScope>()?.preset ??
-      LyricPresets.centered;
+      LyricPresets.aurora;
 
   @override
   bool updateShouldNotify(LyricPresetScope oldWidget) =>

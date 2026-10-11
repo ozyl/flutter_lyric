@@ -32,7 +32,7 @@ LyricPreset _style({
   double anchor = .4,
   double spacing = 26,
   FontWeight weight = FontWeight.w600,
-}) => LyricPresets.leading.copyWith(
+}) => LyricPresets.moss.copyWith(
   textStyle: TextStyle(
     fontSize: size,
     color: const Color(0x66FFFFFF),
@@ -82,7 +82,7 @@ final demoPresets = <DemoPreset>[
     tag: 'ORGANIC',
     accent: const Color(0xFFD5EDAD),
     background: const [Color(0xFF273E36), Color(0xFF101F1C)],
-    preset: _style(),
+    preset: LyricPresets.moss,
   ),
   DemoPreset(
     id: 'aurora',
@@ -91,13 +91,7 @@ final demoPresets = <DemoPreset>[
     tag: 'GRADIENT',
     accent: const Color(0xFF90E9EE),
     background: const [Color(0xFF283957), Color(0xFF17172E)],
-    preset: _style(align: TextAlign.center, anchor: .5, activeSize: 28)
-        .copyWith(
-          highlight: const LyricHighlight.gradient(
-            LinearGradient(colors: [Color(0xFF80F4D4), Color(0xFFB3A1FF)]),
-            tailFadeWidth: 42,
-          ),
-        ),
+    preset: LyricPresets.aurora,
   ),
   DemoPreset(
     id: 'editorial',
@@ -122,24 +116,7 @@ final demoPresets = <DemoPreset>[
     tag: 'SINGLE LINE',
     accent: const Color(0xFFE9D9B4),
     background: const [Color(0xFF393A38), Color(0xFF171B1C)],
-    preset: LyricPresets.singleLine.copyWith(
-      activeTextStyle: const TextStyle(
-        fontSize: 32,
-        fontWeight: FontWeight.w500,
-        color: Color(0x80FFFFFF),
-        height: 1.5,
-      ),
-      translationTextStyle: const TextStyle(
-        fontSize: 14,
-        color: Color(0x99FFFFFF),
-      ),
-      translationSpacing: 18,
-      highlight: const LyricHighlight.solid(
-        Color(0xFFE9D9B4),
-        tailFadeWidth: 36,
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 28),
-    ),
+    preset: LyricPresets.cinema,
   ),
   DemoPreset(
     id: 'neon',

@@ -16,7 +16,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   test('initial layout and first viewport of long word-timed lyrics', () {
     const size = Size(400, 600);
-    final style = LyricPresets.leading.copyWith(
+    final style = LyricPresets.moss.copyWith(
       textStyle:
           const TextStyle(fontSize: 12, color: Colors.white70, height: 1.2),
       activeTextStyle: const TextStyle(

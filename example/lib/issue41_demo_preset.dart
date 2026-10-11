@@ -3,7 +3,21 @@ import 'package:flutter_lyric/flutter_lyric.dart';
 
 /// Issue #41 演示样式：active 文字半透明红色，高亮为饱和黄橙渐变。
 /// 未唱到的字应显示淡红色，已唱到的字显示高亮渐变。
-final issue41HighlightOpacityDemo = LyricPresets.leading.copyWith(
+// Keep the regression fixture independent from evolving built-in styles.
+final issue41HighlightOpacityDemo = LyricPreset(
+  textStyle: const TextStyle(fontSize: 14, color: Color(0xB3FFFFFF)),
+  selectedTextColor: const Color(0xFFFFFFFF),
+  selectedTranslationTextColor: const Color(0xFFFFFFFF),
+  textAlign: TextAlign.start,
+  contentAlignment: LyricContentAlignment.start,
+  activeAnchor: const LyricAnchor.fraction(
+    .3,
+    target: LyricAnchorTarget.mainText,
+  ),
+  selectionAnchor: const LyricAnchor.fraction(
+    .5,
+    target: LyricAnchorTarget.mainText,
+  ),
   activeTextStyle: TextStyle(
     fontSize: 15,
     height: 1.2,

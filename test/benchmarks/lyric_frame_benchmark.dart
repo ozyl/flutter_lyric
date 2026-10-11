@@ -64,10 +64,10 @@ class _BenchmarkState extends State<_Benchmark>
   }
 
   void _configure() {
-    style = LyricPresets.leading.copyWith(
+    style = LyricPresets.moss.copyWith(
       lineTransition: const LyricLineTransition.none(),
       highlight: _case ~/ 2 == 1
-          ? LyricPresets.leading.highlight
+          ? LyricPresets.aurora.highlight
           : const LyricHighlight.none(),
       edgeFade: LyricEdgeFade.pixels(
           top: _case.isOdd ? 80 : 0, bottom: _case.isOdd ? 80 : 0),
