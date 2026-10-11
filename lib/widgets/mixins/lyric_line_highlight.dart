@@ -38,28 +38,30 @@ mixin LyricLineHightlightMixin<T extends StatefulWidget>
     final currentProgress = controller.progressNotifier.value +
         Duration(milliseconds: controller.lyricOffset);
 
-    line.words?.forEach((wordMetric) {
+    final words = line.words ?? [];
+    final extraFadeWidth = style.activeHighlightExtraFadeWidth;
+    for (var i = 0; i < words.length; i++) {
+      final wordMetric = words[i];
       if (currentProgress >= wordMetric.word.start) {
-        newWidth += wordMetric.highlightWidth;
         final endTime = (wordMetric.word.end ?? Duration.zero);
+        var highlightWidth = wordMetric.highlightWidth;
+        if (i == words.length - 1 &&
+            endTime > wordMetric.word.start &&
+            extraFadeWidth > 0) {
+          // Move the fade past the line's end during the last word, so the
+          // tail reaches full opacity continuously instead of snapping at end.
+          highlightWidth += extraFadeWidth;
+        }
+        newWidth += highlightWidth;
         if (currentProgress < endTime) {
           final wordDuration = (endTime - wordMetric.word.start).inMilliseconds;
           final elapsed =
               (currentProgress - wordMetric.word.start).inMilliseconds;
 
           if (wordDuration > 0) {
-            newWidth -=
-                wordMetric.highlightWidth * (1 - elapsed / wordDuration);
+            newWidth -= highlightWidth * (1 - elapsed / wordDuration);
           }
         }
-      }
-    });
-    final words = line.words;
-    if (words != null && words.isNotEmpty) {
-      final lastWord = words.last.word;
-      final lastEnd = lastWord.end ?? Duration.zero;
-      if (lastEnd > lastWord.start && currentProgress >= lastEnd) {
-        newWidth += style.activeHighlightExtraFadeWidth;
       }
     }
     activeHighlightWidthNotifier.value = newWidth;

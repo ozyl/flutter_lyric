@@ -94,6 +94,10 @@ class LyricStyle {
   final LinearGradient? activeHighlightGradient;
 
   /// 高亮渐变末尾附加的渐隐宽度 / Extra fade width at the end of highlight gradient
+  ///
+  /// 渐隐随最后一个字的播放进度移出行尾，在该字结束时完全高亮。
+  /// The fade moves beyond the line during the last timed word, reaching full
+  /// highlight when that word ends. Non-positive values disable the fade.
   final double activeHighlightExtraFadeWidth;
 
   // ==================== 渐隐效果 Fade Effect ====================
