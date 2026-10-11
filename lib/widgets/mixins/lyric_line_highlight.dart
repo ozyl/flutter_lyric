@@ -1,68 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/widgets/mixins/lyric_layout_mixin.dart';
 
-// 动画时长：例如 50 毫秒
-const Duration _kHighlightTransitionDuration = Duration(milliseconds: 200);
-
-// 必须混入 TickerProviderStateMixin 才能使用 AnimationController
 mixin LyricLineHightlightMixin<T extends StatefulWidget>
-    on State<T>, LyricLayoutMixin<T>, TickerProviderStateMixin<T> {
-  late final AnimationController _animationController;
-  Animation<double>? _widthAnimation;
-  CurvedAnimation? _curvedAnimation;
-
+    on State<T>, LyricLayoutMixin<T> {
   final ValueNotifier<double> activeHighlightWidthNotifier = ValueNotifier(0.0);
 
   @override
   void initState() {
-    _animationController = AnimationController(
-      vsync: this,
-      duration: _kHighlightTransitionDuration,
-    )
-      ..addListener(_onWidthAnimationTick)
-      ..addStatusListener(_onWidthAnimationStatus);
-
-    controller.activeIndexNotifiter.addListener(_onActiveIndexChange);
+    controller.activeIndexNotifiter.addListener(updateHighlightWidth);
     controller.progressNotifier.addListener(updateHighlightWidth);
 
     super.initState();
   }
 
-  void _onWidthAnimationTick() {
-    if (!mounted || _widthAnimation == null) {
-      return;
-    }
-    activeHighlightWidthNotifier.value = _widthAnimation!.value;
-  }
-
-  void _onWidthAnimationStatus(AnimationStatus status) {
-    if (status == AnimationStatus.completed) {
-      _disposeWidthAnimation();
-    }
-  }
-
-  void _disposeWidthAnimation() {
-    _widthAnimation = null;
-    _curvedAnimation?.dispose();
-    _curvedAnimation = null;
-  }
-
-  void _onActiveIndexChange() {
-    if (!mounted) {
-      return;
-    }
-    updateHighlightWidth();
-  }
-
   @override
   void dispose() {
-    controller.activeIndexNotifiter.removeListener(_onActiveIndexChange);
+    controller.activeIndexNotifiter.removeListener(updateHighlightWidth);
     controller.progressNotifier.removeListener(updateHighlightWidth);
-    _animationController
-      ..removeStatusListener(_onWidthAnimationStatus)
-      ..stop();
-    _disposeWidthAnimation();
-    _animationController.dispose();
     activeHighlightWidthNotifier.dispose();
     super.dispose();
   }
@@ -75,7 +29,7 @@ mixin LyricLineHightlightMixin<T extends StatefulWidget>
     final metrics = layout?.metrics ?? [];
 
     if (index >= metrics.length || index < 0) {
-      _animateWidth(0.0);
+      activeHighlightWidthNotifier.value = 0.0;
       return;
     }
 
@@ -108,37 +62,7 @@ mixin LyricLineHightlightMixin<T extends StatefulWidget>
         newWidth += style.activeHighlightExtraFadeWidth;
       }
     }
-    _animateWidth(newWidth);
-  }
-
-  void _animateWidth(double newWidth) {
-    if (!mounted) {
-      return;
-    }
-    final currentWidth = activeHighlightWidthNotifier.value;
-
-    // 1. 如果新宽度与当前宽度相同，不做任何事。
-    if (currentWidth == newWidth) return;
-    if (newWidth < currentWidth) {
-      _animationController.stop();
-      _disposeWidthAnimation();
-      activeHighlightWidthNotifier.value = newWidth;
-      return;
-    }
-    if (_animationController.isAnimating) {
-      _animationController.stop();
-    }
-    _disposeWidthAnimation();
-    _curvedAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.linear,
-    );
-    _widthAnimation = Tween<double>(
-      begin: currentWidth,
-      end: newWidth,
-    ).animate(_curvedAnimation!);
-
-    _animationController.forward(from: 0);
+    activeHighlightWidthNotifier.value = newWidth;
   }
 
   Widget buildActiveHighlightWidth(Widget Function(double value) builder) {

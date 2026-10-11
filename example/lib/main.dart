@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
 import 'package:flutter_lyric_example/issue41_demo_style.dart';
+import 'package:flutter_lyric_example/just_audio_progress_source.dart';
 import 'package:flutter_lyric_example/show_lyric.dart';
 import 'package:just_audio/just_audio.dart';
 
@@ -24,15 +25,18 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   final player = AudioPlayer();
 
-  ValueNotifier<Duration> progressNotifier = ValueNotifier(Duration.zero);
+  late final progressSource = JustAudioProgressSource(player);
 
   @override
   void initState() {
     super.initState();
     setPlayer();
-    player.positionStream.listen((event) {
-      progressNotifier.value = event;
-    });
+  }
+
+  @override
+  void dispose() {
+    player.dispose();
+    super.dispose();
   }
 
   @override
@@ -94,9 +98,8 @@ class _MyAppState extends State<MyApp> {
                           ),
                         ),
                         Expanded(
-                          child: ValueListenableBuilder(
-                            valueListenable: progressNotifier,
-                            builder: (context, value, child) {
+                          child: Builder(
+                            builder: (context) {
                               final items = [
                                 ShowLyric(
                                   initStyle: LyricStyles.default2,
@@ -111,7 +114,7 @@ class _MyAppState extends State<MyApp> {
                                       player.play();
                                     });
                                   },
-                                  progress: value,
+                                  progressSource: progressSource,
                                   afterLyricBuilder: (lyricController, style) =>
                                       [
                                         LyricSelectionProgress2(
@@ -127,7 +130,7 @@ class _MyAppState extends State<MyApp> {
                                 ),
                                 ShowLyric(
                                   initStyle: LyricStyles.default1,
-                                  progress: value,
+                                  progressSource: progressSource,
                                   beforeLyricBuilder:
                                       (lyricController, style) => [
                                         LyricSelectionContentBackground(
@@ -150,7 +153,7 @@ class _MyAppState extends State<MyApp> {
                                 ),
                                 ShowLyric(
                                   initStyle: LyricStyles.single,
-                                  progress: value,
+                                  progressSource: progressSource,
                                 ),
                               ];
                               return ConstrainedBox(

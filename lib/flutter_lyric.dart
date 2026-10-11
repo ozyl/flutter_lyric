@@ -1,4 +1,5 @@
 export 'core/lyric_controller.dart';
+export 'core/lyric_progress_source.dart';
 export 'core/lyric_style.dart';
 export 'core/lyric_styles.dart';
 export 'widgets/highlight_listenable_builder.dart';

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/core/lyric_controller.dart';
+import 'package:flutter_lyric/core/lyric_progress_source.dart';
 import 'package:flutter_lyric/core/lyric_style.dart';
 import 'package:flutter_lyric/core/lyric_styles.dart';
 import 'package:flutter_lyric/widgets/lyric_view.dart';
@@ -9,7 +10,7 @@ import 'package:flutter_lyric_example/mock.dart';
 class ShowLyric extends StatefulWidget {
   const ShowLyric({
     super.key,
-    required this.progress,
+    required this.progressSource,
     this.beforeLyricBuilder,
     this.afterLyricBuilder,
     this.initStyle,
@@ -17,7 +18,7 @@ class ShowLyric extends StatefulWidget {
     this.initController,
     this.preserveStyleOnDarkMode = false,
   });
-  final Duration progress;
+  final LyricProgressSource progressSource;
   final LyricStyle? initStyle;
   final Map<String, LyricStyle> stylePresets;
   final Function(LyricController)? initController;
@@ -30,32 +31,33 @@ class ShowLyric extends StatefulWidget {
 }
 
 class _ShowLyricState extends State<ShowLyric> {
-  LyricController lyricController = LyricController();
+  late final LyricController lyricController;
   final ValueNotifier<LyricStyle> _currentStyleNotifier = ValueNotifier(
     LyricStyles.default1,
   );
 
   @override
   void dispose() {
+    _currentStyleNotifier.dispose();
     lyricController.dispose();
     super.dispose();
   }
 
   @override
   void initState() {
+    super.initState();
+    lyricController = LyricController(progressSource: widget.progressSource);
     _currentStyleNotifier.value = widget.initStyle ?? LyricStyles.default1;
     lyricController.loadLyric(qrc, translationLyric: tlrc);
-    lyricController.setProgress(widget.progress);
     widget.initController?.call(lyricController);
-    super.initState();
   }
 
   @override
   void didUpdateWidget(covariant ShowLyric oldWidget) {
-    if (oldWidget.progress != widget.progress) {
-      lyricController.setProgress(widget.progress);
-    }
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.progressSource != widget.progressSource) {
+      lyricController.progressSource = widget.progressSource;
+    }
   }
 
   @override

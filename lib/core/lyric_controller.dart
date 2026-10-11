@@ -1,9 +1,11 @@
+import 'dart:async';
 import 'dart:ui' show VoidCallback;
 
-import 'package:flutter/widgets.dart' show ValueNotifier;
+import 'package:flutter/foundation.dart' show ValueListenable, ValueNotifier;
 import 'package:flutter_lyric/core/lyric_parse.dart';
 
 import 'lyric_model.dart';
+import 'lyric_progress_source.dart';
 
 enum LyricEvent {
   stopSelection,
@@ -15,6 +17,51 @@ enum LyricEvent {
 }
 
 class LyricController {
+  LyricController({LyricProgressSource? progressSource}) {
+    this.progressSource = progressSource;
+  }
+
+  LyricProgressSource? _progressSource;
+  StreamSubscription<void>? _progressSourceSubscription;
+  final ValueNotifier<bool> _progressAdvancingNotifier = ValueNotifier(false);
+  bool _disposed = false;
+
+  /// The optional player source. Assign null to resume manual [setProgress].
+  ///
+  /// Replacing it cancels the old subscription and immediately samples the new
+  /// source. Neither the old source nor its player is disposed by this controller.
+  LyricProgressSource? get progressSource => _progressSource;
+
+  set progressSource(LyricProgressSource? value) {
+    assert(!_disposed, 'Cannot replace the source of a disposed controller.');
+    if (_disposed || identical(value, _progressSource)) return;
+    _progressSourceSubscription?.cancel();
+    _progressSourceSubscription = null;
+    _progressSource = value;
+    if (value != null) {
+      _progressSourceSubscription = value.changes.listen((_) {
+        if (!_disposed && identical(_progressSource, value)) {
+          syncProgress();
+        }
+      });
+    }
+    syncProgress();
+  }
+
+  /// Used by LyricView to start or stop frame sampling.
+  ValueListenable<bool> get progressAdvancingListenable =>
+      _progressAdvancingNotifier;
+
+  /// Reads the source's current position without extrapolation or interpolation.
+  /// LyricView calls this on each active frame; source events also call it while
+  /// paused, so seeks and the final playback position are synchronized.
+  void syncProgress() {
+    if (_disposed) return;
+    final source = _progressSource;
+    if (source != null) setProgress(source.position);
+    _progressAdvancingNotifier.value = _progressSource?.isAdvancing ?? false;
+  }
+
   // 歌词
   final ValueNotifier<LyricModel?> lyricNotifier = ValueNotifier(null);
   // 当前播放行
@@ -136,6 +183,12 @@ class LyricController {
   }
 
   void dispose() {
+    _disposed = true;
+    _progressSourceSubscription?.cancel();
+    _progressSourceSubscription = null;
+    _progressSource = null;
+    _progressAdvancingNotifier.value = false;
+    _progressAdvancingNotifier.dispose();
     _eventCallbacks.clear();
     lyricNotifier.dispose();
     progressNotifier.dispose();

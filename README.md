@@ -96,6 +96,38 @@ Feed your player position into `controller.setProgress` to drive highlighting an
 audioPlayer.positionStream.listen(controller.setProgress);
 ```
 
+**中文**
+
+逐字高亮直接使用传入的进度，不额外补间或推算时间。也可以为 Controller 配置 `LyricProgressSource`：`LyricView` 会在播放期间通过 Ticker 按屏幕帧读取位置，暂停、缓冲、结束时停止，并通过源事件同步暂停时的 seek。调用方无需管理 Ticker 或订阅。
+
+**English**
+
+Word highlights use the supplied position directly, without interpolation or an internal playback clock. Optionally configure a `LyricProgressSource` on the controller: `LyricView` samples its position on each display frame while advancing, stops while paused, buffering, or completed, and handles paused seeks through source events. Callers do not need to manage tickers or subscriptions.
+
+```dart
+// JustAudioProgressSource is the adapter in example/lib/just_audio_progress_source.dart.
+final controller = LyricController(
+  progressSource: JustAudioProgressSource(player),
+);
+
+LyricView(controller: controller);
+
+// Replace the source at runtime; the old subscription is canceled automatically.
+controller.progressSource = JustAudioProgressSource(anotherPlayer);
+
+// Keep the last position and return to manual updates.
+controller.progressSource = null;
+controller.setProgress(position);
+```
+
+**中文**
+
+核心库不依赖具体播放器。适配器实现 `position`、`isAdvancing` 和 `Stream<void> changes`；源状态变化、变速或 seek 时需发出事件。`position` 必须返回读取时的当前位置，时间推算由播放器负责。源可共享，但 `changes` 必须支持多订阅。Controller 替换源或销毁时只取消自己的订阅，不销毁源或播放器；播放器仍由调用方管理。View 卸载或 TickerMode 禁用时停止逐帧采样，源事件仍会更新 Controller。
+
+**English**
+
+The core library has no player dependency. Adapters implement `position`, `isAdvancing`, and `Stream<void> changes`, emitting on playback state changes, speed changes, and seeks. `position` must return the current position at read time; the player owns time extrapolation. Sources may be shared if `changes` supports multiple subscriptions. Replacing a source or disposing a controller cancels only that controller's subscription, without disposing the source or player. The caller still owns the player. Unmounting the view or disabling TickerMode stops frame sampling; source events continue to update the controller.
+
 ## 🎚️ 控制与样式 · Controller & Style
 
 **中文**

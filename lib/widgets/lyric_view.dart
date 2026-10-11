@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter_lyric/core/lyric_controller.dart';
 import 'package:flutter_lyric/render/lyric_painter.dart';
 import 'package:flutter_lyric/widgets/mixins/lyric_line_highlight.dart';
@@ -40,6 +41,32 @@ class _LyricViewState extends State<LyricView>
         LyricTouchMixin,
         LyricLineHightlightMixin,
         LyricLineSwitchMixin {
+  late final Ticker _progressTicker;
+
+  @override
+  void initState() {
+    super.initState();
+    _progressTicker = createTicker((_) => controller.syncProgress());
+    controller.progressAdvancingListenable.addListener(_updateProgressTicker);
+    _updateProgressTicker();
+  }
+
+  void _updateProgressTicker() {
+    if (controller.progressAdvancingListenable.value) {
+      if (!_progressTicker.isActive) _progressTicker.start();
+    } else {
+      _progressTicker.stop();
+    }
+  }
+
+  @override
+  void dispose() {
+    controller.progressAdvancingListenable
+        .removeListener(_updateProgressTicker);
+    _progressTicker.dispose();
+    super.dispose();
+  }
+
   // 提供 mixin 需要的属性访问
   @override
   LyricController get controller => widget.controller;
