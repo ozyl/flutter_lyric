@@ -87,7 +87,9 @@ class LyricViewSession extends ChangeNotifier {
         style.preset == old.preset &&
         style.padding == old.padding &&
         !style.needsTextLayout(old) &&
-        style.sameTextPaint(old)) return;
+        style.sameTextPaint(old)) {
+      return;
+    }
     _replaceLayout = _replaceLayout ||
         old == null ||
         style.needsTextLayout(old) ||
@@ -198,10 +200,11 @@ class LyricViewSession extends ChangeNotifier {
         current.contains(_active)) {
       final animate = _animateFollow && !firstLayout && !changedSize;
       _pendingFollow = false;
-      if (animate)
+      if (animate) {
         _afterFrame(() {
           if (following) _follow(true);
         });
+      }
     } else {
       _pendingFollow = false;
     }
@@ -240,8 +243,9 @@ class LyricViewSession extends ChangeNotifier {
       _previousActive = _active;
       _active = next;
       needsLayout = true;
-      if (_style != null && preset.displayMode == LyricDisplayMode.activeLine)
+      if (_style != null && preset.displayMode == LyricDisplayMode.activeLine) {
         _replaceLayout = true;
+      }
       _pendingFollow = following;
       _animateFollow = !documentChanged;
       if (!documentChanged) _startTransition();
@@ -281,7 +285,9 @@ class LyricViewSession extends ChangeNotifier {
     final current = layout;
     if (current == null ||
         !current.contains(_active) ||
-        !preset.highlight.enabled) return 0;
+        !preset.highlight.enabled) {
+      return 0;
+    }
     final words = current.metric(_active).words ?? [];
     var width = 0.0;
     final time = controller.effectivePosition;
@@ -290,8 +296,9 @@ class LyricViewSession extends ChangeNotifier {
       if (time < word.word.start) continue;
       final end = word.word.end ?? word.word.start;
       var segment = word.highlightWidth;
-      if (i == words.length - 1 && end > word.word.start)
+      if (i == words.length - 1 && end > word.word.start) {
         segment += preset.highlight.tailFadeWidth;
+      }
       final duration = (end - word.word.start).inMicroseconds;
       width += segment *
           (duration <= 0
@@ -326,8 +333,9 @@ class LyricViewSession extends ChangeNotifier {
     _repaint();
     if (!following) _present();
     if (dragging &&
-        preset.selectionSnapMode == LyricSelectionSnapMode.onDragPause)
+        preset.selectionSnapMode == LyricSelectionSnapMode.onDragPause) {
       _scheduleSnap();
+    }
   }
 
   void _updateSelection() {
@@ -358,7 +366,9 @@ class LyricViewSession extends ChangeNotifier {
     if (_disposed ||
         (!preset.interactive && !programmatic) ||
         preset.displayMode == LyricDisplayMode.activeLine ||
-        isEmpty) return;
+        isEmpty) {
+      return;
+    }
     _motion++;
     _programmatic = false;
     _pendingFollow = false;
@@ -402,8 +412,9 @@ class LyricViewSession extends ChangeNotifier {
 
   void _scheduleSnap() {
     _snapTimer?.cancel();
-    if (following || preset.selectionSnapMode == LyricSelectionSnapMode.none)
+    if (following || preset.selectionSnapMode == LyricSelectionSnapMode.none) {
       return;
+    }
     _snapTimer = Timer(preset.selectionSnapDelay, () {
       if (!_disposed && !following && selectedIndex != null) {
         final target = layout!
@@ -431,10 +442,11 @@ class LyricViewSession extends ChangeNotifier {
     if (following) return;
     _scheduleSnap();
     final delay = preset.resumeDelay;
-    if (delay != null)
+    if (delay != null) {
       _resumeTimer = Timer(delay, () {
         resumeFollow(true);
       });
+    }
   }
 
   Future<void> _moveTo(double target, bool animate) async {
@@ -491,7 +503,9 @@ class LyricViewSession extends ChangeNotifier {
     if (_style == null || needsLayout) await _waitForLayout();
     if (_disposed ||
         revision != _documentRevision ||
-        preset.displayMode == LyricDisplayMode.activeLine) return;
+        preset.displayMode == LyricDisplayMode.activeLine) {
+      return;
+    }
     beginBrowsing(programmatic: true);
     final current = layout;
     if (current == null || !current.contains(index)) return;
@@ -529,7 +543,9 @@ class LyricViewSession extends ChangeNotifier {
     if (following ||
         index == null ||
         current == null ||
-        !current.contains(index)) return null;
+        !current.contains(index)) {
+      return null;
+    }
     final rect = lineRect(index);
     final revision = _documentRevision;
     bool valid() =>
@@ -564,8 +580,9 @@ class LyricViewSession extends ChangeNotifier {
   void tapAt(Offset position) {
     if (!preset.interactive || layout == null) return;
     final index = layout!.lineAtOffset(position.dy + scrollY, _active);
-    if (layout!.contains(index) && lineRect(index).contains(position))
+    if (layout!.contains(index) && lineRect(index).contains(position)) {
       _tap(index);
+    }
   }
 
   void _tap(int index) {
@@ -588,9 +605,11 @@ class LyricViewSession extends ChangeNotifier {
 
   void _emit(VoidCallback callback) {
     final SchedulerBinding? binding = SchedulerBinding.instance;
-    if (binding!.schedulerPhase == SchedulerPhase.persistentCallbacks)
+    if (binding!.schedulerPhase == SchedulerPhase.persistentCallbacks) {
       _afterFrame(callback);
-    else if (!_disposed) callback();
+    } else if (!_disposed) {
+      callback();
+    }
   }
 
   void _present() {

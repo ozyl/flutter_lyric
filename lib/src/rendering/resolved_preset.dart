@@ -44,7 +44,9 @@ class ResolvedPreset {
     if (direction != old.direction ||
         textScaleFactor != old.textScaleFactor ||
         locale != old.locale ||
-        preset.textAlign != old.preset.textAlign) return true;
+        preset.textAlign != old.preset.textAlign) {
+      return true;
+    }
     final current = [
       textStyle,
       activeTextStyle,

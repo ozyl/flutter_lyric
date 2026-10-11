@@ -86,8 +86,9 @@ class LineMetrics {
   Iterable<TextPainter> get _initializedPainters sync* {
     yield textPainter;
     yield translationTextPainter;
-    if (_activeTranslationTextPainter != null)
+    if (_activeTranslationTextPainter != null) {
       yield _activeTranslationTextPainter!;
+    }
     if (_activeTextPainter != null) yield _activeTextPainter!;
     if (_textMaskPainter != null) yield _textMaskPainter!;
     if (_activeMaskPainter != null) yield _activeMaskPainter!;

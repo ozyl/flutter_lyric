@@ -1,29 +1,35 @@
-## [4.0.0-dev.1]
+## [4.0.0]
 
-### Breaking
+This major release changes the public API from 3.x. See the [migration guide](doc/migration.md) and [API reference](doc/api.md) before upgrading.
 
-* Replace `LyricStyle` with immutable `LyricPreset`, including display mode, visual effects, interaction policies and presentation builders. Add Moss, Aurora and Cinema studio presets, explicit anchor/fade units, and `LyricPresetScope`.
-* Keep one public `LyricController` with atomic read-only playback state, nullable active indices, immutable `LyricDocument`, explicit offsets and application-owned tap callbacks.
-* Support multiple views per controller with independent browsing, named view commands, and one shared player sampler. Replace public events, mutable notifiers and lifecycle mixins with private view sessions.
-* Use standard parent sizing and native Flutter scrolling around a Canvas viewport. Active translations support full typography; single-line mode lays out only the active entry.
-* Retain Dart 2.12 / Flutter 2.0 support, remove the unused platform interface dependency and incompatible lint dependency, and add a minimum/modern SDK CI matrix.
+### Breaking changes
+
+* Replace `LyricStyle` / `LyricStyles` with immutable `LyricPreset` / `LyricPresets`, combining display mode, typography, layout, effects, animation, interaction policies and presentation builders. Configure views with `preset` instead of `style`; use explicit `.fraction()` / `.pixels()` units for anchors and edge fades.
+* Rename controller methods to `load`, `loadDocument` and `setPosition`. Replace writable playback notifiers with an atomic, read-only `LyricPlaybackState` and `activeLineIndexListenable`; active lines and indices are nullable before the first lyric and when no lyrics are loaded.
+* Replace `LyricModel` with immutable `LyricDocument`, `idTags` with `tags`, and integer offsets with `Duration`. Document offsets and controller `timeOffset` are applied separately. Rename the parsing API to `LyricDocument.parse` / `LyricParser.autoDetect` and custom parser methods to `canParse` / `parse`.
+* Move tap and selection callbacks to each `LyricView`. Applications handle seeking through `onLineTap` and its offset-corrected `seekPosition`; the library does not change playback on tap. Replace the old selection widgets with preset builders and remove the public event bus, mutable selection notifiers and rendering/layout mixins.
+* Size `LyricView` through parent constraints such as `SizedBox` or `Expanded` instead of view `width` / `height` parameters. Import public APIs from `package:flutter_lyric/flutter_lyric.dart`; the old `core/`, `widgets/`, `render/` and `utils/` paths are removed.
+
+### Added
+
+* `LyricProgressSource` for replaceable, player-owned progress, with one subscription and one frame sampler per controller. Advancing playback is sampled on each display frame while an attached view has `TickerMode` enabled and the app is in the foreground; pause, seek and other source events still update state without frame sampling. Binding a source disables manual `setPosition` calls.
+* Multiple views per controller with independent scrolling, selection and follow state. Target `resumeFollow` / `scrollToLine` commands with `viewId`, or broadcast them to all attached views.
+* Moss, Aurora and Cinema as const, customizable built-in presets, with Aurora as the default, plus `LyricPresetScope` for subtree defaults. These replace 3.x's `default1`, `default2` and `single`; earlier 4.0 preview names `leading`, `centered` and `singleLine` are also removed without aliases.
+* Full active-translation typography, explicit anchor targets, and independent selection-snap and follow-resume policies. Selection builders receive viewport geometry and actions for their own view.
 
 ### Changed
 
-* Promote Lyric Studio's Moss, Aurora and Cinema designs to `LyricPresets.moss`, `aurora` and `cinema`, replacing the preview names `leading`, `centered` and `singleLine` without aliases. Unconfigured views now use Aurora. All three remain const, customizable values with no new dependencies or SDK requirements.
-* Reuse the library presets in the demo gallery and keep the Issue #41 regression fixture independent from built-in style changes.
-
-See [migration instructions](doc/migration.md).
-
-## [Unreleased rendering work retained in 4.0]
-
-### Changed
-
-* Defer active-text layout, highlight masks, row metrics, and word bounds until first use to reduce initial lyric loading work, while retaining exact normal and translation heights for scrolling.
+* Use native Flutter scrolling around a Canvas viewport. Reuse text paragraphs, cached line metrics and edge-fade shaders, and paint only visible entries to reduce scrolling, repaint and compositing work.
+* Defer active-text layout, highlight masks, row metrics and word bounds until first use, retaining exact normal and translation heights for scrolling. Active-line mode lays out only the current entry.
+* Rebuild the example as responsive Lyric Studio with eight styles, seven regression/scroll experiments, live preset editing, per-preset drafts, undo/redo, original comparison and playback controls. The gallery shares the three library presets and keeps the Issue #41 fixture independent of their styling.
+* Retain the Dart 2.12 / Flutter 2.0 library minimum and remove the unused `plugin_platform_interface` runtime dependency and incompatible lint dependency. Add minimum/modern Flutter CI checks, API and migration documentation, and playback, interaction, layout and pixel regression tests.
 
 ### Fixed
 
-* Compose active text and highlight colors through a single neutral glyph mask to prevent colored fringes and thickened antialiased edges, while preserving independent highlight opacity, trailing fades, and line-switch animations ([#41](https://github.com/ozyl/flutter_lyric/issues/41)).
+* Compose active text and highlight colors through a single neutral glyph mask to prevent colored fringes and thickened antialiased edges, preserving independent highlight opacity and line-switch animations ([#41](https://github.com/ozyl/flutter_lyric/issues/41)).
+* Smooth trailing highlight fades at word and line endings, including wrapped lyrics and fractional positions.
+* Restore highlight-mask layout after text-opacity changes, preventing missing or incorrectly rendered active and exiting text.
+* Prevent lyric taps from leaving automatic scrolling stuck; resume following according to the view's interaction policy.
 
 ## [3.0.8]
 

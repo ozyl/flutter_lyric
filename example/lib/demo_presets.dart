@@ -1,3 +1,5 @@
+// @dart=3.8
+
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
 import 'issue41_demo_preset.dart';

@@ -149,8 +149,9 @@ class LyricScrollAnimation extends PresetValue {
     if (!distance.isFinite || distance < 0) throw ArgumentError.value(distance);
     if (resolver != null) {
       final result = resolver!(distance);
-      if (result.duration.isNegative)
+      if (result.duration.isNegative) {
         throw ArgumentError('Negative scroll duration.');
+      }
       return result;
     }
     if (duration.isNegative) throw ArgumentError('Negative scroll duration.');

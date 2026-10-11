@@ -271,8 +271,8 @@ void main() {
       (tester) async {
     final controller = LyricController();
     addTearDown(controller.dispose);
-    final preset = LyricPresets.cinema
-        .copyWith(emptyBuilder: (_) => const Text('Empty'));
+    final preset =
+        LyricPresets.cinema.copyWith(emptyBuilder: (_) => const Text('Empty'));
     await tester.pumpWidget(host(controller, preset: preset));
     await tester.pumpAndSettle();
     expect(find.text('Empty'), findsOneWidget);

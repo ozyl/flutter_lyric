@@ -2,16 +2,18 @@
 
 [![pub package](https://img.shields.io/pub/v/flutter_lyric.svg)](https://pub.dev/packages/flutter_lyric)
 [![license](https://img.shields.io/github/license/ozyl/flutter_lyric)](LICENSE)
+[![Live Demo](https://img.shields.io/badge/demo-online-brightgreen)](https://ozyl.github.io/flutter_lyric/)
 
 Flutter 歌词组件，支持 LRC / QRC / YRC、翻译、逐字高亮和滚动选择。一个 `LyricController` 可以连接多个视图；每个视图独立管理滚动和选择。
 
 A Canvas-based lyric widget with translations, word-timed highlighting and native Flutter scrolling. One controller shares playback across views; each view keeps its own browsing state.
 
-This branch contains the **4.0 API preview**, with breaking changes from 3.x. Minimum library versions remain **Dart 2.12 / Flutter 2.0**. The audio-player example uses a newer SDK for its player dependencies.
+**4.0.0** introduces breaking API changes from 3.x; see the [migration guide](doc/migration.md) before upgrading. Minimum library versions remain **Dart 2.12 / Flutter 2.0**. The audio-player example uses a newer SDK for its player dependencies.
 
+- [在线演示 / Live Demo](https://ozyl.github.io/flutter_lyric/)
 - [完整 API 与参数划分 / API reference](doc/api.md)
 - [3.x → 4.0 迁移 / Migration](doc/migration.md)
-- [示例 / Example](example/lib/main.dart)
+- [示例源码 / Example source](example/lib/main.dart)
 
 ## Quick start
 

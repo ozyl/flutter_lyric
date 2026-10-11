@@ -1,3 +1,5 @@
+// @dart=3.8
+
 import 'package:flutter/animation.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
 

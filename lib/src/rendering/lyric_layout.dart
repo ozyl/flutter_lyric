@@ -93,10 +93,12 @@ class LyricLayout {
     final main = active ? line.activeHeight : line.height;
     final translation =
         active ? line.activeTranslationHeight : line.translationHeight;
-    if (translation == 0 || target == LyricAnchorTarget.mainText)
+    if (translation == 0 || target == LyricAnchorTarget.mainText) {
       return main / 2;
-    if (target == LyricAnchorTarget.translationText)
+    }
+    if (target == LyricAnchorTarget.translationText) {
       return main + style.preset.translationSpacing + translation / 2;
+    }
     return getLineHeight(active, index) / 2;
   }
 

@@ -10,6 +10,7 @@ linter:
     - avoid_print
     - cancel_subscriptions
     - close_sinks
+    - curly_braces_in_flow_control_structures
     - hash_and_equals
     - prefer_final_fields
     - unawaited_futures

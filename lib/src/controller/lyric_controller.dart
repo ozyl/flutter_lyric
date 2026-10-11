@@ -154,7 +154,9 @@ class LyricController implements ValueListenable<LyricPlaybackState> {
         identical(old.document, next.document) &&
         old.position == next.position &&
         old.timeOffset == next.timeOffset &&
-        old.isAdvancing == next.isAdvancing) return;
+        old.isAdvancing == next.isAdvancing) {
+      return;
+    }
     _state = next;
     if (old.activeLineIndex != next.activeLineIndex) _activeIndex.changed();
     if (!_disposed) _changes.changed();

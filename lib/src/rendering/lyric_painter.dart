@@ -421,8 +421,9 @@ class LyricPainter {
           text: tOldSpan.text,
           style: recolor(tOldSpan.style!, tTargetColor),
         );
-        if (paintChangesNeedLayout)
+        if (paintChangesNeedLayout) {
           tPainter.layout(maxWidth: layout.contentWidth);
+        }
       }
       canvas.save();
       canvas.translate(contentOffsetX(tPainter.width, size.width), 0);

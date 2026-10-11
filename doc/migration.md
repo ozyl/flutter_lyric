@@ -1,6 +1,6 @@
 # Migrating from 3.x to 4.0
 
-4.0 is a breaking API preview. Replace old deep imports with:
+4.0.0 is a major release with breaking API changes from 3.x. Replace old deep imports with:
 
 ```dart
 import 'package:flutter_lyric/flutter_lyric.dart';

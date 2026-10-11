@@ -1,3 +1,5 @@
+// @dart=3.8
+
 const lrc = '''
 [ti:Be what you wanna be]
 [ar:Darin]

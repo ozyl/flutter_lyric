@@ -1,3 +1,5 @@
+// @dart=3.8
+
 import 'package:flutter/material.dart';
 
 const studioInk = Color(0xFF252923);
