@@ -71,6 +71,7 @@ LyricLayout _layout(LyricPreset style,
 Future<Uint8List> _render(
   void Function(Canvas) paint, {
   double scale = 1,
+  double skewX = 0,
   Color? background,
 }) async {
   final recorder = ui.PictureRecorder();
@@ -80,6 +81,7 @@ Future<Uint8List> _render(
   }
   canvas.scale(scale);
   canvas.translate(_offset.dx, _offset.dy);
+  canvas.skew(skewX, 0);
   paint(canvas);
   final picture = recorder.endRecording();
   final image = await picture.toImage(
@@ -180,8 +182,11 @@ void main() {
         (canvas) => reference.metrics.single.activeTextPainter
             .paint(canvas, Offset.zero),
         scale: scale,
+        skewX: 0.1,
       );
-      // Fractional positioning ensures the test actually exercises AA pixels.
+      // Rasterizers can snap Ahem's axis-aligned edges to whole pixels, even
+      // at fractional positions. Shearing keeps antialiased edge coverage at
+      // every scale so the comparison still catches doubled glyph fringes.
       expect(
         [for (var i = 3; i < expected.length; i += 4) expected[i]]
             .any((alpha) => alpha > 0 && alpha < 255),
@@ -190,6 +195,7 @@ void main() {
       final actual = await _render(
         (canvas) => _paintLyric(canvas, layout),
         scale: scale,
+        skewX: 0.1,
       );
       _expectPixelsClose(actual, expected);
     });
