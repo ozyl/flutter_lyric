@@ -51,9 +51,41 @@ Color withAlphaValue(Color color, double alpha) => _floatColors
     ? (color as dynamic).withValues(alpha: alpha) as Color
     : color.withAlpha((alpha * 255).round());
 
+// Paint stores colors at engine precision; allow one channel step when
+// comparing a recorded Canvas color with a framework Color.
+Matcher colorCloseTo(Color expected) => predicate<Color>(
+    (actual) => ['a', 'r', 'g', 'b'].every((name) =>
+        (channel(actual, name) - channel(expected, name)).abs() <= 1 / 255),
+    'color close to $expected');
+
 LyricViewSession session(WidgetTester tester, {int at = 0}) => tester
     .renderObject<RenderLyricViewport>(find.byType(LyricViewport).at(at))
     .session;
+
+class PaintedDot {
+  final Offset center;
+  final double radius;
+  final Color color;
+  const PaintedDot(this.center, this.radius, this.color);
+}
+
+/// Inspect the actual viewport display list, including active-line intros
+/// where there is no lyric paragraph to paint.
+List<PaintedDot> countdownDots(WidgetTester tester, {int at = 0}) {
+  final result = <PaintedDot>[];
+  expect(
+      tester
+          .renderObject<RenderLyricViewport>(find.byType(LyricViewport).at(at)),
+      paints
+        ..everything((method, arguments) {
+          if (method == #drawCircle) {
+            result.add(PaintedDot(arguments[0] as Offset,
+                arguments[1] as double, (arguments[2] as Paint).color));
+          }
+          return true;
+        }));
+  return result;
+}
 
 Widget host(LyricController controller,
         {LyricPreset? preset,
@@ -94,6 +126,7 @@ LyricDocument lines({int count = 30, Duration offset = Duration.zero}) =>
                     ])));
 
 const quietPreset = LyricPreset(
+  countdown: LyricCountdown.none(),
   textStyle:
       TextStyle(fontFamily: 'Ahem', fontSize: 14, color: Color(0xFF808080)),
   activeTextStyle: TextStyle(fontSize: 18, color: Color(0xFFFFFFFF)),

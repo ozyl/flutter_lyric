@@ -1,6 +1,7 @@
 // @dart=3.8
 
 import 'package:flutter/material.dart';
+import 'demo_songs.dart';
 import 'studio_theme.dart';
 
 class PlaybackControls extends StatefulWidget {
@@ -11,6 +12,9 @@ class PlaybackControls extends StatefulWidget {
     required this.playing,
     required this.onPlay,
     required this.onSeek,
+    this.song = beWhatYouWannaBe,
+    this.songs = demoSongs,
+    this.onSongSelected,
     this.loading = false,
     this.error,
     this.onRetry,
@@ -23,6 +27,9 @@ class PlaybackControls extends StatefulWidget {
   final VoidCallback onPlay;
   final ValueChanged<Duration> onSeek;
   final VoidCallback? onRetry;
+  final DemoSong song;
+  final List<DemoSong> songs;
+  final ValueChanged<DemoSong>? onSongSelected;
   @override
   State<PlaybackControls> createState() => _PlaybackControlsState();
 }
@@ -43,6 +50,7 @@ class _PlaybackControlsState extends State<PlaybackControls> {
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= 600;
         final transport = Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
               tooltip: '后退 10 秒',
@@ -91,34 +99,78 @@ class _PlaybackControlsState extends State<PlaybackControls> {
           children: [
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.asset(
-                'assets/cover.webp',
-                width: 42,
-                height: 42,
-                fit: BoxFit.cover,
-              ),
+              child: widget.song.coverAsset != null
+                  ? Image.asset(
+                      widget.song.coverAsset!,
+                      width: 42,
+                      height: 42,
+                      fit: BoxFit.cover,
+                    )
+                  : Container(
+                      width: 42,
+                      height: 42,
+                      color: studioInk,
+                      child: const Icon(
+                        Icons.music_note_rounded,
+                        color: Colors.white,
+                      ),
+                    ),
             ),
             const SizedBox(width: 10),
-            const Expanded(
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Be What You Wanna Be',
+                    widget.song.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
-                  SizedBox(height: 4),
+                  const SizedBox(height: 4),
                   Text(
-                    'Darin · 2005',
-                    style: TextStyle(fontSize: 10, color: studioMuted),
+                    widget.song.artist,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 10, color: studioMuted),
                   ),
                 ],
               ),
             ),
+            if (widget.onSongSelected != null)
+              const Icon(
+                Icons.unfold_more_rounded,
+                size: 18,
+                color: studioMuted,
+              ),
           ],
+        );
+        final songSelector = PopupMenuButton<DemoSong>(
+          key: const ValueKey('song-selector'),
+          tooltip: '切换歌曲',
+          enabled: !widget.loading && widget.onSongSelected != null,
+          initialValue: widget.song,
+          onSelected: widget.onSongSelected,
+          itemBuilder: (_) => [
+            for (final song in widget.songs)
+              PopupMenuItem(
+                key: ValueKey('song-${song.id}'),
+                value: song,
+                child: ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(song.title),
+                  subtitle: Text(song.artist),
+                  trailing: song == widget.song
+                      ? const Icon(Icons.check_rounded, color: studioAccent)
+                      : null,
+                ),
+              ),
+          ],
+          child: track,
         );
         final progress = Row(
           children: [
@@ -172,13 +224,18 @@ class _PlaybackControlsState extends State<PlaybackControls> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Row(
-                children: [
-                  Expanded(child: track),
-                  if (wide) const SizedBox(width: 16),
-                  transport,
-                ],
-              ),
+              if (constraints.maxWidth < 480) ...[
+                songSelector,
+                const SizedBox(height: 6),
+                Center(child: transport),
+              ] else
+                Row(
+                  children: [
+                    Expanded(child: songSelector),
+                    if (wide) const SizedBox(width: 16),
+                    transport,
+                  ],
+                ),
               const SizedBox(height: 6),
               if (widget.error == null)
                 progress

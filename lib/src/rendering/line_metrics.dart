@@ -2,6 +2,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
 import '../model/lyric_document.dart';
 import '../compat/painting.dart';
+import 'lyric_word_layout.dart';
 
 // 单行测量结果
 class LineMetrics {
@@ -20,6 +21,36 @@ class LineMetrics {
   bool _wordsComputed = true;
   bool _disposed = false;
   double? _maxWidth;
+  LyricWordLine? _normalWordLine, _activeWordLine;
+  bool get debugWordLineComputed =>
+      _normalWordLine != null || _activeWordLine != null;
+  bool get debugSegmentsComputed =>
+      (_normalWordLine?.debugSegmentsComputed ?? false) ||
+      (_activeWordLine?.debugSegmentsComputed ?? false);
+  bool get debugCharactersComputed =>
+      (_normalWordLine?.debugCharactersComputed ?? false) ||
+      (_activeWordLine?.debugCharactersComputed ?? false);
+  bool get debugWordMaskComputed =>
+      (_normalWordLine?.debugMaskComputed ?? false) ||
+      (_activeWordLine?.debugMaskComputed ?? false);
+  LyricWordLine wordLine(ResolvedWordStyle style, Duration? end, bool active) {
+    if (active) {
+      return _activeWordLine ??= LyricWordLine(line, style, _maxWidth!, end,
+          paragraph: activeTextPainter,
+          translationParagraph: line.translation?.isNotEmpty == true
+              ? activeTranslationTextPainter
+              : null);
+    }
+    return _normalWordLine ??= LyricWordLine(line, style, _maxWidth!, end,
+        paragraph: textPainter, translationParagraph: translationTextPainter);
+  }
+
+  void _clearWordLines() {
+    _normalWordLine?.dispose();
+    _activeWordLine?.dispose();
+    _normalWordLine = _activeWordLine = null;
+  }
+
   TextStyle? _activeStyle;
 
   double get height => _height ??= textPainter.height;
@@ -122,6 +153,7 @@ class LineMetrics {
     required TextStyle activeTranslationStyle,
     required TextStyle translationStyle,
   }) {
+    _clearWordLines();
     textPainter.text = TextSpan(text: line.text, style: textStyle);
     _activeStyle = activeStyle;
     _activeTranslationStyle = activeTranslationStyle;
@@ -147,6 +179,7 @@ class LineMetrics {
   /// Re-measures initialized paragraphs after a system font change. Deferred
   /// paragraphs will pick up the current fonts when first accessed.
   void relayout(double maxWidth) {
+    _clearWordLines();
     _maxWidth = maxWidth;
     for (final painter in _initializedPainters) {
       painter.markNeedsLayout();
@@ -165,6 +198,7 @@ class LineMetrics {
     for (final painter in _initializedPainters) {
       disposeTextPainter(painter);
     }
+    _clearWordLines();
     _disposed = true;
   }
 

@@ -11,20 +11,27 @@ class ResolvedPreset {
   final EdgeInsets padding;
   final TextDirection direction;
   final double textScaleFactor;
+  final double devicePixelRatio;
   final Locale? locale;
 
   ResolvedPreset(this.preset,
       {TextStyle ambient = const TextStyle(color: Color(0xFF000000)),
       this.direction = TextDirection.ltr,
       this.textScaleFactor = 1,
+      this.devicePixelRatio = 1,
       this.locale})
       : textStyle = ambient.merge(preset.textStyle),
         activeTextStyle =
             ambient.merge(preset.textStyle).merge(preset.activeTextStyle),
-        translationTextStyle =
-            ambient.merge(preset.textStyle).merge(preset.translationTextStyle),
+        translationTextStyle = ambient
+            .merge(preset.translationInheritsTextStyle
+                ? preset.textStyle
+                : const TextStyle())
+            .merge(preset.translationTextStyle),
         activeTranslationTextStyle = ambient
-            .merge(preset.textStyle)
+            .merge(preset.translationInheritsTextStyle
+                ? preset.textStyle
+                : const TextStyle())
             .merge(preset.translationTextStyle)
             .merge(preset.activeTranslationTextStyle),
         padding = preset.padding.resolve(direction);
@@ -41,7 +48,13 @@ class ResolvedPreset {
       const Color(0xFF000000);
 
   bool needsTextLayout(ResolvedPreset old) {
-    if (direction != old.direction ||
+    if (preset.layoutMode != old.preset.layoutMode ||
+        preset.wordEffects.lift != old.preset.wordEffects.lift ||
+        preset.wordEffects.floatAmplitude !=
+            old.preset.wordEffects.floatAmplitude ||
+        preset.wordEffects.simulateTiming !=
+            old.preset.wordEffects.simulateTiming ||
+        direction != old.direction ||
         textScaleFactor != old.textScaleFactor ||
         locale != old.locale ||
         preset.textAlign != old.preset.textAlign) {

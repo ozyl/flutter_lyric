@@ -6,9 +6,13 @@ import 'lyric_layout.dart';
 import 'line_metrics.dart';
 import 'line_transition.dart';
 import 'resolved_preset.dart';
+import '../view/lyric_view_session.dart';
+import 'lyric_word_painter.dart';
 
 /// Pure Canvas renderer: geometry/selection callbacks never run during paint.
 class LyricPainter {
+  final LyricViewSession? session;
+  int debugPaintedLines = 0;
   final LyricLayout layout;
   final int playIndex;
   final double scrollY;
@@ -25,7 +29,8 @@ class LyricPainter {
       required this.activeHighlightWidth,
       this.switchState = const LyricLineSwitchState(),
       this.isSelecting = false,
-      this.selectedIndex});
+      this.selectedIndex,
+      this.session});
 
   static TextStyle recolor(TextStyle style, Color color) =>
       style.foreground == null
@@ -33,6 +38,10 @@ class LyricPainter {
           : style.copyWith(foreground: Paint()..color = color);
 
   void paint(Canvas canvas, Size size) {
+    if (session != null) {
+      _paintSession(canvas, size);
+      return;
+    }
     final first = layout.lineAtOffset(scrollY, playIndex);
     canvas.save();
     canvas.clipRect(Offset.zero & size);
@@ -46,6 +55,66 @@ class LyricPainter {
       drawLine(canvas, layout.metric(i), innerSize, i, selectedIndex == i);
       canvas.restore();
     }
+    canvas.restore();
+  }
+
+  void _paintSession(Canvas canvas, Size size) {
+    final state = session!;
+    debugPaintedLines = 0;
+    canvas.save();
+    canvas.clipRect(Offset.zero & size);
+    final countdown = state.countdownPainter;
+    var paintedCountdown = false;
+    for (final index in state.visibleIndices) {
+      if (!paintedCountdown &&
+          countdown != null &&
+          index >= countdown.frame.nextIndex) {
+        countdown.paint(canvas, size);
+        paintedCountdown = true;
+      }
+      final current = state.layoutFor(index)!;
+      final visual = state.visualState(index);
+      final sigma = state.blurFor(index);
+      if (visual.opacity <= 0 ||
+          !state
+              .lineRect(index)
+              .inflate(
+                  (sigma * 3 + style.preset.wordEffects.extent) * visual.scale)
+              .overlaps(Offset.zero & size)) {
+        continue;
+      }
+      debugPaintedLines++;
+      canvas.save();
+      canvas.translate(style.padding.left + visual.offset.dx,
+          state.lineTop(index) + visual.offset.dy);
+      canvas.translate(state.pivotX, 0);
+      canvas.scale(visual.scale);
+      canvas.translate(-state.pivotX, 0);
+      final bounds = Rect.fromLTWH(0, 0, current.contentWidth,
+              current.getLineHeight(state.paintsActive(index), index))
+          .inflate(current.metric(index).textPainter.preferredLineHeight +
+              sigma * 3 +
+              current.headroom);
+      final layered = visual.opacity < 1 || sigma > 0;
+      if (layered) {
+        final paint = Paint()
+          ..color = colorWithOpacity(const Color(0xFFFFFFFF), visual.opacity);
+        if (sigma > 0) {
+          paint.imageFilter = ui.ImageFilter.blur(sigmaX: sigma, sigmaY: sigma);
+        }
+        canvas.saveLayer(bounds, paint);
+      }
+      canvas.translate(0, current.headroom);
+      drawLine(
+          canvas,
+          current.metric(index),
+          Size(current.contentWidth, size.height),
+          index,
+          selectedIndex == index);
+      if (layered) canvas.restore();
+      canvas.restore();
+    }
+    if (!paintedCountdown) countdown?.paint(canvas, size);
     canvas.restore();
   }
 
@@ -260,7 +329,9 @@ class LyricPainter {
     TextPainter painter,
     Size size,
   ) {
-    if (style.preset.lineTransition.enabled != true) return 0;
+    if (session != null || style.preset.lineTransition.enabled != true) {
+      return 0;
+    }
     double calcTranslateX(double contentWidth) {
       var transX = 0.0;
       if (style.preset.contentAlignment == LyricContentAlignment.center) {
@@ -304,7 +375,7 @@ class LyricPainter {
     return customColor ??
         baseStyle.color ??
         baseStyle.foreground?.color ??
-        const Color(0xFF000000);
+        (layout.fixed ? const Color(0xFFFFFFFF) : const Color(0xFF000000));
   }
 
   void drawLine(
@@ -314,7 +385,7 @@ class LyricPainter {
     int index,
     bool isInAnchorArea,
   ) {
-    final isActive = playIndex == index;
+    final isActive = session?.paintsActive(index) ?? (playIndex == index);
 
     final painter = isActive ? metric.activeTextPainter : metric.textPainter;
     final oldSpan = painter.text! as TextSpan;
@@ -336,22 +407,42 @@ class LyricPainter {
       }
     }
 
+    if (session != null) {
+      final activity = session!.activity(index);
+      highlightOpacity = activity;
+      animatedMainColor = Color.lerp(
+          style.textStyle.color ?? style.textStyle.foreground?.color,
+          style.activeTextStyle.color ??
+              style.activeTextStyle.foreground?.color,
+          activity);
+    }
     final baseStyle = isActive ? style.activeTextStyle : style.textStyle;
-    final targetColor = _resolveColor(baseStyle, style.selectedTextColor,
-        isSelecting, isInAnchorArea, animatedMainColor);
+    final targetColor = _resolveColor(
+        baseStyle,
+        style.selectedTextColor,
+        isSelecting &&
+            (!layout.fixed || style.preset.selectedTextColor != null),
+        isInAnchorArea,
+        animatedMainColor);
     final hasHighlight = style.preset.highlight.color != null ||
         style.preset.highlight.gradient != null;
-    final isExiting = index == switchState.exitIndex &&
-        switchState.exitAnimationValue < 1 &&
-        style.preset.lineTransition.enabled;
-    final highlightWidth = isActive && metric.words?.isNotEmpty == true
-        ? activeHighlightWidth
+    final isExiting = session != null
+        ? !isActive && session!.activity(index) > 0
+        : index == switchState.exitIndex &&
+            switchState.exitAnimationValue < 1 &&
+            style.preset.lineTransition.enabled;
+    final usesWordEffects = session != null &&
+        (session!.layoutFor(index)!.fixed || style.preset.wordEffects.enabled);
+    final highlightWidth = !usesWordEffects &&
+            (isActive || (session != null && isExiting)) &&
+            metric.words?.isNotEmpty == true
+        ? session?.highlightWidthFor(index, isActive) ?? activeHighlightWidth
         : double.infinity;
     final drawHighlighted = hasHighlight &&
         (isActive || isExiting) &&
         highlightOpacity > 0 &&
         highlightWidth > 0;
-    final needsRestyle = !drawHighlighted &&
+    final needsRestyle = (!drawHighlighted || usesWordEffects) &&
         targetColor !=
             (oldSpan.style!.color ?? oldSpan.style!.foreground?.color);
 
@@ -366,7 +457,23 @@ class LyricPainter {
     canvas.translate(contentOffsetX(painter.width, size.width), 0);
     final switchOffset = handleSwitchAnimation(
         canvas, metric, index, switchState, painter, size);
-    if (drawHighlighted) {
+    final current = session?.layoutFor(index);
+    final wordEffects =
+        session != null && (current!.fixed || style.preset.wordEffects.enabled);
+    if (wordEffects &&
+        highlightOpacity > 0 &&
+        (hasHighlight ||
+            (style.preset.wordEffects.lift > 0 &&
+                style.preset.wordEffects.liftDuration > Duration.zero &&
+                !session!.reduceMotion) ||
+            session!.characterFloatEnabled)) {
+      final line = current!.wordLine(index, isActive);
+      LyricWordPainter(session!,
+              baseColor: targetColor,
+              rasterCache: session!.wordRasterCache,
+              pixelRatio: session!.devicePixelRatio)
+          .paint(canvas, line, index, highlightOpacity);
+    } else if (drawHighlighted) {
       _drawHighlightedText(
         canvas,
         isActive ? metric.activeMaskPainter : metric.textMaskPainter,
@@ -403,14 +510,25 @@ class LyricPainter {
         }
       }
 
+      if (session != null) {
+        animatedTranslationColor = Color.lerp(style.translationTextStyle.color,
+            style.activeTranslationTextStyle.color, session!.activity(index));
+      }
       final tBaseColor = isActive
           ? (style.activeTranslationTextStyle.color ??
               style.translationTextStyle.color)
           : style.translationTextStyle.color;
       final tTargetColor = _resolveColor(
-          recolor(tOldSpan.style!, tBaseColor ?? const Color(0xFF000000)),
+          recolor(
+              tOldSpan.style!,
+              tBaseColor ??
+                  (layout.fixed
+                      ? const Color(0xFFFFFFFF)
+                      : const Color(0xFF000000))),
           style.selectedTranslationTextColor,
-          isSelecting,
+          isSelecting &&
+              (!layout.fixed ||
+                  style.preset.selectedTranslationTextColor != null),
           isInAnchorArea,
           animatedTranslationColor);
       final tNeedsRestyle = tTargetColor !=
@@ -429,7 +547,12 @@ class LyricPainter {
       canvas.translate(contentOffsetX(tPainter.width, size.width), 0);
       canvas.translate(0, switchOffset);
       tPainter.paint(
-          canvas, Offset(0, mainHeight + style.preset.translationSpacing));
+          canvas,
+          Offset(
+              0,
+              mainHeight +
+                  style.preset.wordEffects.floatAmplitude +
+                  style.preset.translationSpacing));
       canvas.translate(0, -switchOffset);
       canvas.restore();
     }

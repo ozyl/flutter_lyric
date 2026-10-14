@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import '../view/lyric_details.dart';
 import 'lyric_effects.dart';
+import 'lyric_countdown.dart';
 import 'value.dart';
 
 /// An immutable, reusable lyric experience: appearance, motion, interaction
@@ -14,6 +15,7 @@ class LyricPreset extends PresetValue {
   final TextStyle textStyle;
   final TextStyle activeTextStyle;
   final TextStyle translationTextStyle;
+  final bool translationInheritsTextStyle;
   final TextStyle activeTranslationTextStyle;
   final Color? selectedTextColor;
   final Color? selectedTranslationTextColor;
@@ -32,10 +34,19 @@ class LyricPreset extends PresetValue {
   // Effects
   final LyricHighlight highlight;
   final LyricEdgeFade edgeFade;
+  final LyricCountdown countdown;
 
   // Animation
   final LyricScrollAnimation scrollAnimation;
   final LyricLineTransition lineTransition;
+
+  final LyricLayoutMode layoutMode;
+  final LyricLineMotion lineMotion;
+  final LyricWordEffects wordEffects;
+  final LyricDistanceBlur distanceBlur;
+
+  /// Null animates any distance. Otherwise jump beyond this many view heights.
+  final double? jumpScrollThreshold;
 
   // Interaction
   final bool interactive;
@@ -53,6 +64,7 @@ class LyricPreset extends PresetValue {
     this.displayMode = LyricDisplayMode.scrollable,
     this.textStyle = const TextStyle(fontSize: 14),
     this.activeTextStyle = const TextStyle(fontSize: 18),
+    this.translationInheritsTextStyle = true,
     this.translationTextStyle = const TextStyle(fontSize: 12),
     this.activeTranslationTextStyle = const TextStyle(),
     this.selectedTextColor,
@@ -66,8 +78,14 @@ class LyricPreset extends PresetValue {
     this.selectionAnchor = const LyricAnchor.fraction(0.5),
     this.highlight = const LyricHighlight.none(),
     this.edgeFade = const LyricEdgeFade.pixels(top: 32, bottom: 32),
+    this.countdown = const LyricCountdown(),
     this.scrollAnimation = const LyricScrollAnimation.fixed(),
     this.lineTransition = const LyricLineTransition(),
+    this.layoutMode = LyricLayoutMode.dualStyle,
+    this.lineMotion = const LyricLineMotion(),
+    this.wordEffects = const LyricWordEffects(),
+    this.distanceBlur = const LyricDistanceBlur(),
+    this.jumpScrollThreshold,
     this.interactive = true,
     this.selectionSnapMode = LyricSelectionSnapMode.afterScroll,
     this.selectionSnapDelay = const Duration(milliseconds: 320),
@@ -86,6 +104,7 @@ class LyricPreset extends PresetValue {
     TextStyle? textStyle,
     TextStyle? activeTextStyle,
     TextStyle? translationTextStyle,
+    bool? translationInheritsTextStyle,
     TextStyle? activeTranslationTextStyle,
     Color? selectedTextColor,
     Color? selectedTranslationTextColor,
@@ -98,8 +117,15 @@ class LyricPreset extends PresetValue {
     LyricAnchor? selectionAnchor,
     LyricHighlight? highlight,
     LyricEdgeFade? edgeFade,
+    LyricCountdown? countdown,
     LyricScrollAnimation? scrollAnimation,
     LyricLineTransition? lineTransition,
+    LyricLayoutMode? layoutMode,
+    LyricLineMotion? lineMotion,
+    LyricWordEffects? wordEffects,
+    LyricDistanceBlur? distanceBlur,
+    double? jumpScrollThreshold,
+    bool clearJumpScrollThreshold = false,
     bool? interactive,
     LyricSelectionSnapMode? selectionSnapMode,
     Duration? selectionSnapDelay,
@@ -115,6 +141,9 @@ class LyricPreset extends PresetValue {
     bool clearSelectionBackgroundBuilder = false,
     bool clearSelectionForegroundBuilder = false,
   }) {
+    if (clearJumpScrollThreshold && jumpScrollThreshold != null) {
+      throw ArgumentError('Cannot set and clear jumpScrollThreshold together.');
+    }
     if (clearSelectedTextColor && selectedTextColor != null) {
       throw ArgumentError('Cannot set and clear selectedTextColor together.');
     }
@@ -142,6 +171,8 @@ class LyricPreset extends PresetValue {
       textStyle: textStyle ?? this.textStyle,
       activeTextStyle: activeTextStyle ?? this.activeTextStyle,
       translationTextStyle: translationTextStyle ?? this.translationTextStyle,
+      translationInheritsTextStyle:
+          translationInheritsTextStyle ?? this.translationInheritsTextStyle,
       activeTranslationTextStyle:
           activeTranslationTextStyle ?? this.activeTranslationTextStyle,
       selectedTextColor: clearSelectedTextColor
@@ -159,8 +190,16 @@ class LyricPreset extends PresetValue {
       selectionAnchor: selectionAnchor ?? this.selectionAnchor,
       highlight: highlight ?? this.highlight,
       edgeFade: edgeFade ?? this.edgeFade,
+      countdown: countdown ?? this.countdown,
       scrollAnimation: scrollAnimation ?? this.scrollAnimation,
       lineTransition: lineTransition ?? this.lineTransition,
+      layoutMode: layoutMode ?? this.layoutMode,
+      lineMotion: lineMotion ?? this.lineMotion,
+      wordEffects: wordEffects ?? this.wordEffects,
+      distanceBlur: distanceBlur ?? this.distanceBlur,
+      jumpScrollThreshold: clearJumpScrollThreshold
+          ? null
+          : (jumpScrollThreshold ?? this.jumpScrollThreshold),
       interactive: interactive ?? this.interactive,
       selectionSnapMode: selectionSnapMode ?? this.selectionSnapMode,
       selectionSnapDelay: selectionSnapDelay ?? this.selectionSnapDelay,
@@ -183,6 +222,7 @@ class LyricPreset extends PresetValue {
         textStyle,
         activeTextStyle,
         translationTextStyle,
+        translationInheritsTextStyle,
         activeTranslationTextStyle,
         selectedTextColor,
         selectedTranslationTextColor,
@@ -195,8 +235,14 @@ class LyricPreset extends PresetValue {
         selectionAnchor,
         highlight,
         edgeFade,
+        countdown,
         scrollAnimation,
         lineTransition,
+        layoutMode,
+        lineMotion,
+        wordEffects,
+        distanceBlur,
+        jumpScrollThreshold,
         interactive,
         selectionSnapMode,
         selectionSnapDelay,

@@ -8,6 +8,7 @@ import 'preset_gallery.dart';
 import 'show_lyric.dart';
 import 'studio_state.dart';
 import 'studio_theme.dart';
+import 'studio_preview.dart';
 
 /// Responsive shell, kept independent of audio plugins for layout testing.
 class LyricStudio extends StatefulWidget {
@@ -35,9 +36,25 @@ class _LyricStudioState extends State<LyricStudio> {
   bool _focus = false;
   bool _sheetOpen = false;
   double _sheetExtent = .52;
+  bool _plainLrc = false;
+  StudioPreview? _preview;
+
+  LyricController get _controller => _plainLrc
+      ? (_preview ??= StudioPreview(widget.controller)).controller
+      : widget.controller;
+
+  @override
+  void didUpdateWidget(LyricStudio oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      _preview?.dispose();
+      _preview = null;
+    }
+  }
 
   @override
   void dispose() {
+    _preview?.dispose();
     if (widget.state == null) _state.dispose();
     super.dispose();
   }
@@ -327,12 +344,14 @@ class _LyricStudioState extends State<LyricStudio> {
           ),
         ),
         if (wide)
-          const Column(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              StudioLabel('08 STYLES + 07 EXPERIMENTS'),
-              SizedBox(height: 7),
-              Text(
+              StudioLabel(
+                '${_state.catalog.length.toString().padLeft(2, '0')} PRESETS',
+              ),
+              const SizedBox(height: 7),
+              const Text(
                 '空格 播放 / 暂停   ·   ⌘ / Ctrl Z 撤销',
                 style: TextStyle(fontSize: 10, color: studioMuted),
               ),
@@ -357,6 +376,31 @@ class _LyricStudioState extends State<LyricStudio> {
           )
         else
           const Spacer(),
+        PopupMenuButton<bool>(
+          key: const ValueKey('timing-mode'),
+          tooltip: '歌词时间模式',
+          initialValue: _plainLrc,
+          onSelected: (value) => setState(() => _plainLrc = value),
+          itemBuilder: (_) => const [
+            PopupMenuItem(value: false, child: Text('原始逐字时间')),
+            PopupMenuItem(value: true, child: Text('普通 LRC')),
+          ],
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  width < 600
+                      ? (_plainLrc ? 'LRC' : '逐字')
+                      : (_plainLrc ? '普通 LRC' : '原始时间'),
+                  style: const TextStyle(fontSize: 11, color: studioMuted),
+                ),
+                const Icon(Icons.arrow_drop_down_rounded, size: 18),
+              ],
+            ),
+          ),
+        ),
         _tool(
           '原版对照',
           Icons.vertical_split_outlined,
@@ -412,7 +456,7 @@ class _LyricStudioState extends State<LyricStudio> {
     builder: (context, constraints) {
       Widget stage(bool original) => ShowLyric(
         key: ValueKey(original ? 'original' : 'draft'),
-        controller: widget.controller,
+        controller: _controller,
         demo: _state.selected,
         preset: original ? _state.selected.preset : _state.preset,
         onLineTap: widget.onLineTap,

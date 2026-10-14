@@ -23,6 +23,8 @@ class RenderLyricViewport extends RenderBox {
   LyricViewSession session;
   ViewportOffset _offset;
   late final Listenable _fonts;
+  bool _layingOut = false;
+  int? _semanticIndex;
   RenderLyricViewport(this.session, ViewportOffset offset) : _offset = offset {
     session.attachOffset(offset);
     final PaintingBinding? binding = PaintingBinding.instance;
@@ -31,6 +33,7 @@ class RenderLyricViewport extends RenderBox {
   void update(LyricViewSession value, ViewportOffset offset) {
     if (!identical(session, value)) {
       if (attached) session.removeListener(_changed);
+      session.detachOffset(_offset);
       session = value;
       if (attached) session.addListener(_changed);
     }
@@ -41,6 +44,11 @@ class RenderLyricViewport extends RenderBox {
   }
 
   void _changed() {
+    if (_layingOut) return;
+    if (_semanticIndex != session.activeIndex) {
+      _semanticIndex = session.activeIndex;
+      markNeedsSemanticsUpdate();
+    }
     if (session.needsLayout) {
       markNeedsLayout();
       markNeedsSemanticsUpdate();
@@ -77,19 +85,29 @@ class RenderLyricViewport extends RenderBox {
           'LyricView requires bounded width and height. Wrap it in SizedBox or Expanded.');
     }
     size = constraints.biggest;
-    session.layoutViewport(size);
+    _layingOut = true;
+    try {
+      session.layoutViewport(size);
+    } finally {
+      _layingOut = false;
+    }
   }
 
   @override
   bool hitTestSelf(Offset position) => true;
   @override
   void paint(PaintingContext context, Offset offset) {
-    final painter = session.painter;
-    if (painter == null || size.isEmpty) return;
+    if (size.isEmpty) return;
     final canvas = context.canvas;
     canvas.save();
     canvas.translate(offset.dx, offset.dy);
-    painter.paint(canvas, size);
+    final painter = session.painter;
+    if (painter != null) {
+      painter.paint(canvas, size);
+    } else {
+      // Active-line intros have a countdown before the first lyric paragraph.
+      session.countdownPainter?.paint(canvas, size);
+    }
     canvas.restore();
   }
 

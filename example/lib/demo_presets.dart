@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
-import 'issue41_demo_preset.dart';
 
 /// Gallery metadata stays separate from the library's reusable configuration.
 class DemoPreset {
@@ -14,7 +13,6 @@ class DemoPreset {
     required this.accent,
     required this.background,
     required this.preset,
-    this.lab = false,
   });
   final String id;
   final String name;
@@ -23,7 +21,6 @@ class DemoPreset {
   final Color accent;
   final List<Color> background;
   final LyricPreset preset;
-  final bool lab;
 }
 
 LyricPreset _style({
@@ -70,6 +67,14 @@ LyricPreset _style({
   lineSpacing: spacing,
   translationSpacing: 9,
   highlight: LyricHighlight.solid(accent, tailFadeWidth: 28),
+  countdown: LyricCountdown(
+    dotSize: activeSize * .27,
+    dotSpacing: activeSize * .32,
+    height: activeSize,
+    spacing: spacing,
+    color: accent,
+    breathDuration: const Duration(milliseconds: 1600),
+  ),
   edgeFade: const LyricEdgeFade.fraction(top: .12, bottom: .2),
   scrollAnimation: const LyricScrollAnimation.fixed(
     duration: Duration(milliseconds: 550),
@@ -78,9 +83,18 @@ LyricPreset _style({
 
 final demoPresets = <DemoPreset>[
   DemoPreset(
+    id: 'apple-music',
+    name: 'Apple Music',
+    caption: '换行位置稳定，歌词依次跟进，字词轻盈悬浮。',
+    tag: 'FLOAT',
+    accent: const Color(0xFFFFCCD5),
+    background: const [Color(0xFF603B46), Color(0xFF251E29)],
+    preset: LyricPresets.appleMusic,
+  ),
+  DemoPreset(
     id: 'moss',
     name: '苔原',
-    caption: '松弛留白，逐字生长。',
+    caption: '轻盈浮升，像呼吸一样展开。',
     tag: 'ORGANIC',
     accent: const Color(0xFFD5EDAD),
     background: const [Color(0xFF273E36), Color(0xFF101F1C)],
@@ -89,32 +103,54 @@ final demoPresets = <DemoPreset>[
   DemoPreset(
     id: 'aurora',
     name: '极光',
-    caption: '冷色渐变，流动的声场。',
+    caption: '新旧句沿弧线交接，光色流动。',
     tag: 'GRADIENT',
     accent: const Color(0xFF90E9EE),
     background: const [Color(0xFF283957), Color(0xFF17172E)],
     preset: LyricPresets.aurora,
   ),
   DemoPreset(
+    id: 'cascade',
+    name: '瀑布',
+    caption: '三段落位，行间层层跟进。',
+    tag: 'CASCADE',
+    accent: const Color(0xFF9BDCEB),
+    background: const [Color(0xFF294752), Color(0xFF17272F)],
+    preset: LyricPresets.cascade,
+  ),
+  DemoPreset(
+    id: 'pulse',
+    name: '跃动',
+    caption: '弹簧回落与逐字上弹，跳出重音。',
+    tag: 'PULSE',
+    accent: const Color(0xFFFFBE98),
+    background: const [Color(0xFF633E3D), Color(0xFF2C2029)],
+    preset: LyricPresets.pulse,
+  ),
+  DemoPreset(
     id: 'editorial',
     name: '字刊',
-    caption: '大字、左对齐，像一页音乐杂志。',
+    caption: '纸页先滑入，大字随后显现。',
     tag: 'EDITORIAL',
     accent: const Color(0xFFFFD2AD),
     background: const [Color(0xFF583F36), Color(0xFF291F20)],
-    preset: _style(
-      size: 25,
-      activeSize: 38,
-      accent: const Color(0xFFFFD2AD),
-      anchor: .32,
-      spacing: 34,
-      weight: FontWeight.w800,
-    ).copyWith(highlight: const LyricHighlight.none()),
+    preset:
+        _style(
+          size: 25,
+          activeSize: 38,
+          accent: const Color(0xFFFFD2AD),
+          anchor: .32,
+          spacing: 34,
+          weight: FontWeight.w800,
+        ).copyWith(
+          highlight: const LyricHighlight.none(),
+          lineTransition: LyricLineTransitions.paper,
+        ),
   ),
   DemoPreset(
     id: 'cinema',
     name: '银幕',
-    caption: '一行主角，一整个世界。',
+    caption: '雾化交叠，先对焦再进入下一幕。',
     tag: 'SINGLE LINE',
     accent: const Color(0xFFE9D9B4),
     background: const [Color(0xFF393A38), Color(0xFF171B1C)],
@@ -123,7 +159,7 @@ final demoPresets = <DemoPreset>[
   DemoPreset(
     id: 'neon',
     name: '霓虹',
-    caption: '高饱和逐字光谱，点亮副歌。',
+    caption: '镜头推进，让副歌从虚焦中点亮。',
     tag: 'KARAOKE',
     accent: const Color(0xFFF4A3EB),
     background: const [Color(0xFF432346), Color(0xFF211B32)],
@@ -131,6 +167,7 @@ final demoPresets = <DemoPreset>[
         _style(
           align: TextAlign.center,
           activeSize: 34,
+          accent: const Color(0xFFF4A3EB),
           spacing: 30,
           anchor: .46,
         ).copyWith(
@@ -139,15 +176,16 @@ final demoPresets = <DemoPreset>[
             tailFadeWidth: 16,
           ),
           scrollAnimation: const LyricScrollAnimation.fixed(
-            duration: Duration(milliseconds: 700),
-            curve: Curves.easeOutBack,
+            duration: Duration(milliseconds: 650),
+            curve: Curves.easeOutCubic,
           ),
+          lineTransition: LyricLineTransitions.zoom,
         ),
   ),
   DemoPreset(
     id: 'letter',
     name: '来信',
-    caption: '轻盈靠右，温柔回应。',
+    caption: '钟摆轻摇，温柔落在句尾。',
     tag: 'TRAILING',
     accent: const Color(0xFFF2C2B2),
     background: const [Color(0xFF54414A), Color(0xFF29232F)],
@@ -158,12 +196,12 @@ final demoPresets = <DemoPreset>[
       accent: const Color(0xFFF2C2B2),
       spacing: 24,
       weight: FontWeight.w400,
-    ),
+    ).copyWith(lineTransition: LyricLineTransitions.pendulum),
   ),
   DemoPreset(
     id: 'terminal',
     name: '频率',
-    caption: '紧凑排布，把节奏变成信号。',
+    caption: '三段跃迁，把切句变成节奏信号。',
     tag: 'MONO',
     accent: const Color(0xFFB5F58A),
     background: const [Color(0xFF263C32), Color(0xFF121F1C)],
@@ -190,50 +228,19 @@ final demoPresets = <DemoPreset>[
             duration: Duration(milliseconds: 180),
             curve: Curves.linear,
           ),
-          lineTransition: const LyricLineTransition.none(),
+          lineTransition: LyricLineTransitions.step.copyWith(
+            enterDuration: const Duration(milliseconds: 330),
+            exitDuration: const Duration(milliseconds: 180),
+          ),
         ),
   ),
   DemoPreset(
     id: 'float',
     name: '浮游',
-    caption: '宽松居中，慢一点也很好。',
+    caption: '余韵斜向漂移，字词缓慢悬浮。',
     tag: 'AMBIENT',
     accent: const Color(0xFFD6D3FC),
     background: const [Color(0xFF3B405E), Color(0xFF222738)],
-    preset:
-        _style(
-          size: 18,
-          activeSize: 26,
-          align: TextAlign.center,
-          accent: const Color(0xFFD6D3FC),
-          spacing: 44,
-          anchor: .5,
-          weight: FontWeight.w400,
-        ).copyWith(
-          scrollAnimation: const LyricScrollAnimation.fixed(
-            duration: Duration(milliseconds: 1100),
-            curve: Curves.easeInOutCubic,
-          ),
-          lineTransition: const LyricLineTransition(
-            enterDuration: Duration(milliseconds: 650),
-            exitDuration: Duration(milliseconds: 650),
-          ),
-          edgeFade: const LyricEdgeFade.fraction(top: .25, bottom: .3),
-        ),
+    preset: LyricPresets.drift,
   ),
-  for (final entry in issue41DemoPresets.entries)
-    DemoPreset(
-      id: entry.key,
-      name: entry.key == 'Issue #41 Gradient'
-          ? 'Issue #41'
-          : entry.key.replaceFirst('Scroll · ', ''),
-      caption: entry.key == 'Issue #41 Gradient'
-          ? '半透明底字 × 饱和渐变高亮'
-          : 'Issue #41 · 自定义距离时长与曲线',
-      tag: entry.key == 'Issue #41 Gradient' ? 'REGRESSION' : 'SCROLL CURVE',
-      accent: const Color(0xFFFFCB77),
-      background: const [Color(0xFF453B2D), Color(0xFF241F1C)],
-      preset: entry.value,
-      lab: true,
-    ),
 ];

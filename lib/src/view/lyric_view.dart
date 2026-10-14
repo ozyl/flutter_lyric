@@ -1,3 +1,4 @@
+import 'dart:ui' as ui;
 import 'package:flutter/widgets.dart';
 import '../controller/lyric_controller.dart';
 import '../preset/lyric_effects.dart';
@@ -68,12 +69,21 @@ class _LyricViewState extends State<LyricView> with TickerProviderStateMixin {
     // ignore: deprecated_member_use
     _session.connection.enabled = TickerMode.of(context);
     final media = context.dependOnInheritedWidgetOfExactType<MediaQuery>();
-    _session.configure(ResolvedPreset(preset,
-        ambient: DefaultTextStyle.of(context).style,
-        direction: Directionality.of(context),
+    // Keep bare Flutter 2 hosts (without MediaQuery) at their native resolution.
+    // ignore: deprecated_member_use
+    final fallbackPixelRatio = ui.window.devicePixelRatio;
+    _session.configure(
+        ResolvedPreset(preset,
+            ambient: DefaultTextStyle.of(context).style,
+            direction: Directionality.of(context),
+            // ignore: deprecated_member_use
+            textScaleFactor: media?.data.textScaleFactor ?? 1,
+            devicePixelRatio:
+                media?.data.devicePixelRatio ?? fallbackPixelRatio,
+            locale: Localizations.maybeLocaleOf(context)),
         // ignore: deprecated_member_use
-        textScaleFactor: media?.data.textScaleFactor ?? 1,
-        locale: Localizations.maybeLocaleOf(context)));
+        enabled: TickerMode.of(context),
+        disableAnimations: media?.data.disableAnimations ?? false);
     final canScroll =
         preset.interactive && preset.displayMode == LyricDisplayMode.scrollable;
     Widget presentation(bool foreground) => ValueListenableBuilder<int>(

@@ -1,3 +1,27 @@
+## Unreleased
+
+* Default Character Float to highlighted graphemes only, easing motion in as the highlight crosses each character. Add `LyricWordEffects.floatMode` / `AppleMusicLyricStyle.characterFloatMode` with `LyricFloatMode.all` to retain whole-line float, plus Studio mode selection, history and export support.
+* Reduce long-line Apple Music switch compositing with bounded, device-pixel-ratio glyph atlases for solid-color floating characters. Keep partial highlight tails, gradients and unsupported engines on the existing renderer; preserve motion settings. Avoid eagerly laying out inactive paragraphs and repeated grapheme geometry work. Add real/simulated timing switch benchmarks and cache/rendering regressions.
+* Keep Apple Music lyrics and translations crisp while browsing by default in both the unified preset and compatibility style; restore distance blur when playback following resumes. Enable the Studio clear-while-browsing switch by default.
+* Enable Canvas countdown dots in all presets, with style-specific colors, sizes and spacing. Simplify timing to `dotCount`, total `dotDuration` and optional `breathDuration`; remove the spread/per-second modes and separate gap/window switches. Short gaps show no dots; breathing uses only excess time before the full fade.
+* Accept `LyricDocument.vocalStart` (such as QQ Music's `startTs`) so intro credit time between zero and vocals can supply the countdown budget without changing text or word timing. Intros still need the full fade duration. Load saved vocal-start metadata for STAY in the example.
+* Give visible countdown dots exclusive playback focus, immediately returning lyrics to inactive styling while preserving scroll/reflow motion. Follow player time across pause, seek and offsets; respect reduced motion/TickerMode. Studio exposes three timing controls with history and export support.
+* Paint countdown dots directly in the lyric viewport with Canvas, removing the countdown Widget/builder APIs. Reserve a row before the next lyric only while its countdown is visible; hidden, past and future countdowns leave no empty rows or extra scroll space. Share lyric coordinates, scrolling, waves and reflow transitions, following the dots through the normal scroll animation. Remove the extra bundled song from the example.
+
+* Prevent macOS Studio lyrics and transport from rewinding on playback start/resume when libmpv corrects just_audio's predicted position. Preserve backwards seeks, replay and track changes, with native startup regression coverage.
+
+* Keep vertical gaps balanced around the active line in Step transitions by using a small horizontal offset instead of shifting inactive rows downward.
+
+* Add `LyricLineTransitions` with reusable Rise, Paper, Spring, Orbit, Pendulum, Zoom, Step, Drift and Focus/Cinematic motion alongside the basic transitions. Studio exposes 17 named options with motion descriptions and adapts the dissolve to list/single-line mode.
+* Recompose complete presets around distinct line trajectories; retain Apple Music motion and preserve custom trajectories when retiming or interrupting a transition.
+
+* Consolidate Studio into one preset gallery: remove the laboratory, Issue #41 demo configurations and separate Apple Music route; share effect tuning and original/plain-LRC timing previews across styles.
+* Add reusable Cascade, Pulse and Drift presets with distinct stagger, lift and float motion. Give Cinema a single-entry crossfade and slide; retain Apple Music compatibility wrappers.
+
+* Add `LyricPresets.appleMusic` to the unified `LyricView`; retain `AppleMusicLyricView` / `AppleMusicLyricStyle.toPreset()` as compatibility adapters and remove the duplicated backend.
+* Separate fixed/dual-style layout, list scrolling, stagger/wave row motion, composed/custom line transitions, distance blur and word effects. Capture interrupted visual states and share transformed geometry between painting, selection and hit testing.
+* Retain outgoing active-only entries for crossfades, settle reduced/hidden motion, and reuse lazy shaped word/grapheme geometry. Add independent Studio transition controls and regression coverage.
+
 ## [4.0.0]
 
 This major release changes the public API from 3.x. See the [migration guide](doc/migration.md) and [API reference](doc/api.md) before upgrading.
@@ -12,6 +36,9 @@ This major release changes the public API from 3.x. See the [migration guide](do
 
 ### Added
 
+* Add `AppleMusicLyricStyle.blurWhenBrowsing` to optionally keep lyrics and translations crisp throughout browsing, restoring distance blur when following resumes. Preserve existing blur by default and expose a clear-while-browsing switch in the Studio demo.
+* Separate Apple Music Word Pop (`wordLift` / `wordPopDuration`) from continuous Character Float, with independent amplitude, period and neighboring-character phase delay. Word Pop rises and holds; Float adds signed drift around that position. Float uses subpixel compositing, preserves graphemes and wrapping, and stops its clock for hidden or reduced-motion views. Expose both effects separately in the Studio controls.
+* Independent `AppleMusicLyricView` and immutable `AppleMusicLyricStyle`, sharing playback with existing views while isolating distance blur, staggered scrolling, tap waves, timed word lift, smooth scale transitions and optional LRC timing simulation ([#38](https://github.com/ozyl/flutter_lyric/issues/38)). Add a separate Studio demonstration with effect controls, original-view comparison and timing-mode selection.
 * `LyricProgressSource` for replaceable, player-owned progress, with one subscription and one frame sampler per controller. Advancing playback is sampled on each display frame while an attached view has `TickerMode` enabled and the app is in the foreground; pause, seek and other source events still update state without frame sampling. Binding a source disables manual `setPosition` calls.
 * Multiple views per controller with independent scrolling, selection and follow state. Target `resumeFollow` / `scrollToLine` commands with `viewId`, or broadcast them to all attached views.
 * Moss, Aurora and Cinema as const, customizable built-in presets, with Aurora as the default, plus `LyricPresetScope` for subtree defaults. These replace 3.x's `default1`, `default2` and `single`; earlier 4.0 preview names `leading`, `centered` and `singleLine` are also removed without aliases.
@@ -19,6 +46,8 @@ This major release changes the public API from 3.x. See the [migration guide](do
 
 ### Changed
 
+* Disable Apple Music selection snapping by default (`selectionSnapMode: LyricSelectionSnapMode.none`); opt in with `afterScroll` or `onDragPause`.
+* Give Apple Music Word Pop sole control of the held rise height and Character Float control of the ± drift range around it. Default to a 2.5px / 900ms rise and ±1.4px float with a 6s cycle. Disabling Float preserves the raised position; reserve space below the baseline for downward drift.
 * Use native Flutter scrolling around a Canvas viewport. Reuse text paragraphs, cached line metrics and edge-fade shaders, and paint only visible entries to reduce scrolling, repaint and compositing work.
 * Defer active-text layout, highlight masks, row metrics and word bounds until first use, retaining exact normal and translation heights for scrolling. Active-line mode lays out only the current entry.
 * Rebuild the example as responsive Lyric Studio with eight styles, seven regression/scroll experiments, live preset editing, per-preset drafts, undo/redo, original comparison and playback controls. The gallery shares the three library presets and keeps the Issue #41 fixture independent of their styling.
@@ -26,6 +55,8 @@ This major release changes the public API from 3.x. See the [migration guide](do
 
 ### Fixed
 
+* Reduce Apple Music word-effect compositing: reuse the float surface for glyph coverage and compose solid highlights/tails in that surface, reducing the default path from 3–4 offscreen layers to one per grapheme. Cache shaped clip paths and bounds; preserve subpixel motion, translucent colors, wrapped/RTL highlighting and existing defaults. Add pixel regressions and a 3x-DPR raster/readback benchmark.
+* Jump directly for Apple Music programmatic scrolls farther than one viewport height, clearing interrupted line lag and skipping stagger and wave animation on long seeks, browsing commands and follow resumption.
 * Compose active text and highlight colors through a single neutral glyph mask to prevent colored fringes and thickened antialiased edges, preserving independent highlight opacity and line-switch animations ([#41](https://github.com/ozyl/flutter_lyric/issues/41)).
 * Smooth trailing highlight fades at word and line endings, including wrapped lyrics and fractional positions.
 * Restore highlight-mask layout after text-opacity changes, preventing missing or incorrectly rendered active and exiting text.

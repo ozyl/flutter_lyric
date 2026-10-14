@@ -5,7 +5,7 @@ import 'demo_presets.dart';
 import 'studio_state.dart';
 import 'studio_theme.dart';
 
-class PresetGallery extends StatefulWidget {
+class PresetGallery extends StatelessWidget {
   const PresetGallery({
     super.key,
     required this.state,
@@ -14,22 +14,16 @@ class PresetGallery extends StatefulWidget {
   final StudioState state;
   final bool horizontal;
   @override
-  State<PresetGallery> createState() => _PresetGalleryState();
-}
-
-class _PresetGalleryState extends State<PresetGallery> {
-  late bool _lab = widget.state.selected.lab;
-  @override
   Widget build(BuildContext context) {
-    final entries = widget.state.catalog.where((e) => e.lab == _lab).toList();
+    final entries = state.catalog;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: EdgeInsets.fromLTRB(widget.horizontal ? 20 : 8, 0, 8, 12),
+          padding: EdgeInsets.fromLTRB(horizontal ? 20 : 8, 0, 8, 12),
           child: Row(
             children: [
-              if (!widget.horizontal) ...[
+              if (!horizontal) ...[
                 const Icon(
                   Icons.grid_view_rounded,
                   size: 16,
@@ -37,11 +31,9 @@ class _PresetGalleryState extends State<PresetGallery> {
                 ),
                 const Spacer(),
               ],
-              _filter('风格', false),
-              const SizedBox(width: 4),
-              _filter('实验室 · 7', true),
-              if (widget.horizontal) const Spacer(),
-              if (widget.horizontal)
+              StudioLabel('预设 · ${entries.length}'),
+              if (horizontal) const Spacer(),
+              if (horizontal)
                 const Padding(
                   padding: EdgeInsets.only(right: 12),
                   child: Icon(
@@ -55,30 +47,28 @@ class _PresetGalleryState extends State<PresetGallery> {
         ),
         Expanded(
           child: ListView.separated(
-            key: PageStorageKey('gallery-${widget.horizontal}-$_lab'),
-            scrollDirection: widget.horizontal
-                ? Axis.horizontal
-                : Axis.vertical,
+            key: PageStorageKey('gallery-$horizontal'),
+            scrollDirection: horizontal ? Axis.horizontal : Axis.vertical,
             padding: EdgeInsets.symmetric(
-              horizontal: widget.horizontal ? 20 : 4,
+              horizontal: horizontal ? 20 : 4,
               vertical: 2,
             ),
             itemCount: entries.length,
             separatorBuilder: (_, _) => SizedBox(
-              width: widget.horizontal ? 10 : 0,
-              height: widget.horizontal ? 0 : 10,
+              width: horizontal ? 10 : 0,
+              height: horizontal ? 0 : 10,
             ),
             itemBuilder: (context, index) => _PresetCard(
               item: entries[index],
               index: index,
-              compact: widget.horizontal,
-              selected: widget.state.selected.id == entries[index].id,
-              modified: widget.state.isModified(entries[index]),
-              onTap: () => widget.state.select(entries[index]),
+              compact: horizontal,
+              selected: state.selected.id == entries[index].id,
+              modified: state.isModified(entries[index]),
+              onTap: () => state.select(entries[index]),
             ),
           ),
         ),
-        if (!widget.horizontal)
+        if (!horizontal)
           const Padding(
             padding: EdgeInsets.fromLTRB(8, 16, 8, 0),
             child: Text(
@@ -89,29 +79,6 @@ class _PresetGalleryState extends State<PresetGallery> {
       ],
     );
   }
-
-  Widget _filter(String name, bool lab) => Semantics(
-    selected: _lab == lab,
-    child: InkWell(
-      borderRadius: BorderRadius.circular(8),
-      onTap: () => setState(() => _lab = lab),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 7),
-        decoration: BoxDecoration(
-          color: _lab == lab ? studioInk : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Text(
-          name,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w600,
-            color: _lab == lab ? Colors.white : studioMuted,
-          ),
-        ),
-      ),
-    ),
-  );
 }
 
 class _PresetCard extends StatelessWidget {

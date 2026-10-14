@@ -5,59 +5,93 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_lyric/flutter_lyric.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_media_kit/just_audio_media_kit.dart';
+import 'demo_songs.dart';
 import 'just_audio_progress_source.dart';
-import 'mock.dart';
 import 'playback_controls.dart';
 import 'studio.dart';
 import 'studio_theme.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  // AVPlayer can block the macOS main thread while querying time after an
+  // output device disconnects. Use libmpv for this desktop demo's audio.
+  JustAudioMediaKit.ensureInitialized(
+    macOS: true,
+    linux: false,
+    windows: false,
+  );
   SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
   runApp(const MyApp());
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+  const MyApp({super.key, this.player});
+  final AudioPlayer? player;
   @override
   State<MyApp> createState() => _MyAppState();
 }
 
 class _MyAppState extends State<MyApp> {
-  final _player = AudioPlayer();
+  late final _player = widget.player ?? AudioPlayer();
   late final _controller = LyricController(
     progressSource: JustAudioProgressSource(_player),
-  )..load(qrc, translation: tlrc);
+  );
+  DemoSong _song = beWhatYouWannaBe;
   bool _loading = true;
   String? _error;
   Duration _duration = Duration.zero;
+  StreamSubscription<PlayerException>? _audioErrors;
 
   @override
   void initState() {
     super.initState();
-    unawaited(_load());
+    _audioErrors = _player.errorStream.listen((_) {
+      if (mounted && !_loading) {
+        setState(() => _error = '音频播放出错，请检查声音输出后重试');
+      }
+    });
+    unawaited(_load(_song));
   }
 
-  Future<void> _load() async {
+  Future<void> _load(DemoSong song) async {
+    final resume =
+        _player.playing && _player.processingState != ProcessingState.completed;
     setState(() {
+      _song = song;
       _loading = true;
       _error = null;
+      _duration = Duration.zero;
     });
+    _controller.clear();
     try {
-      final duration = await _player.setAsset('assets/music.mp3');
+      await _player.pause();
+      final document = await song.loadLyrics();
       if (!mounted) return;
+      final duration = await _player.setAsset(
+        song.audioAsset,
+        initialPosition: Duration.zero,
+      );
+      if (!mounted) return;
+      _controller.loadDocument(document);
       setState(() {
         _duration = duration ?? Duration.zero;
         _loading = false;
       });
+      if (resume) unawaited(_play());
     } catch (_) {
       if (mounted) {
         setState(() {
           _loading = false;
-          _error = '音频加载失败，请重试';
+          _error = '歌曲加载失败，请重试';
         });
       }
     }
+  }
+
+  void _selectSong(DemoSong song) {
+    if (_loading || song == _song) return;
+    unawaited(_load(song));
   }
 
   Future<void> _play() async {
@@ -80,21 +114,25 @@ class _MyAppState extends State<MyApp> {
 
   Future<void> _toggle() async {
     if (_loading || _error != null) return;
-    if (_player.playing &&
-        _player.processingState != ProcessingState.completed) {
-      await _player.pause();
-    } else {
-      if (_player.processingState == ProcessingState.completed) {
-        await _seek(Duration.zero);
+    try {
+      if (_player.playing &&
+          _player.processingState != ProcessingState.completed) {
+        await _player.pause();
+      } else {
+        if (_player.processingState == ProcessingState.completed) {
+          await _seek(Duration.zero);
+        }
+        unawaited(_play());
       }
-      unawaited(_play());
+    } catch (_) {
+      if (mounted) setState(() => _error = '播放控制失败，请重试');
     }
   }
 
   @override
   Widget build(BuildContext context) => MaterialApp(
     debugShowCheckedModeBanner: false,
-    title: 'Lyric Studio · 歌词实验室',
+    title: 'Lyric Studio · 歌词工作室',
     theme: studioTheme(),
     home: AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
@@ -113,15 +151,18 @@ class _MyAppState extends State<MyApp> {
           stream: _player.playerStateStream,
           builder: (context, state) => StreamBuilder<Duration>(
             stream: _player.positionStream,
-            builder: (context, position) => PlaybackControls(
-              position: position.data ?? Duration.zero,
+            builder: (context, _) => PlaybackControls(
+              key: ValueKey(_song.id),
+              song: _song,
+              onSongSelected: _selectSong,
+              position: _loading ? Duration.zero : _controller.position,
               duration: _duration,
               playing:
                   (state.data?.playing ?? false) &&
                   state.data?.processingState != ProcessingState.completed,
               loading: _loading,
               error: _error,
-              onRetry: _load,
+              onRetry: () => unawaited(_load(_song)),
               onPlay: () => unawaited(_toggle()),
               onSeek: (value) => unawaited(_seek(value)),
             ),
@@ -133,6 +174,7 @@ class _MyAppState extends State<MyApp> {
 
   @override
   void dispose() {
+    unawaited(_audioErrors?.cancel());
     _controller.dispose();
     unawaited(_player.dispose());
     super.dispose();

@@ -71,10 +71,11 @@ class LyricController implements ValueListenable<LyricPlaybackState> {
     _publish(_snapshot(document, position, value, isAdvancing));
   }
 
-  void load(String lyric, {String? translation, LyricParser? parser}) {
+  void load(String lyric,
+      {String? translation, LyricParser? parser, Duration? vocalStart}) {
     _checkAlive();
-    loadDocument(
-        LyricDocument.parse(lyric, translation: translation, parser: parser));
+    loadDocument(LyricDocument.parse(lyric,
+        translation: translation, parser: parser, vocalStart: vocalStart));
   }
 
   void loadDocument(LyricDocument document) {

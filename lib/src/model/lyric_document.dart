@@ -7,20 +7,39 @@ class LyricDocument {
   final List<LyricLine> lines;
   final Duration offset;
 
+  /// Start of the first sung lyric on the lyric timeline, when supplied by the
+  /// provider (for example QQ Music's `startTs`, in milliseconds).
+  ///
+  /// Countdown detection treats earlier entries as intro credits, regardless
+  /// of their durations. The intro spans zero to the first sung line's start
+  /// so credit time can supply the full countdown duration. Intros shorter
+  /// than that duration remain hidden. Entries and word timing are unchanged.
+  /// Null uses the normal gap detection from the first non-empty entry.
+  final Duration? vocalStart;
+
   LyricDocument({
     required List<LyricLine> lines,
     Map<String, String> tags = const {},
     Duration? offset,
+    this.vocalStart,
   })  : tags = Map.unmodifiable(tags),
         lines = _ordered(lines),
         offset = offset ??
-            Duration(milliseconds: int.tryParse(tags['offset'] ?? '') ?? 0);
+            Duration(milliseconds: int.tryParse(tags['offset'] ?? '') ?? 0) {
+    if (vocalStart?.isNegative ?? false) {
+      throw ArgumentError.value(
+          vocalStart, 'vocalStart', 'Must be non-negative.');
+    }
+  }
 
   factory LyricDocument.parse(String text,
-      {String? translation, LyricParser? parser}) {
-    return parser == null
+      {String? translation, LyricParser? parser, Duration? vocalStart}) {
+    final document = parser == null
         ? LyricParser.autoDetect(text, translationLyric: translation)
         : parser.parse(text, translationLyric: translation);
+    return vocalStart == null
+        ? document
+        : document.copyWith(vocalStart: vocalStart);
   }
 
   static List<LyricLine> _ordered(List<LyricLine> lines) {
@@ -36,12 +55,19 @@ class LyricDocument {
     List<LyricLine>? lines,
     Map<String, String>? tags,
     Duration? offset,
-  }) =>
-      LyricDocument(
-        lines: lines ?? this.lines,
-        tags: tags ?? this.tags,
-        offset: offset ?? this.offset,
-      );
+    Duration? vocalStart,
+    bool clearVocalStart = false,
+  }) {
+    if (clearVocalStart && vocalStart != null) {
+      throw ArgumentError('Cannot set and clear vocalStart together.');
+    }
+    return LyricDocument(
+      lines: lines ?? this.lines,
+      tags: tags ?? this.tags,
+      offset: offset ?? this.offset,
+      vocalStart: clearVocalStart ? null : vocalStart ?? this.vocalStart,
+    );
+  }
 
   String get title => tags['ti'] ?? '';
   String get artist => tags['ar'] ?? '';

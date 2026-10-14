@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 import 'value.dart';
 
@@ -172,27 +173,307 @@ class LyricScrollAnimation extends PresetValue {
       ];
 }
 
+/// Dual style preserves separate active/inactive wrapping. Fixed measures at
+/// the active style and changes only paint transforms during playback.
+enum LyricLayoutMode { dualStyle, fixed }
+
+/// A paint transform, in logical pixels. Scale is applied around the content
+/// alignment pivot, then offset; opacity and blur apply to the entire entry.
+class LyricLineVisualState extends PresetValue {
+  final Offset offset;
+  final double scale;
+  final double opacity;
+  final double blurSigma;
+  final double activity;
+  const LyricLineVisualState(
+      {this.offset = Offset.zero,
+      this.scale = 1,
+      this.opacity = 1,
+      this.blurSigma = 0,
+      this.activity = 0});
+
+  static LyricLineVisualState lerp(
+          LyricLineVisualState a, LyricLineVisualState b, double t) =>
+      LyricLineVisualState(
+          offset: Offset.lerp(a.offset, b.offset, t)!,
+          scale: a.scale + (b.scale - a.scale) * t,
+          opacity: a.opacity + (b.opacity - a.opacity) * t,
+          blurSigma: a.blurSigma + (b.blurSigma - a.blurSigma) * t,
+          activity: a.activity + (b.activity - a.activity) * t);
+
+  @override
+  List<Object?> get values => [offset, scale, opacity, blurSigma, activity];
+}
+
+/// Context for a pure custom transition. Return [from] at progress zero and
+/// [to] at progress one. The library captures the returned state on interruption.
+/// Do not perform I/O, update playback or mutate widgets from the resolver.
+class LyricLineTransitionContext {
+  final double progress;
+  final LyricLineVisualState from;
+  final LyricLineVisualState to;
+  final int index;
+  final int activeIndex;
+  final int previousActiveIndex;
+  final bool entering;
+  final Rect lineRect;
+  final Size viewportSize;
+  const LyricLineTransitionContext(
+      {required this.progress,
+      required this.from,
+      required this.to,
+      required this.index,
+      required this.activeIndex,
+      required this.previousActiveIndex,
+      required this.entering,
+      required this.lineRect,
+      required this.viewportSize});
+}
+
+typedef LyricLineTransitionResolver = LyricLineVisualState Function(
+    LyricLineTransitionContext context);
+
+/// Inactive-state modifiers. Composition adds offsets, multiplies scale and
+/// opacity, and combines Gaussian blur by sqrt(sum(sigma²)), independent of order.
+class LyricLineEffect extends PresetValue {
+  final Offset offset;
+  final double scale;
+  final double opacity;
+  final double blurSigma;
+  const LyricLineEffect.slide(this.offset)
+      : scale = 1,
+        opacity = 1,
+        blurSigma = 0;
+  const LyricLineEffect.scale(double value)
+      : scale = value,
+        offset = Offset.zero,
+        opacity = 1,
+        blurSigma = 0,
+        assert(value > 0 && value < double.infinity);
+  const LyricLineEffect.fade(double value)
+      : opacity = value,
+        offset = Offset.zero,
+        scale = 1,
+        blurSigma = 0,
+        assert(value >= 0 && value <= 1);
+  const LyricLineEffect.blur(double value)
+      : blurSigma = value,
+        offset = Offset.zero,
+        scale = 1,
+        opacity = 1,
+        assert(value >= 0 && value < double.infinity);
+  @override
+  List<Object?> get values => [offset, scale, opacity, blurSigma];
+}
+
 class LyricLineTransition extends PresetValue {
   final bool enabled;
   final Duration enterDuration;
   final Duration exitDuration;
   final Curve enterCurve;
   final Curve exitCurve;
+  final List<LyricLineEffect> effects;
+  final LyricLineTransitionResolver? resolver;
+
+  /// Bounds for custom output, including endpoints; enforced before rendering.
+  final double maxDisplacement;
+  final double maxBlurSigma;
+  final double maxScale;
+
+  /// Retains the original dual-style size transition for existing presets.
+  final bool legacyScale;
 
   const LyricLineTransition({
     this.enterDuration = const Duration(milliseconds: 200),
     this.exitDuration = const Duration(milliseconds: 200),
     this.enterCurve = Curves.easeIn,
     this.exitCurve = Curves.easeOut,
-  }) : enabled = true;
+  })  : enabled = true,
+        effects = const [],
+        resolver = null,
+        maxDisplacement = 0,
+        maxBlurSigma = 0,
+        maxScale = 1,
+        legacyScale = true;
+
   const LyricLineTransition.none()
       : enabled = false,
         enterDuration = Duration.zero,
         exitDuration = Duration.zero,
         enterCurve = Curves.linear,
-        exitCurve = Curves.linear;
+        exitCurve = Curves.linear,
+        effects = const [],
+        resolver = null,
+        maxDisplacement = 0,
+        maxBlurSigma = 0,
+        maxScale = 1,
+        legacyScale = false;
+
+  /// Pass an immutable list when using the const constructor.
+  const LyricLineTransition.effects(
+    this.effects, {
+    this.enterDuration = const Duration(milliseconds: 250),
+    this.exitDuration = const Duration(milliseconds: 250),
+    this.enterCurve = Curves.easeOutCubic,
+    this.exitCurve = Curves.easeOutCubic,
+  })  : enabled = true,
+        resolver = null,
+        maxDisplacement = 0,
+        maxBlurSigma = 0,
+        maxScale = 1,
+        legacyScale = false;
+
+  const LyricLineTransition.custom(
+    this.resolver, {
+    required this.maxDisplacement,
+    required this.maxBlurSigma,
+    this.maxScale = 1,
+    this.effects = const [],
+    this.enterDuration = const Duration(milliseconds: 250),
+    this.exitDuration = const Duration(milliseconds: 250),
+    this.enterCurve = Curves.easeOutCubic,
+    this.exitCurve = Curves.easeOutCubic,
+  })  : enabled = true,
+        legacyScale = false,
+        assert(maxDisplacement >= 0 && maxDisplacement < double.infinity),
+        assert(maxBlurSigma >= 0 && maxBlurSigma < double.infinity),
+        assert(maxScale > 0 && maxScale < double.infinity);
+
+  LyricLineVisualState state(bool active) {
+    var offset = Offset.zero;
+    var scale = 1.0, opacity = 1.0, variance = 0.0;
+    if (enabled && !active) {
+      for (final effect in effects) {
+        offset += effect.offset;
+        scale *= effect.scale;
+        opacity *= effect.opacity;
+        variance += effect.blurSigma * effect.blurSigma;
+      }
+    }
+    return LyricLineVisualState(
+        offset: offset,
+        scale: scale,
+        opacity: opacity,
+        blurSigma: math.sqrt(variance),
+        activity: active ? 1 : 0);
+  }
+
+  double get displacementBound => math.max(maxDisplacement,
+      effects.fold<double>(0, (sum, e) => sum + e.offset.distance));
+  double get blurBound => math.max(maxBlurSigma, state(false).blurSigma);
+  double get scaleBound => math.max(maxScale, math.max(1, state(false).scale));
+
+  /// Changes timing without discarding built-in composition or custom code.
+  LyricLineTransition copyWith(
+      {Duration? enterDuration,
+      Duration? exitDuration,
+      Curve? enterCurve,
+      Curve? exitCurve}) {
+    if (!enabled) return this;
+    if (legacyScale) {
+      return LyricLineTransition(
+          enterDuration: enterDuration ?? this.enterDuration,
+          exitDuration: exitDuration ?? this.exitDuration,
+          enterCurve: enterCurve ?? this.enterCurve,
+          exitCurve: exitCurve ?? this.exitCurve);
+    }
+    return LyricLineTransition.custom(resolver,
+        effects: effects,
+        maxDisplacement: maxDisplacement,
+        maxBlurSigma: maxBlurSigma,
+        maxScale: maxScale,
+        enterDuration: enterDuration ?? this.enterDuration,
+        exitDuration: exitDuration ?? this.exitDuration,
+        enterCurve: enterCurve ?? this.enterCurve,
+        exitCurve: exitCurve ?? this.exitCurve);
+  }
 
   @override
+  List<Object?> get values => [
+        enabled,
+        enterDuration,
+        exitDuration,
+        enterCurve,
+        exitCurve,
+        legacyScale,
+        resolver,
+        maxDisplacement,
+        maxBlurSigma,
+        maxScale,
+        ...effects
+      ];
+}
+
+/// Relative row movement layered over list scrolling. Zero lag/delay is
+/// synchronous; lag with a delay staggers rows; amplitude adds a damped wave.
+class LyricLineMotion extends PresetValue {
+  final Duration delay;
+  final Duration maxDelay;
+  final Duration waveDuration;
+  final double waveAmplitude;
+  final double maxLag;
+  const LyricLineMotion(
+      {this.delay = Duration.zero,
+      this.maxDelay = Duration.zero,
+      this.waveDuration = Duration.zero,
+      this.waveAmplitude = 0,
+      this.maxLag = 0})
+      : assert(waveAmplitude >= 0 && waveAmplitude < double.infinity),
+        assert(maxLag >= 0 && maxLag < double.infinity);
+  @override
   List<Object?> get values =>
-      [enabled, enterDuration, exitDuration, enterCurve, exitCurve];
+      [delay, maxDelay, waveDuration, waveAmplitude, maxLag];
+}
+
+/// Which characters in an active line receive continuous float motion.
+enum LyricFloatMode {
+  /// Float only where the highlight has reached, easing in with its progress.
+  highlighted,
+
+  /// Float all characters, including unplayed text and disabled highlights.
+  all,
+}
+
+class LyricWordEffects extends PresetValue {
+  final double lift;
+  final Duration liftDuration;
+  final double floatAmplitude;
+  final Duration floatPeriod;
+  final Duration floatStagger;
+  final LyricFloatMode floatMode;
+  final bool simulateTiming;
+  const LyricWordEffects(
+      {this.lift = 0,
+      this.liftDuration = const Duration(milliseconds: 900),
+      this.floatAmplitude = 0,
+      this.floatPeriod = const Duration(milliseconds: 6000),
+      this.floatStagger = const Duration(milliseconds: 180),
+      this.floatMode = LyricFloatMode.highlighted,
+      this.simulateTiming = false})
+      : assert(lift >= 0 && lift < double.infinity),
+        assert(floatAmplitude >= 0 && floatAmplitude < double.infinity);
+  double get extent => lift + floatAmplitude;
+  bool get enabled => lift > 0 || floatAmplitude > 0 || simulateTiming;
+  @override
+  List<Object?> get values => [
+        lift,
+        liftDuration,
+        floatAmplitude,
+        floatPeriod,
+        floatStagger,
+        floatMode,
+        simulateTiming
+      ];
+}
+
+class LyricDistanceBlur extends PresetValue {
+  final double maxSigma;
+  final double sigmaPerLine;
+  final bool whenBrowsing;
+  const LyricDistanceBlur(
+      {this.maxSigma = 0, this.sigmaPerLine = 1, this.whenBrowsing = true})
+      : assert(maxSigma >= 0 && maxSigma < double.infinity),
+        assert(sigmaPerLine >= 0 && sigmaPerLine < double.infinity);
+  @override
+  List<Object?> get values => [maxSigma, sigmaPerLine, whenBrowsing];
 }
