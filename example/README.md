@@ -101,6 +101,23 @@ audio playback, pause, seeking and a minute of continuous lyric effect changes.
 Run `flutter test integration_test/playback_start_test.dart -d macos` to check
 eight starts/resumes for backwards lyric progress, including replay from zero.
 This test plays the bundled audio through the current output device.
+Run `flutter test integration_test/song_switch_test.dart -d macos` to check
+both MP3s with the real decoder while switching in paused and playing states.
+For web, start ChromeDriver on port 4444 and run:
+
+```sh
+flutter drive --driver=test_driver/integration_test.dart \
+  --target=integration_test/song_switch_test.dart -d web-server \
+  --browser-name=chrome --headless \
+  --web-browser-flag=--autoplay-policy=no-user-gesture-required
+```
+
+Song changes stop and release the previous audio backend before loading the
+selected asset. This avoids `just_audio_web` 0.4.16 reusing its cached first
+playlist on repeated `setAsset` calls, including on GitHub Pages; see
+[the upstream issue](https://github.com/ryanheise/just_audio/issues/1596).
+The regression test checks decoded MP3 durations as well as the selected title
+and playback state, so updating only the Dart-side source cannot make it pass.
 
 The macOS example uses `just_audio_media_kit` with the audio-only libmpv bundle.
 This avoids the AVPlayer `currentTime` call that blocked the main thread after

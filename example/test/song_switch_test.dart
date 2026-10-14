@@ -89,6 +89,13 @@ class _Player implements AudioPlayer {
   }
 
   @override
+  Future<void> stop() async {
+    playing = false;
+    processingState = ProcessingState.idle;
+    _emit();
+  }
+
+  @override
   Future<void> seek(Duration? value, {int? index}) async {
     final previous = PlaybackEvent(updatePosition: position);
     position = value ?? Duration.zero;

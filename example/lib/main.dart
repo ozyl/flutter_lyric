@@ -65,7 +65,9 @@ class _MyAppState extends State<MyApp> {
     });
     _controller.clear();
     try {
-      await _player.pause();
+      // Replacing a playlist in just_audio_web can reuse the first source's
+      // cached player. Release that backend before loading the selected song.
+      await _player.stop();
       final document = await song.loadLyrics();
       if (!mounted) return;
       final duration = await _player.setAsset(
