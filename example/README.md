@@ -119,6 +119,14 @@ playlist on repeated `setAsset` calls, including on GitHub Pages; see
 The regression test checks decoded MP3 durations as well as the selected title
 and playback state, so updating only the Dart-side source cannot make it pass.
 
+GitHub Pages uses the same Flutter 3.44.9 SDK as CI and passes the source commit
+as `--web-define=BUILD_ID=<commit>`. Both `flutter_bootstrap.js` and `main.dart.js`
+include this ID in their URLs, so an updated page cannot reuse scripts cached
+from an earlier deployment. Local web builds can use `--web-define=BUILD_ID=local`;
+when omitted, the unresolved ID is ignored by the bootstrap. After upgrading
+from a deployment without versioned URLs, force-refresh the page once
+(Cmd+Shift+R on macOS) to fetch the new HTML.
+
 The macOS example uses `just_audio_media_kit` with the audio-only libmpv bundle.
 This avoids the AVPlayer `currentTime` call that blocked the main thread after
 an audio output device disconnected. The `just_audio` API and lyric progress

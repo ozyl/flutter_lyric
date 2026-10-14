@@ -11,7 +11,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.9'
+          channel: stable
+          cache: true
       - uses: bluefireteam/flutter-gh-pages@v9
         with:
           workingDir: example
           baseHref: /flutter_lyric/
+          customArgs: --web-define=BUILD_ID=${{ github.sha }}
