@@ -91,10 +91,13 @@ void main() {
           for (var j = 0; j < boxes.length; j++) {
             final clip = character.clips[j];
             final box = boxes[j];
-            expect(clip.left, lessThanOrEqualTo(box.left));
-            expect(clip.right, greaterThanOrEqualTo(box.right));
-            expect(clip.top, lessThanOrEqualTo(box.top));
-            expect(clip.bottom, greaterThanOrEqualTo(box.bottom));
+            // Legacy native paragraph metrics lose sub-micro-pixel precision
+            // when crossing the float/double boundary.
+            const epsilon = 1e-6;
+            expect(clip.left, lessThanOrEqualTo(box.left + epsilon));
+            expect(clip.right, greaterThanOrEqualTo(box.right - epsilon));
+            expect(clip.top, lessThanOrEqualTo(box.top + epsilon));
+            expect(clip.bottom, greaterThanOrEqualTo(box.bottom - epsilon));
           }
         }
         expect(layout.metrics.last.debugWordLineComputed, isFalse);

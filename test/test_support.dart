@@ -69,22 +69,33 @@ class PaintedDot {
   const PaintedDot(this.center, this.radius, this.color);
 }
 
+// Flutter 2 does not export the modern `paints` matcher. Record the viewport's
+// Canvas calls directly so the same assertions exercise both SDK generations.
+class _DotRecordingCanvas implements Canvas {
+  final List<PaintedDot> dots = [];
+  @override
+  void drawCircle(Offset center, double radius, Paint paint) =>
+      dots.add(PaintedDot(center, radius, paint.color));
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
+class _DotPaintingContext implements PaintingContext {
+  _DotPaintingContext(this.canvas);
+  @override
+  final Canvas canvas;
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
+}
+
 /// Inspect the actual viewport display list, including active-line intros
 /// where there is no lyric paragraph to paint.
 List<PaintedDot> countdownDots(WidgetTester tester, {int at = 0}) {
-  final result = <PaintedDot>[];
-  expect(
-      tester
-          .renderObject<RenderLyricViewport>(find.byType(LyricViewport).at(at)),
-      paints
-        ..everything((method, arguments) {
-          if (method == #drawCircle) {
-            result.add(PaintedDot(arguments[0] as Offset,
-                arguments[1] as double, (arguments[2] as Paint).color));
-          }
-          return true;
-        }));
-  return result;
+  final canvas = _DotRecordingCanvas();
+  tester
+      .renderObject<RenderLyricViewport>(find.byType(LyricViewport).at(at))
+      .paint(_DotPaintingContext(canvas), Offset.zero);
+  return canvas.dots;
 }
 
 Widget host(LyricController controller,

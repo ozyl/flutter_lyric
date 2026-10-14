@@ -17,8 +17,9 @@ A responsive, configuration-driven playground for `flutter_lyric`.
   Dots exclusively own playback focus while visible; the previous line becomes
   inactive. They share lyric scrolling and row motion, leaving no space when
   hidden. The LRC preview retains the same hint.
-- **11 presets in one gallery:** Moss, Aurora, Apple Music, Cascade, Pulse,
+- **11 presets in one gallery:** Apple Music, Moss, Aurora, Cascade, Pulse,
   Editorial, Cinema, Neon, Letter, Terminal and Drift (浮游).
+- Apple Music is the first gallery entry and is selected when Studio opens.
 - Moss, Aurora, Apple Music, Cascade, Pulse, Cinema and Drift use the library's
   `LyricPresets` directly. Cascade settles in three steps; Pulse springs past its
   target; Drift drifts diagonally; Cinema dissolves through a focus pull.

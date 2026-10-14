@@ -1,4 +1,4 @@
-# 4.0 API
+# 4.1 API
 
 只从 `package:flutter_lyric/flutter_lyric.dart` 导入公开 API。`src/` 下的渲染器、排版缓存和视图会话属于内部实现。
 
@@ -328,7 +328,7 @@ Controller 只保留一条 source 订阅和一个帧采样器。所有视图都�
 
 ## Apple Music-inspired view
 
-`AppleMusicLyricView(controller:, style:, viewId:, onLineTap:, onSelectionChanged:, onFollowChanged:)` 是 `LyricView` 的兼容包装。新调用推荐 `LyricView(preset: LyricPresets.appleMusic, controller: controller)`。旧 style 通过 `toPreset()` 转换为相同的四层配置。尺寸由外层布局提供，必须具有有限宽高；包装默认显式使用 `const AppleMusicLyricStyle()`，不继承 Scope。
+`AppleMusicLyricView(controller:, style:, viewId:, onLineTap:, onSelectionChanged:, onFollowChanged:)` 是 `LyricView` 的便捷包装。推荐 `LyricView(preset: LyricPresets.appleMusic, controller: controller)`。style 通过 `toPreset()` 转换为相同的四层配置。尺寸由外层布局提供，必须具有有限宽高；包装默认显式使用 `const AppleMusicLyricStyle()`，不继承 Scope。
 
 它复用 `LyricDocument`、解析器、`LyricController` 和回调 details 类型。普通视图与 Apple Music 视图可以使用同一个 controller；每个 viewId 在该 controller 内唯一，各自保存浏览、选中和动画状态。`resumeFollow` / `scrollToLine` 的 viewId 路由规则保持一致。
 

@@ -117,12 +117,18 @@ Future<Uint8List> _render(WidgetTester tester, void Function(Canvas) paint,
   return result!;
 }
 
-void _expectAlphaCeiling(Uint8List image, Color color, String context) {
+void _expectAlphaCeiling(
+    Uint8List image, Color foreground, Color background, String context) {
   var maximum = 0;
   for (var index = 3; index < image.length; index += 4) {
     maximum = math.max(maximum, image[index]);
   }
-  expect(maximum, lessThanOrEqualTo((support.channel(color, 'a') * 255).ceil()),
+  // Compute source-over independently: legacy Color.alphaBlend truncates its
+  // integer alpha, while the engine rounds the final shader result to 8 bits.
+  final foregroundAlpha = support.channel(foreground, 'a');
+  final alpha = foregroundAlpha +
+      support.channel(background, 'a') * (1 - foregroundAlpha);
+  expect(maximum, lessThanOrEqualTo((alpha * 255).ceil()),
       reason: '$context, glyph coverage must not be applied twice');
 }
 
@@ -561,11 +567,10 @@ void main() {
                   origin);
               final context =
                   '$text, base=$base, position=$position, scale=$scale';
-              final active = Color.alphaBlend(
-                  support.withAlphaValue(const Color(0xB0EEAA55),
-                      support.channel(const Color(0xB0EEAA55), 'a') * .65),
-                  base);
-              _expectAlphaCeiling(actual, active, context);
+              final foreground = support.withAlphaValue(const Color(0xB0EEAA55),
+                  support.channel(const Color(0xB0EEAA55), 'a') * .65);
+              final active = Color.alphaBlend(foreground, base);
+              _expectAlphaCeiling(actual, foreground, base, context);
               if (position == 0 ||
                   position == 1000 ||
                   support.channel(base, 'a') == 0) {

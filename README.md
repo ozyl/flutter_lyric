@@ -8,12 +8,31 @@ Flutter 歌词组件，支持 LRC / QRC / YRC、翻译、逐字高亮和滚动�
 
 A Canvas-based lyric widget with translations, word-timed highlighting and native Flutter scrolling. One controller shares playback across views; each view keeps its own browsing state.
 
-**4.0.0** introduces breaking API changes from 3.x; see the [migration guide](doc/migration.md) before upgrading. Minimum library versions remain **Dart 2.12 / Flutter 2.0**. The audio-player example uses a newer SDK for its player dependencies.
+**4.1.0** adds Apple Music-style motion, configurable countdown dots and reusable line transitions to the 4.0 API. Minimum library versions remain **Dart 2.12 / Flutter 2.0**. The audio-player example requires **Dart 3.8.1 or later**. Upgrading from 3.x requires the [migration guide](doc/migration.md).
 
 - [在线演示 / Live Demo](https://ozyl.github.io/flutter_lyric/)
 - [完整 API 与参数划分 / API reference](doc/api.md)
-- [3.x → 4.0 迁移 / Migration](doc/migration.md)
+- [4.0 → 4.1 / 3.x → 4.x 迁移 / Migration](doc/migration.md)
 - [示例源码 / Example source](example/lib/main.dart)
+- [渲染性能与验证 / Rendering performance](doc/apple_music_performance.md)
+
+## Installation
+
+```yaml
+dependencies:
+  flutter_lyric: ^4.1.0
+```
+
+Run `flutter pub get`, then import `package:flutter_lyric/flutter_lyric.dart`.
+
+## What's new in 4.1
+
+- Apple Music, Cascade, Pulse and Drift join Moss, Aurora and Cinema as reusable presets. Word lift, character float, row motion and distance blur can be configured independently.
+- Canvas countdown dots mark intros and interludes, with optional `vocalStart` metadata for intro credits. Dots are enabled by default; use `countdown: const LyricCountdown.none()` to disable them.
+- Named, composed and custom line transitions share one renderer and preserve interrupted animation state. Solid-color floating text uses bounded glyph atlases to reduce long-line switch compositing.
+- Lyric Studio opens with Apple Music first, with 11 styles, 17 transition choices, shared timing previews, undo/redo and Dart configuration export.
+
+Existing 4.0 integrations keep their API. Built-in motion has been refreshed; see the [4.1 upgrade notes](doc/migration.md#upgrading-from-40-to-41) for restoring the earlier transitions.
 
 ## Quick start
 
@@ -176,7 +195,7 @@ final preset = LyricPresets.moss.copyWith(
 
 `LyricLineTransition.custom` 接收进度、起始/目标状态和行几何，返回这一帧的视觉状态。详见 [过渡与组合规则](doc/api.md#播放切句与效果组合)。Studio 动效面板可以独立切换内置、组合和自定义示例。
 
-`AppleMusicLyricView` 和 `AppleMusicLyricStyle` 继续兼容已有调用，通过 `style.toPreset()` 复用统一实现。包装组件显式传入预设，因此不读取 `LyricPresetScope`。
+也可使用便捷包装 `AppleMusicLyricView` 和 `AppleMusicLyricStyle`，通过 `style.toPreset()` 复用统一实现。包装组件显式传入预设，因此不读取 `LyricPresetScope`。
 
 ```dart
 AppleMusicLyricView(
@@ -208,9 +227,9 @@ Word Pop rises to `wordLift` over `wordPopDuration` at each timed word's onset, 
 
 Programmatic scrolling farther than one viewport height jumps directly to the target and clears residual line lag. Shorter moves retain the configured scroll duration and stagger, including when resuming playback following.
 
-Text wraps at its full size and scales within a fixed line slot, so transitions never rewrap the text. Backgrounds and player UI remain the host's responsibility. Open **Apple Music 风格** from the Studio header to tune the effects, switch between word-timed lyrics and LRC, and compare with the ordinary view. See the [style and behavior reference](doc/api.md#apple-music-inspired-view).
+Text wraps at its full size and scales within a fixed line slot, so transitions never rewrap the text. Backgrounds and player UI remain the host's responsibility. Studio opens with **Apple Music** selected in the preset gallery; use the shared inspector and stage timing menu to tune effects, preview plain LRC and compare with the ordinary view. See the [style and behavior reference](doc/api.md#apple-music-inspired-view).
 
-Apple Music's solid highlight, trailing fade and subpixel float share one offscreen surface per grapheme. Clip paths are cached with the shaped text, preserving the configured motion and highlight behavior; see the [mobile rendering analysis and benchmarks](doc/apple_music_performance.md) for costs and verification steps.
+Solid-color Character Float reuses bounded glyph atlases at the view's device pixel ratio. Partial highlight tails, custom gradients, oversized atlases and unsupported engines use the paragraph renderer. Clip paths and shaped geometry are cached; see the [mobile rendering analysis and benchmarks](doc/apple_music_performance.md) for costs and verification steps.
 
 ## Selection UI
 
@@ -267,3 +286,5 @@ flutter test test/benchmarks/lyric_scroll_benchmark.dart --reporter expanded
 ```
 
 CI checks both Flutter 2.0.6 (Dart 2.12.3) and a modern Flutter release. Pixel tests retain independent reference calculations for alpha compositing, fractional positions, wrapped lyrics and highlight tails.
+
+CI also runs the latest `pana --exit-code-threshold 0` with API documentation enabled, requiring all available pub points. Before publishing, follow the [release checks](doc/releasing.md).

@@ -1,6 +1,61 @@
-# Migrating from 3.x to 4.0
+# Migrating to 4.x
 
-4.0.0 is a major release with breaking API changes from 3.x. Replace old deep imports with:
+## Upgrading from 4.0 to 4.1
+
+4.1.0 adds public APIs while retaining the published 4.0 constructors, methods
+and preset names. The library minimum remains Dart 2.12 / Flutter 2.0.
+
+All presets now enable Canvas countdown dots before vocals and between known
+lyric gaps. Dots own the view's playback focus while visible; controller
+active-line indices and document entries remain unchanged. To keep the 4.0
+presentation without countdowns:
+
+```dart
+final preset = LyricPresets.aurora.copyWith(
+  countdown: const LyricCountdown.none(),
+  lineTransition: LyricLineTransitions.classic,
+);
+```
+
+`LyricLineTransitions.classic` also restores the 4.0 size transition for Moss
+and Cinema. Otherwise these presets use distinct trajectories. Layout remains
+dual-style for these three presets, and Aurora remains the library default.
+Studio now starts with Apple Music as its first gallery entry.
+
+Countdown timing uses `dotCount`, total `dotDuration` (default three seconds),
+and optional `breathDuration`. Gaps shorter than `dotDuration` show no dots;
+breathing uses only excess time before the complete fade. For ordinary LRC,
+add a blank timestamp at the start of an interlude, or provide `LyricLine.end`
+/ complete word end times. Start-only nonempty lines cannot identify silence.
+An optional `vocalStart` hint lets credit time from zero to vocals supply the
+intro countdown budget without changing lyric entries or word timestamps.
+See [countdown configuration](api.md#lyriccountdown).
+
+Use `LyricView(controller: controller, preset: LyricPresets.appleMusic)` for
+Apple Music-style motion. `AppleMusicLyricView` and `AppleMusicLyricStyle` are
+new convenience wrappers around the same renderer. Character Float defaults
+to `LyricFloatMode.highlighted`: unhighlighted graphemes stay still, and float
+eases in with each character's highlight. Disabling highlighting also disables
+float in this mode. Use `LyricWordEffects(floatMode: LyricFloatMode.all)` or
+`AppleMusicLyricStyle(characterFloatMode: LyricFloatMode.all)` to float all text.
+Word Pop independently controls the held lift height. Browsing stays crisp by
+default; set `distanceBlur.whenBrowsing` / `blurWhenBrowsing` to true to retain
+blur during browsing.
+
+`cascade`, `pulse` and `drift` provide additional presets. Line transitions are
+independently reusable; for example, `LyricPresets.aurora.copyWith(
+lineTransition: LyricLineTransitions.spring)` keeps its colors and layout while
+changing line motion. Studio shares the gallery, inspector and timing menu
+across all presets, and exports edits as public Dart configuration.
+
+Long-line switching reuses bounded glyph atlases at the view's device pixel
+ratio for solid-color Character Float. Unsupported engines, oversized atlases,
+partial highlight tails and custom gradients use the paragraph renderer. No
+application migration is required; see the [performance notes](apple_music_performance.md).
+
+## Upgrading from 3.x to 4.x
+
+4.0 introduced breaking API changes from 3.x. Replace old deep imports with:
 
 ```dart
 import 'package:flutter_lyric/flutter_lyric.dart';
@@ -74,67 +129,11 @@ Use `details.line.seekPosition`, not `line.start`, to seek. It already removes b
 
 Do not cache builder actions across view/document replacement. Old actions are deliberately inert. Empty-state content is provided by `preset.emptyBuilder`.
 
-## Intro and interlude countdown
+## SDK compatibility
 
-All presets now enable countdown dots with colors and spacing adapted to their
-style. Use `preset.copyWith(countdown: const LyricCountdown.none())` to disable
-them. Dots own the view's playback focus while visible; controller active-line
-indices and document entries remain unchanged.
-
-Timing has three settings: `dotCount`, total `dotDuration` (default three
-seconds), and optional `breathDuration`. Gaps shorter than `dotDuration` show
-no dots. Breathing uses only the excess time before the complete fade.
-`LyricCountdownMode`, `minimumGap`, `leadIn`, `showIntro`, `showInterludes` and
-`extraDuration` have been removed. For the old per-second behavior, set
-`dotDuration: Duration(seconds: dotCount)`; replace `extraDuration` with
-`breathDuration`. A `vocalStart` hint lets intro credit time from zero to vocals
-supply the countdown budget, but the intro must still fit the full fade.
-
-For ordinary LRC, add a blank timestamp at the start of an interlude, or provide
-`LyricLine.end` / complete word end times. Start-only nonempty lines do not
-provide enough information to infer silence safely. No data migration is
-required. See [countdown configuration](api.md#lyriccountdown).
-
-## Compatibility
-
-The library keeps the Dart 2.12 minimum, has no third-party runtime dependency, and uses Flutter 2-compatible syntax. Modern native paragraph disposal and floating-point color alpha are selected through a small capability adapter. Flutter 2's paint-only invalidation behavior is handled separately. The example's newer audio-player dependencies do not change the library minimum.
-
-## Apple Music and Studio presets
-
-Use `LyricView(controller: controller, preset: LyricPresets.appleMusic)` for new
-Apple Music integrations. `AppleMusicLyricView` and `AppleMusicLyricStyle` remain
-compatible wrappers; existing calls do not need to change.
-
-Character Float now defaults to `LyricFloatMode.highlighted`: unhighlighted
-graphemes stay still, and float eases in with each character's highlight.
-Disabling highlighting also disables float in this mode. To retain the previous
-whole-line behavior, pass `floatMode: LyricFloatMode.all` to `LyricWordEffects`,
-or `characterFloatMode: LyricFloatMode.all` to `AppleMusicLyricStyle` (including
-its `copyWith`). Word Pop settings and held lift heights are unchanged. Studio's
-float mode selector supports both choices and includes the mode in copied code.
-
-Long-line switching now reuses bounded glyph atlases at the view's device pixel
-ratio for solid-color Character Float, preserving the configured motion and
-timing. Engines without synchronous image handles, oversized glyph atlases,
-partial highlight tails and custom gradients retain the paragraph renderer.
-No application migration is required; see the [performance notes](apple_music_performance.md)
-for benchmark scope and device verification.
-
-Studio now uses one gallery and inspector for every preset. The separate Apple
-Music route and Issue #41 laboratory entries have been removed. Choose Apple
-Music in the gallery and use the stage timing menu to preview ordinary LRC.
-`LyricPresets.cascade`, `pulse` and `drift` add reusable motion configurations.
-Built-in presets now use distinct named line transitions. Cinema dissolves
-through a focus pull; to keep its previous line
-transition, use `LyricPresets.cinema.copyWith(lineTransition: const
-LyricLineTransition())`.
-
-Line transitions are independently reusable through `LyricLineTransitions`.
-For example, `LyricPresets.aurora.copyWith(lineTransition:
-LyricLineTransitions.spring)` keeps Aurora's colors and layout while changing
-its line motion. `LyricLineTransitions.classic` restores the original dual-style
-size transition for Moss or Aurora. Apple Music's transition stays unchanged.
-
-`LyricLineTransitions.step` now uses a 12 px horizontal offset instead of an
-18 px downward offset for inactive lines. This preserves the configured vertical
-spacing around the active line. Its API, segment timing and durations are unchanged.
+The library keeps the Dart 2.12 minimum, has no third-party runtime dependency,
+and uses Flutter 2-compatible syntax. Modern native paragraph disposal and
+floating-point color alpha are selected through a capability adapter. Flutter
+2's paint-only invalidation behavior is handled separately. The example needs
+Dart 3.8.1 or later for its audio-player dependencies; this does not change the
+library minimum.
